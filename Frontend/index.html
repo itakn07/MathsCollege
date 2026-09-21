@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>APP-MATHS College</title>
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+     
+     <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+            }
+        };
+    </script>
+
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  </head>
+<body>
+
+<header class="topbar">
+  <div class="header-top">
+    <h1> Maths Collège</h1>
+    <div class="header-actions">
+      <button class="login" onclick="ouvrirModalLogin()">Log in</button>
+      <button class="nav-btn" id="btn-signup-main" onclick="ouvrirModalSignup()" style="background:#28a745; color:white; border:none; border-radius:5px; padding:10px 20px; cursor:pointer;">
+        Sign up
+      </button>
+      
+    </div>
+  </div>
+ 
+  <p class="slogan"><h2> Apprendre les maths devient facile</h2> </p>
+
+</header>
+
+<section class="welcome">
+  <h2>Bienvenue sur Maths Collège </h2>
+  <p class="welcome-text">Plateforme éducative dédiée aux élèves de la 6e à la 3e.</p>
+</section>
+
+<section id="levels-page" class="page active">
+  <h2 class="title">Choisis ton niveau</h2>
+  <div class="levels" id="levels-container"></div>
+</section>
+
+<section id="dashboard" class="page" style="display:none;">
+  <h2 class="title">Mon Espace Travail</h2>
+  <div class="container" style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+    
+    <div class="card recherche-item">
+      <h3>Fiches de révisions</h3>
+      <p>Tes cours résumés,clairs et faciles à comprendre!</p>
+      <button class="action" id="btn-cours">Accéder</button>
+    </div>
+
+    <div class="card recherche-item">
+      <h3>Vidéos</h3>
+      <p> Des vidéos explicatives!</p> 
+      <button class="action" id="btn-videos">Regarder</button>
+    </div>
+
+    <div class="card recherche-item">
+      <h3>Exercices</h3>
+      <p>Entraine toi avec des exercices simples pour garder la forme!</p> 
+      <button class="action-btn" onclick="declencherEntrainement()" style="background: #5b6cff; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">S'entraîner</button>
+    </div>
+
+  </div>
+  <button onclick="location.reload()" style="background: #5b6cff; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top:20px;">Retour aux niveaux</button>
+</section>
+
+<section id="content" class="page" style="display:none; padding:20px; text-align:center;">
+    <h2 id="content-title"></h2>
+    <div id="cours" class="content-block recherche-item" style="display:none;"></div>
+    <div id="videos" class="content-block recherche-item" style="display:none;"></div>
+    <div id="exercices" class="content-block recherche-item" style="display:none;"></div>
+    <button id="back-dashboard" style="background: #5b6cff; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">Retour au menu</button>
+</section>
+
+<div class="solveur-box" style="background: #f8f9fa; padding: 20px; border-radius: 10px; border: 2px solid #5b6cff; margin: 20px auto; max-width: 800px;">
+    <h3>Solveur d'exercices</h3>
+    <input type="text" id="equation-input" placeholder="Ex: sqrt(64)+3^2" style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 5px; border: 1px solid #ccc;">
+    <div style="display: flex; gap: 10px;">
+        <button onclick="resoudre()" style="flex: 1; padding: 12px; background: #5b6cff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Calculer</button>
+        <button onclick="effacerSolveur()" style="flex: 1; padding: 12px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Effacer</button>
+    </div>
+    <p id="resultat-solveur" style="margin-top: 15px; font-weight: bold; min-height: 20px;"></p>
+</div>
+
+<div id="login-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:white; padding:30px; border-radius:15px; width:90%; max-width:400px; position:relative;">
+        <span onclick="fermerModalLogin()" style="position:absolute; top:10px; right:15px; cursor:pointer; font-size:24px;">&times;</span>
+        <h2 style="text-align:center; color:#5b6cff;">Connexion</h2>
+        <input type="email" id="login-email" placeholder="Email" style="width:100%; padding:10px; margin:10px 0;">
+        <input type="password" id="login-pass" placeholder="Mot de passe" style="width:100%; padding:10px; margin:10px 0;">
+        <button onclick="login()" style="width:100%; padding:12px; background:#5b6cff; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Se connecter</button>
+    </div>
+</div>
+
+<div id="signup-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:white; padding:30px; border-radius:15px; width:90%; max-width:400px; position:relative;">
+        <span onclick="fermerModalSignup()" style="position:absolute; top:10px; right:15px; cursor:pointer; font-size:24px;">&times;</span>
+        <h2 style="text-align:center; color:#5b6cff;">Créer un compte</h2>
+        <input type="text" id="signup-user" placeholder="Nom d'utilisateur" style="width:100%; padding:10px; margin:10px 0;">
+        <input type="email" id="signup-email" placeholder="Email" style="width:100%; padding:10px; margin:10px 0;">
+        <input type="password" id="signup-pass" placeholder="Mot de passe" style="width:100%; padding:10px; margin:10px 0;">
+        <select id="signup-niveau" style="width:100%; padding:10px; margin:10px 0;">
+            <option value="6ème">6ème</option>
+            <option value="5ème">5ème</option>
+            <option value="4ème">4ème</option>
+            <option value="3ème">3ème</option>
+        </select>
+        <button onclick="signup()" style="width:100%; padding:12px; background:#28a745; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">S'inscrire</button>
+    </div>
+</div>
+
+<div id="ai-chat-container" style="background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin: 20px auto; max-width: 800px; border-top: 5px solid #5b6cff;">
+    <h3 style="color: #5b6cff; display: flex; align-items: center; gap: 10px;">Coach Sylvie</h3>
+    <div id="reponseIA" style="min-height: 80px; background: #f8f9fa; padding: 15px; margin-bottom: 15px; border-radius: 10px; border: 1px solid #eee; overflow-y: auto; max-height: 300px; font-style: italic; color: #555;">
+        Bonjour ! Je suis Sylvie, ta super coach de maths!!!
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <input type="text" id="monInputIA" placeholder="Ex: Bonjour Sylvie, explique-moi Thalès..." style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #ccc;">
+        <button onclick="envoyerQuestionIA()" style="background: #5b6cff; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">Demander</button>
+    </div>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-container" style="display:flex; justify-content:space-around; background:#5b6cff; color:white; padding:20px;">
+    <div class="footer-section"><h3>À propos:</h3><p>Maths Collège est ta plateforme permettant aux apprenants en cycle collège d'apprendre les mathématiques plus facilement</p></div>
+    <div class="footer-section"><h3>E-mail:</h3><p>ritakngot3@gmail.com</p></div>
+    <div class="footer-section"><h3>Téléphone</h3><p>00242 04 478 18 74</p></div>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
