@@ -29,7 +29,7 @@ const transporter = nodemailer.createTransport({
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
-    password: 'password',
+    password: '',
     port: 3307,
     database: 'maths_college'
 });
