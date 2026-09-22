@@ -6,28 +6,42 @@ const dashboard = document.getElementById("dashboard");
 const levelsPage = document.getElementById("levels-page");
 const contentPage = document.getElementById("content");
 
-// Fonctions pour l'ouverture/fermeture des Modals
-function ouvrirModalLogin() { document.getElementById('login-modal').style.display = 'flex'; }
-function fermerModalLogin() { document.getElementById('login-modal').style.display = 'none'; }
-function ouvrirModalSignup() { document.getElementById('signup-modal').style.display = 'flex'; }
-function fermerModalSignup() { document.getElementById('signup-modal').style.display = 'none'; }
+// Fonctions pour l'ouverture/fermeture des Modals (Compatible Tailwind)
+function ouvrirModalLogin() { 
+    const modal = document.getElementById('login-modal');
+    if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+}
+function fermerModalLogin() { 
+    const modal = document.getElementById('login-modal');
+    if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+}
+function ouvrirModalSignup() { 
+    const modal = document.getElementById('signup-modal');
+    if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+}
+function fermerModalSignup() { 
+    const modal = document.getElementById('signup-modal');
+    if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+}
 
 // Navigation Niveaux (le Dashboard)
 window.entrerDansNiveau = function(id, nom) {
     currentNiveauId = id;
-    document.querySelector(".welcome").style.display = "none";
-    levelsPage.style.display = "none";
-    dashboard.style.display = "block";
-    const titleElement = dashboard.querySelector(".title");
+    const welcome = document.querySelector(".welcome");
+    if (welcome) welcome.style.display = "none";
+    if (levelsPage) levelsPage.style.display = "none";
+    if (dashboard) dashboard.style.display = "block";
+    
+    const titleElement = dashboard ? dashboard.querySelector(".title") : null;
     if (titleElement) titleElement.textContent = "Niveau : " + nom;
 };
 
 // SIGNUP / LOGIN
 
 async function signup() {
-    const username = document.getElementById('signup-user').value;
-    const email = document.getElementById('signup-email').value;
-    const password = document.getElementById('signup-pass').value;
+    const username = document.getElementById('signup-user').value.trim();
+    const email = document.getElementById('signup-email').value.trim();
+    const password = document.getElementById('signup-pass').value.trim();
     const niveau = document.getElementById('signup-niveau').value;
 
     if (!username || !email || !password) { alert("Remplis tous les champs !"); return; }
@@ -40,7 +54,7 @@ async function signup() {
         });
         const data = await response.json();
         if (data.success) {
-            localStorage.setItem('user', JSON.stringify({username, niveau}));
+            localStorage.setItem('user', JSON.stringify({ username, niveau }));
             fermerModalSignup();
             location.reload(); 
         } else { alert("Erreur : " + data.message); }
@@ -48,8 +62,10 @@ async function signup() {
 }
 
 async function login() {
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-pass').value;
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-pass').value.trim();
+
+    if (!email || !password) { alert("Veuillez saisir votre email et votre mot de passe."); return; }
 
     try {
         const response = await fetch('http://localhost:3000/login', {
@@ -75,159 +91,147 @@ function mettreAJourInterface(data) {
     const btnLogin = document.querySelector('.login');
     if (btnLogin) btnLogin.innerText = data.username;
     
-    const btnNav = document.querySelector('.nav-btn');
+    const btnNav = document.getElementById('btn-signup-main') || document.querySelector('.nav-btn');
     if (btnNav) {
         btnNav.innerText = "Log out";
-        btnNav.style.background = "#f44336"; 
+        btnNav.style.backgroundColor = "#ef4444"; 
         btnNav.onclick = logout;
     }
     const welcomeH2 = document.querySelector('.welcome h2');
     if (welcomeH2) welcomeH2.innerText = "Ravi de te revoir, " + data.username + " !";
 }
 
-//  Chargement au démarrage
-
-window.onload = function() {
-    const userStocke = localStorage.getItem('user');
-    if (userStocke) {
-        mettreAJourInterface(JSON.parse(userStocke));
-    }
-
-    fetch("http://localhost:3000/niveaux")
-        .then(res => res.json())
-        .then(data => {
-            if (levelsContainer) {
-                levelsContainer.innerHTML = ""; 
-                data.forEach(niveau => {
-                    const card = document.createElement("div");
-                    card.className = "level-card";
-                    card.innerHTML = `
-                        <h3>${niveau.nom}</h3>
-                        <button class="action-btn" onclick="entrerDansNiveau(${niveau.id}, '${niveau.nom}')">Entrer</button>
-                    `;
-                    levelsContainer.appendChild(card);
-                });
-            }
-        })
-        .catch(err => console.error("Serveur Backend éteint."));
-};
-
-// AFFICHEr COURS / VIDEOS 
+// AFFICHER COURS / VIDEOS / EXERCICES
 
 function showContent(blockId, title) {
-    dashboard.style.display = "none";
-    contentPage.style.display = "block";
-    document.getElementById("content-title").textContent = title;
+    if (dashboard) dashboard.style.display = "none";
+    if (contentPage) contentPage.style.display = "block";
+    
+    const pageTitle = document.getElementById("content-title");
+    if (pageTitle) pageTitle.textContent = title;
 
-    document.querySelectorAll(".content-block").forEach(b => b.style.display = "none");
+    document.querySelectorAll(".content-block").forEach(b => {
+        b.style.display = "none";
+        b.classList.add("hidden");
+    });
+    
     const container = document.getElementById(blockId);
     if (!container) return;
+    
     container.style.display = "block";
-    container.innerHTML = "<h3>Chargement...</h3>";
+    container.classList.remove("hidden");
+    container.innerHTML = "<h3 class='text-slate-500 font-semibold p-4'>Chargement...</h3>";
 
     fetch(`http://localhost:3000/api/${blockId}/${currentNiveauId}`)
         .then(res => res.json())
         .then(data => {
-            container.innerHTML = `<h3>${title}</h3>`;
+            container.innerHTML = `<h3 class="text-lg font-bold text-slate-800 mb-4">${title}</h3>`;
+            
             data.forEach(item => {
-                // --- DANS TA FONCTION SHOWCONTENT ---
-if (blockId === "cours") {
-    let renduFinal = "";
+                if (blockId === "cours") {
+                    let renduFinal = "";
+                    if (item.contenu.includes("<div") || item.contenu.includes("<h")) {
+                        renduFinal = item.contenu;
+                    } else {
+                        renduFinal = marked.parse(item.contenu);
+                    }
 
-    // Si le contenu contient déjà des balises HTML (comme ton cours sur les Entiers)
-    if (item.contenu.includes("<div") || item.contenu.includes("<h")) {
-        renduFinal = item.contenu;
-    } else {
-        // Sinon, on transforme le Markdown (###, **) en HTML propre
-        renduFinal = marked.parse(item.contenu);
-    }
+                    container.innerHTML += `
+                        <div class="card recherche-item bg-white p-5 rounded-2xl border border-slate-100 shadow-sm mb-4">
+                            <h4 class="font-bold text-slate-900 text-base mb-2">${item.titre}</h4>
+                            <div class="course-body text-slate-700 text-sm leading-relaxed">
+                                ${renduFinal}
+                            </div>
+                        </div>`;
+                } 
+                else if (blockId === "videos") {
+                    let rawData = item.youtube_id.trim();
+                    let finalUrl = "";
 
-    container.innerHTML += `
-        <div class="card recherche-item">
-            <h4>${item.titre}</h4>
-            <div class="course-body">
-                ${renduFinal}
-            </div>
-        </div>`;
-} 
-// <-- L'ACCOLADE QUI MANQUAIT EST ICI !
-else if (blockId === "videos") {
-    let rawData = item.youtube_id.trim();
-    // ... la suite de ton code vidéo ...
-    let finalUrl = "";
+                    if (rawData.includes('http')) {
+                        if (rawData.includes('watch?v=')) {
+                            finalUrl = rawData.replace('watch?v=', 'embed/');
+                        } else {
+                            finalUrl = rawData;
+                        }
+                    } else {
+                        finalUrl = `https://www.youtube.com/embed/${rawData}`;
+                    }
 
-    
-    if (rawData.includes('http')) {
-       
-        if (rawData.includes('watch?v=')) {
-            finalUrl = rawData.replace('watch?v=', 'embed/');
-        } else {
-            finalUrl = rawData;
-        }
-    } 
-  
-    else {
-        finalUrl = `https://www.youtube.com/embed/${rawData}`;
-    }
+                    container.innerHTML += `
+                        <div class="card recherche-item bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-6">
+                            <h4 class="font-bold text-slate-900 mb-3">${item.titre}</h4>
+                            <div class="video-wrapper relative pb-[56.25%] h-0 overflow-hidden rounded-xl bg-black">
+                                <iframe 
+                                    class="absolute top-0 left-0 w-full h-full border-0"
+                                    src="${finalUrl}" 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                    allowfullscreen>
+                                </iframe>
+                            </div>
+                            <p class="mt-3 text-xs text-slate-500">
+                                <a href="${finalUrl.replace('embed/', 'watch?v=')}" target="_blank" class="text-brand-500 hover:underline">Voir directement sur YouTube</a>
+                            </p>
+                        </div>`;
+                } else {
+                    // Pour les exercices ou autres contenus
+                    container.innerHTML += `
+                        <div class="card recherche-item bg-white p-5 rounded-2xl border border-slate-100 shadow-sm mb-4">
+                            <h4 class="font-bold text-slate-900 mb-2">${item.titre}</h4>
+                            <div>${item.contenu || ""}</div>
+                        </div>`;
+                }
+            });
 
-    container.innerHTML += `
-        <div class="card recherche-item" style="margin-bottom: 25px; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-            <h4 style="color: #333; margin-bottom: 10px;">${item.titre}</h4>
-            <div class="video-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
-                <iframe 
-                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
-                    src="${finalUrl}" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                    allowfullscreen>
-                </iframe>
-            </div>
-            <p style="margin-top: 10px; font-size: 0.8em;">
-                <a href="${finalUrl.replace('embed/', 'watch?v=')}" target="_blank" style="color: #3498db;">Voir directement sur YouTube</a>
-            </p>
-        </div>`;
+            // MATHJAX POUR RENDRE LES FORMULES MATHEMATIQUES
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise([container]);
+            }
+        })
+        .catch(e => {
+            console.error(e);
+            container.innerHTML = "<p class='text-rose-500 font-semibold p-4'>Erreur de chargement des données.</p>";
+        });
 }
- //  MATHJAX POuR LES COURs && window.MathJax.typesetPromise)
-          if (window.MathJax)  {
-               window.MathJax.typesetPromise([container]);
-       }
 
-           });
-        }).catch(e => container.innerHTML = "Erreur de chargement.");
-}
+// SOLVEUR D'EXERCICES
 
 function resoudre() {
     const input = document.getElementById('equation-input').value.replace(/\s/g, '').replace(/,/g, '.');
     const display = document.getElementById('resultat-solveur');
 
-    // 1. CAS DES CALCULS SIMPLES (Arithmétique + Racines + Puissances)
-if (!input.includes('x') && !input.includes('=') && !input.includes('>') && !input.includes('<')) {
-    try {
-        let calcul = input.toLowerCase()
-            .replace(/racine\(/g, 'Math.sqrt(') 
-            .replace(/sqrt\(/g, 'Math.sqrt(')  
-            .replace(/\^/g, '*')              
-            .replace(/x/g, '*')                
-            .replace(/:/g, '/');               
-        const res = eval(calcul);
-        
-        
-        display.innerHTML = `
-            <div style="background: #f0f7ff; padding: 15px; border-radius: 10px; border: 1px solid #007bff; color: #004085;">
-                <small>Calcul effectué :</small><br>
-                <span style="font-size: 22px; font-weight: bold;">${res}</span>
-            </div>`;
-        return;
-    } catch (e) {
-        display.innerHTML = "<span style='color:red;'>Erreur : format invalide (ex: racine(16) + 2)</span>";
+    if (!input) {
+        display.innerHTML = "<span class='text-rose-500'>Veuillez entrer un calcul ou une équation.</span>";
         return;
     }
-}
 
-    //  CAS DES ÉQUATIONS / INÉQUATIONS
-    let type = input.includes('>') || input.includes('<') ? "inequation" : "equation";
+    // 1. CAS DES CALCULS SIMPLES (Arithmétique + Racines + Puissances)
+    if (!input.includes('x') && !input.includes('=') && !input.includes('>') && !input.includes('<')) {
+        try {
+            let calcul = input.toLowerCase()
+                .replace(/racine\(/g, 'Math.sqrt(') 
+                .replace(/sqrt\(/g, 'Math.sqrt(')  
+                .replace(/\^/g, '**')              // Correction : ** pour exposants en JS
+                .replace(/:/g, '/');               
+            
+            const res = eval(calcul);
+            
+            display.innerHTML = `
+                <div class="bg-brand-50 border border-brand-100 p-4 rounded-xl text-slate-800 mt-2">
+                    <small class="text-xs text-slate-500">Résultat du calcul :</small><br>
+                    <span class="text-2xl font-bold text-brand-500">${res}</span>
+                </div>`;
+            return;
+        } catch (e) {
+            display.innerHTML = "<span class='text-rose-500'>Erreur : format invalide (ex: racine(16) + 2^3)</span>";
+            return;
+        }
+    }
+
+    // 2. CAS DES ÉQUATIONS / INÉQUATIONS
     let symbole = input.match(/[=<>]/) ? input.match(/[=<>]/)[0] : "=";
 
-    // le SECOND DEGRÉ 
+    // LE SECOND DEGRÉ
     const quadraticMatch = input.match(/([+-]?\d*)x\^2([+-]?\d*)x([+-]?\d*)([=<>])0/);
     if (quadraticMatch) {
         let a = parseFloat(quadraticMatch[1] === "" || quadraticMatch[1] === "+" ? 1 : quadraticMatch[1] === "-" ? -1 : quadraticMatch[1]);
@@ -235,7 +239,7 @@ if (!input.includes('x') && !input.includes('=') && !input.includes('>') && !inp
         let c = parseFloat(quadraticMatch[3] || 0);
 
         const delta = (b * b) - (4 * a * c);
-        let html = `<div style="text-align:left; border-left:4px solid #007bff; padding-left:10px;">`;
+        let html = `<div class="bg-slate-50 border-l-4 border-brand-500 p-4 rounded-r-xl text-left space-y-1 text-sm mt-2">`;
         html += `<p><b>Forme :</b> ${a}x² + ${b}x + ${c} ${symbole} 0</p>`;
         html += `<p><b>Δ =</b> ${delta}</p>`;
 
@@ -244,38 +248,32 @@ if (!input.includes('x') && !input.includes('=') && !input.includes('>') && !inp
             const x2 = ((-b + Math.sqrt(delta)) / (2 * a)).toFixed(2);
             html += `<p>Racines : <b>x₁ = ${x1}</b>, <b>x₂ = ${x2}</b></p>`;
         } else if (delta === 0) {
-            html += `<p>Racine unique : <b>${(-b/(2*a)).toFixed(2)}</b></p>`;
+            html += `<p>Racine unique : <b>x = ${(-b/(2*a)).toFixed(2)}</b></p>`;
         } else {
-            html += `<p>Pas de racines réelles.</p>`;
+            html += `<p>Pas de racines réelles dans ℝ.</p>`;
         }
-        display.innerHTML = html +`</div>` ;
+        display.innerHTML = html + `</div>`;
 
-    // le PREMIER DEGRÉ 
+    // LE PREMIER DEGRÉ
     } else {
         const linearMatch = input.match(/([+-]?\d*)x([+-]?\d*)([=<>])0/);
         if (linearMatch) {
             let a = parseFloat(linearMatch[1] === "" || linearMatch[1] === "+" ? 1 : linearMatch[1] === "-" ? -1 : linearMatch[1]);
             let b = parseFloat(linearMatch[2] || 0);
             let res = (-b / a).toFixed(2);
-            display.innerHTML = `Solution : <b>x ${symbole} ${res}</b>`;
+            display.innerHTML = `<div class="mt-2 font-medium text-slate-800">Solution : <b class="text-brand-500">x ${symbole} ${res}</b></div>`;
         } else {
-            display.innerHTML = "Format : 2x+4=0 ou 1x^2-5x+6=0";
+            display.innerHTML = "<span class='text-amber-600 text-xs'>Format attendu : 2x+4=0 ou 1x^2-5x+6=0</span>";
         }
     }
 }
+
 function effacerSolveur() {
     document.getElementById('equation-input').value = "";
-    document.getElementById('resultat-solveur').innerText = "";
+    document.getElementById('resultat-solveur').innerHTML = "";
 }
 
-//  ECOUTEURS D'EVENEMENTS 
-
-document.getElementById("btn-cours")?.addEventListener("click", () => showContent("cours", "Cours"));
-document.getElementById("btn-videos")?.addEventListener("click", () => showContent("videos", "Vidéos"));
-document.getElementById("back-dashboard")?.addEventListener("click", () => {
-    contentPage.style.display = "none";
-    dashboard.style.display = "block";
-});
+// COACH SYLVIE IA
 
 async function envoyerQuestionIA() {
     const input = document.getElementById('monInputIA');
@@ -285,91 +283,116 @@ async function envoyerQuestionIA() {
     if (!question) return;
 
     // 1. Afficher le message utilisateur
-    reponseZone.innerHTML += `<div class="user-msg" style="background: #5b6cff; color: white; padding: 10px; border-radius: 10px; margin-bottom: 10px; align-self: flex-end; text-align: right;">${question}</div>`;
+    reponseZone.innerHTML += `
+        <div class="user-msg bg-brand-500 text-white p-3 rounded-2xl mb-3 max-w-[85%] ml-auto text-right text-sm">
+            ${question}
+        </div>`;
     input.value = "";
     
-    // 2. Création de la bulle de Rita qui attend
+    // 2. Création de la bulle d'attente
     const loadingId = "rita-load-" + Date.now();
-    reponseZone.innerHTML += `<div id="${loadingId}" class="bot-msg" style="background: #f1f2f6; padding: 10px; border-radius: 10px; margin-bottom: 10px;"><em>Sylvie réfléchit...</em></div>`;
+    reponseZone.innerHTML += `
+        <div id="${loadingId}" class="bot-msg bg-slate-100 text-slate-600 p-3 rounded-2xl mb-3 max-w-[85%] text-sm">
+            <em>Sylvie réfléchit...</em>
+        </div>`;
     
     reponseZone.scrollTop = reponseZone.scrollHeight;
 
     try {
-        // 3. route serveur : /ask-ai
         const response = await fetch('http://localhost:3000/ask-ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: question }) // On envoie 'prompt' comme attendu par ton serveur
+            body: JSON.stringify({ prompt: question })
         });
 
         const data = await response.json();
 
-        // 4. 'answer' reçu du serveur
         const ritaBubble = document.getElementById(loadingId);
         if (data.answer) {
+            const htmlContent = marked.parse(data.answer);
+            ritaBubble.innerHTML = `<strong class="text-brand-500">Sylvie :</strong> ${htmlContent}`;
 
-            // marked.parse() transforme les ### en titres et les ** en gras
-const htmlContent = marked.parse(data.answer);
-ritaBubble.innerHTML = `<strong>Sylvie :</strong> ${htmlContent}`;
-
-             //  MATHJAX POUR SYLvie
             if (window.MathJax && window.MathJax.typesetPromise) {
                 window.MathJax.typesetPromise([ritaBubble]);
             }
-
         } else {
             ritaBubble.innerHTML = "Désolée, je n'ai pas pu obtenir de réponse.";
         }
 
     } catch (error) {
-        console.error("Erreur Rita:", error);
-        document.getElementById(loadingId).innerHTML = "⚠️ Connexion perdue avec le serveur.";
+        console.error("Erreur IA:", error);
+        const errBubble = document.getElementById(loadingId);
+        if (errBubble) errBubble.innerHTML = "⚠️ Connexion perdue avec le serveur.";
     }
 
     reponseZone.scrollTop = reponseZone.scrollHeight;
 }
 
-// Reconnaitre l'élève connecté
+function declencherEntrainement() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const prenom = user ? user.username : "l'ami";
+
+    const aiContainer = document.getElementById('ai-chat-container') || document.getElementById('reponseIA');
+    if (aiContainer) aiContainer.scrollIntoView({ behavior: 'smooth' });
+
+    const reponseZone = document.getElementById('reponseIA');
+    if (reponseZone) {
+        reponseZone.innerHTML += `
+            <div class="bot-msg bg-amber-50 border-l-4 border-brand-500 text-slate-800 p-3 rounded-xl mt-3 text-sm">
+                <strong>Sylvie:</strong> C'est parti ${prenom} ! Je te prépare une série d'exercices. 
+                Dis-moi sur quel chapitre tu veux t'exercer !
+            </div>`;
+        reponseZone.scrollTop = reponseZone.scrollHeight;
+    }
+}
+
+// INITIALISATION AU CHARGEMENT DE LA PAGE
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Récupération Utilisateur
     const userStocke = localStorage.getItem('user');
-    
     if (userStocke) {
         const userData = JSON.parse(userStocke);
-        
-        //  On met à jour l'interface (tes boutons, ton texte de bienvenue)
         mettreAJourInterface(userData);
-        
         
         const reponseIA = document.getElementById('reponseIA');
         if (reponseIA) {
             reponseIA.innerHTML = `
-                <div class="bot-msg" style="background:#f1f2f6; padding:10px; border-radius:10px; margin-bottom:10px; border-left: 4px solid #5b6cff;">
-                    <strong>Sylvie :</strong> Bonjour <strong>${userData.username}</strong> !  Je suis prête à t'aider. Que veux-tu réviser ?
+                <div class="bot-msg bg-slate-100 p-3 rounded-2xl mb-3 border-l-4 border-brand-500 text-sm">
+                    <strong>Sylvie :</strong> Bonjour <strong>${userData.username}</strong> ! Je suis prête à t'aider. Que veux-tu réviser ?
                 </div>`;
         }
     }
+
+    // 2. Écouteurs d'événements des boutons du Dashboard
+    document.getElementById("btn-cours")?.addEventListener("click", () => showContent("cours", "Cours"));
+    document.getElementById("btn-videos")?.addEventListener("click", () => showContent("videos", "Vidéos"));
+    document.getElementById("back-dashboard")?.addEventListener("click", () => {
+        if (contentPage) contentPage.style.display = "none";
+        if (dashboard) dashboard.style.display = "block";
+    });
+
+    // 3. Écouteur Touche Entrée pour l'IA
+    document.getElementById('monInputIA')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') envoyerQuestionIA();
+    });
+
+    // 4. Chargement des niveaux depuis le Backend
+    if (levelsContainer) {
+        fetch("http://localhost:3000/niveaux")
+            .then(res => res.json())
+            .then(data => {
+                levelsContainer.innerHTML = ""; 
+                data.forEach(niveau => {
+                    const card = document.createElement("div");
+                    card.className = "level-card bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition text-left flex flex-col justify-between";
+                    card.innerHTML = `
+                        <h3 class="font-bold text-slate-900 text-lg mb-4">${niveau.nom}</h3>
+                        <button class="action-btn bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2 px-4 rounded-xl text-sm transition w-full" onclick="entrerDansNiveau(${niveau.id}, '${niveau.nom}')">Entrer</button>
+                    `;
+                    levelsContainer.appendChild(card);
+                });
+            })
+            .catch(err => console.error("Serveur Backend éteint ou inaccessible."));
+    }
 });
-
-//Rita génère les exercices
-
-function declencherEntrainement() {
-    // récupère le nom de l'utilisateur
-    const user = JSON.parse(localStorage.getItem('user'));
-    const prenom = user ? user.username : "l'ami";
-
-    // défiler la page vers Rita pour que le jury voie l'action
-    document.getElementById('reponseIA').scrollIntoView({ behavior: 'smooth' });
-
-    //  réponse immédiatement
-    const reponseZone = document.getElementById('reponseIA');
-    reponseZone.innerHTML += `
-        <div class="bot-msg" style="background:#fff3cd; border-left:5px solid #5b6cff; padding:10px; border-radius:10px; margin-top:10px;">
-            <strong>Sylvie:</strong> C'est parti ${prenom} ! Je te prépare une série d'exercices . 
-            Dis-moi sur quoi veux-tu t'exercer !
-        </div>`;
-    
-    reponseZone.scrollTop = reponseZone.scrollHeight;
-}
-
-

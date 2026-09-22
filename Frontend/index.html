@@ -2,12 +2,39 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>APP-MATHS College</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathsCollege</title>
 
+    <!-- Script Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Configuration Tailwind (Couleurs & Police) -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: '#f0edff',
+                100: '#e2d9ff',
+                500: '#6c5ce7',
+                600: '#5b4bc4',
+              }
+            },
+            fontFamily: {
+              sans: ['Plus Jakarta Sans', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+
+    <!-- Polices Google -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Librairies (MathJS, MathJax, Marked) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
-     
-     <script>
+    <script>
         window.MathJax = {
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
@@ -18,130 +45,200 @@
             }
         };
     </script>
-
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between">
 
-  </head>
-<body>
+  <div>
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 py-3">
+      <div class="max-w-4xl mx-auto flex justify-between items-center">
+        <h1 class="text-xl font-extrabold bg-gradient-to-r from-brand-500 to-purple-600 bg-clip-text text-transparent cursor-pointer" onclick="location.reload()">
+          MathsCollege
+        </h1>
+        <div class="flex items-center gap-2">
+          <button class="login px-4 py-2 text-sm font-semibold text-brand-500 rounded-xl hover:bg-brand-50 transition" onclick="ouvrirModalLogin()">
+            Log in
+          </button>
+          <button class="nav-btn bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-md shadow-brand-500/20 transition" id="btn-signup-main" onclick="ouvrirModalSignup()">
+            Sign up
+          </button>
+        </div>
+      </div>
+    </header>
 
-<header class="topbar">
-  <div class="header-top">
-    <h1> Maths Collège</h1>
-    <div class="header-actions">
-      <button class="login" onclick="ouvrirModalLogin()">Log in</button>
-      <button class="nav-btn" id="btn-signup-main" onclick="ouvrirModalSignup()" style="background:#28a745; color:white; border:none; border-radius:5px; padding:10px 20px; cursor:pointer;">
-        Sign up
-      </button>
-      
-    </div>
+    <!-- Conteneur Principal -->
+    <main class="max-w-4xl mx-auto px-4 py-6 space-y-6">
+
+      <!-- Banner Welcome -->
+      <section class="welcome bg-gradient-to-br from-brand-50 to-purple-50 border border-brand-100 p-6 rounded-3xl relative">
+        <span class="inline-block bg-white text-brand-500 text-xs font-bold px-3 py-1 rounded-full shadow-sm mb-3">
+          Tu peux le faire ! 💜
+        </span>
+        <h2 class="text-2xl font-bold text-slate-900">Bienvenue sur MathsCollege ! 👋</h2>
+        <p class="welcome-text text-slate-600 text-sm mt-1">
+          Apprendre les maths devient facile ! Prêt(e) à progresser à ton rythme ?
+        </p>
+      </section>
+
+      <!-- Page Choix des Niveaux -->
+      <section id="levels-page">
+        <h2 class="title text-lg font-bold text-slate-900 mb-4">Choisis ton niveau</h2>
+        <div class="levels grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4" id="levels-container">
+          <!-- Les niveaux sont injectés dynamiquement par le JS -->
+        </div>
+      </section>
+
+      <!-- Dashboard Espace Travail -->
+      <section id="dashboard" class="hidden">
+        <h2 class="title text-lg font-bold text-slate-900 mb-4">Mon Espace Travail</h2>
+        <div class="container grid grid-cols-1 sm:grid-cols-3 gap-4">
+          
+          <div class="card recherche-item bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-lg mb-3">📘</div>
+            <h3 class="font-bold text-slate-900 mb-1">Fiches de révisions</h3>
+            <p class="text-xs text-slate-500 mb-4">Tes cours résumés, clairs et faciles à comprendre !</p>
+            <button class="action w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition" id="btn-cours">
+              Accéder
+            </button>
+          </div>
+
+          <div class="card recherche-item bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition">
+            <div class="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-lg mb-3">🎬</div>
+            <h3 class="font-bold text-slate-900 mb-1">Vidéos</h3>
+            <p class="text-xs text-slate-500 mb-4">Des explications animées pas à pas !</p> 
+            <button class="action w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition" id="btn-videos">
+              Regarder
+            </button>
+          </div>
+
+          <div class="card recherche-item bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-lg mb-3">✏️</div>
+            <h3 class="font-bold text-slate-900 mb-1">Exercices</h3>
+            <p class="text-xs text-slate-500 mb-4">Entraîne-toi avec des exercices simples pour garder la forme !</p> 
+            <button class="action-btn action w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition" onclick="declencherEntrainement()">
+              S'entraîner
+            </button>
+          </div>
+
+        </div>
+        <button class="mt-6 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-sm font-semibold rounded-xl transition" onclick="location.reload()">
+          ← Retour aux niveaux
+        </button>
+      </section>
+
+      <!-- Affichage du Contenu (Cours / Vidéos) -->
+      <section id="content" class="hidden">
+          <h2 id="content-title" class="text-xl font-bold text-slate-900 mb-4"></h2>
+          
+          <div id="cours" class="content-block hidden space-y-4"></div>
+          <div id="videos" class="content-block hidden space-y-4"></div>
+          <div id="exercices" class="content-block hidden space-y-4"></div>
+          
+          <button id="back-dashboard" class="mt-4 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-sm font-semibold rounded-xl transition">
+            ← Retour au menu
+          </button>
+      </section>
+
+      <!-- Solveur d'exercices -->
+      <div class="solveur-box bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🧮</span>
+            <h3 class="font-bold text-slate-900">Solveur d'exercices</h3>
+          </div>
+          <input type="text" id="equation-input" placeholder="Ex: sqrt(64)+3^2 ou 2x+4=0" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-500 text-sm">
+          <div class="flex gap-3">
+              <button onclick="resoudre()" class="flex-1 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">
+                Calculer
+              </button>
+              <button onclick="effacerSolveur()" class="flex-1 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm font-semibold rounded-xl transition">
+                Effacer
+              </button>
+          </div>
+          <div id="resultat-solveur" class="min-h-[20px]"></div>
+      </div>
+
+      <!-- Coach Sylvie IA -->
+      <div id="ai-chat-container" class="ai-box bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center text-xl">🤖</div>
+            <div>
+              <h3 class="font-bold text-slate-900 leading-tight">Coach Sylvie</h3>
+              <span class="text-xs text-emerald-600 font-semibold">En ligne • Ton assistante IA</span>
+            </div>
+          </div>
+          
+          <div id="reponseIA" class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-sm text-slate-600 min-h-[100px] max-h-[300px] overflow-y-auto space-y-2">
+              <div class="bot-msg bg-slate-100 p-3 rounded-2xl border-l-4 border-brand-500 text-sm">
+                <strong>Sylvie :</strong> Bonjour ! Je suis ta coach de maths. Pose-moi tes questions sur une leçon, un problème ou une équation !
+              </div>
+          </div>
+          
+          <div class="flex flex-col sm:flex-row gap-2">
+              <input type="text" id="monInputIA" placeholder="Ex: Explique-moi le théorème de Pythagore..." class="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-500 text-sm">
+              <button onclick="envoyerQuestionIA()" class="px-6 py-3 sm:py-0 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">
+                Demander
+              </button>
+          </div>
+      </div>
+
+    </main>
   </div>
- 
-  <p class="slogan"><h2> Apprendre les maths devient facile</h2> </p>
 
-</header>
-
-<section class="welcome">
-  <h2>Bienvenue sur Maths Collège </h2>
-  <p class="welcome-text">Plateforme éducative dédiée aux élèves de la 6e à la 3e.</p>
-</section>
-
-<section id="levels-page" class="page active">
-  <h2 class="title">Choisis ton niveau</h2>
-  <div class="levels" id="levels-container"></div>
-</section>
-
-<section id="dashboard" class="page" style="display:none;">
-  <h2 class="title">Mon Espace Travail</h2>
-  <div class="container" style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-    
-    <div class="card recherche-item">
-      <h3>Fiches de révisions</h3>
-      <p>Tes cours résumés,clairs et faciles à comprendre!</p>
-      <button class="action" id="btn-cours">Accéder</button>
-    </div>
-
-    <div class="card recherche-item">
-      <h3>Vidéos</h3>
-      <p> Des vidéos explicatives!</p> 
-      <button class="action" id="btn-videos">Regarder</button>
-    </div>
-
-    <div class="card recherche-item">
-      <h3>Exercices</h3>
-      <p>Entraine toi avec des exercices simples pour garder la forme!</p> 
-      <button class="action-btn" onclick="declencherEntrainement()" style="background: #5b6cff; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">S'entraîner</button>
-    </div>
-
+  <!-- Modale Login -->
+  <div id="login-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white p-6 rounded-3xl w-full max-w-sm relative shadow-xl space-y-4">
+          <span onclick="fermerModalLogin()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl cursor-pointer">&times;</span>
+          <h2 class="text-xl font-bold text-brand-500">Connexion</h2>
+          <input type="email" id="login-email" placeholder="Email" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500">
+          <input type="password" id="login-pass" placeholder="Mot de passe" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500">
+          <button onclick="login()" class="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm rounded-xl transition">
+            Se connecter
+          </button>
+      </div>
   </div>
-  <button onclick="location.reload()" style="background: #5b6cff; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top:20px;">Retour aux niveaux</button>
-</section>
 
-<section id="content" class="page" style="display:none; padding:20px; text-align:center;">
-    <h2 id="content-title"></h2>
-    <div id="cours" class="content-block recherche-item" style="display:none;"></div>
-    <div id="videos" class="content-block recherche-item" style="display:none;"></div>
-    <div id="exercices" class="content-block recherche-item" style="display:none;"></div>
-    <button id="back-dashboard" style="background: #5b6cff; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">Retour au menu</button>
-</section>
-
-<div class="solveur-box" style="background: #f8f9fa; padding: 20px; border-radius: 10px; border: 2px solid #5b6cff; margin: 20px auto; max-width: 800px;">
-    <h3>Solveur d'exercices</h3>
-    <input type="text" id="equation-input" placeholder="Ex: sqrt(64)+3^2" style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 5px; border: 1px solid #ccc;">
-    <div style="display: flex; gap: 10px;">
-        <button onclick="resoudre()" style="flex: 1; padding: 12px; background: #5b6cff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Calculer</button>
-        <button onclick="effacerSolveur()" style="flex: 1; padding: 12px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Effacer</button>
-    </div>
-    <p id="resultat-solveur" style="margin-top: 15px; font-weight: bold; min-height: 20px;"></p>
-</div>
-
-<div id="login-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
-    <div style="background:white; padding:30px; border-radius:15px; width:90%; max-width:400px; position:relative;">
-        <span onclick="fermerModalLogin()" style="position:absolute; top:10px; right:15px; cursor:pointer; font-size:24px;">&times;</span>
-        <h2 style="text-align:center; color:#5b6cff;">Connexion</h2>
-        <input type="email" id="login-email" placeholder="Email" style="width:100%; padding:10px; margin:10px 0;">
-        <input type="password" id="login-pass" placeholder="Mot de passe" style="width:100%; padding:10px; margin:10px 0;">
-        <button onclick="login()" style="width:100%; padding:12px; background:#5b6cff; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Se connecter</button>
-    </div>
-</div>
-
-<div id="signup-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
-    <div style="background:white; padding:30px; border-radius:15px; width:90%; max-width:400px; position:relative;">
-        <span onclick="fermerModalSignup()" style="position:absolute; top:10px; right:15px; cursor:pointer; font-size:24px;">&times;</span>
-        <h2 style="text-align:center; color:#5b6cff;">Créer un compte</h2>
-        <input type="text" id="signup-user" placeholder="Nom d'utilisateur" style="width:100%; padding:10px; margin:10px 0;">
-        <input type="email" id="signup-email" placeholder="Email" style="width:100%; padding:10px; margin:10px 0;">
-        <input type="password" id="signup-pass" placeholder="Mot de passe" style="width:100%; padding:10px; margin:10px 0;">
-        <select id="signup-niveau" style="width:100%; padding:10px; margin:10px 0;">
-            <option value="6ème">6ème</option>
-            <option value="5ème">5ème</option>
-            <option value="4ème">4ème</option>
-            <option value="3ème">3ème</option>
-        </select>
-        <button onclick="signup()" style="width:100%; padding:12px; background:#28a745; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">S'inscrire</button>
-    </div>
-</div>
-
-<div id="ai-chat-container" style="background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin: 20px auto; max-width: 800px; border-top: 5px solid #5b6cff;">
-    <h3 style="color: #5b6cff; display: flex; align-items: center; gap: 10px;">Coach Sylvie</h3>
-    <div id="reponseIA" style="min-height: 80px; background: #f8f9fa; padding: 15px; margin-bottom: 15px; border-radius: 10px; border: 1px solid #eee; overflow-y: auto; max-height: 300px; font-style: italic; color: #555;">
-        Bonjour ! Je suis Sylvie, ta super coach de maths!!!
-    </div>
-    <div style="display: flex; gap: 10px;">
-        <input type="text" id="monInputIA" placeholder="Ex: Bonjour Sylvie, explique-moi Thalès..." style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #ccc;">
-        <button onclick="envoyerQuestionIA()" style="background: #5b6cff; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">Demander</button>
-    </div>
-</div>
-
-<footer class="site-footer">
-  <div class="footer-container" style="display:flex; justify-content:space-around; background:#5b6cff; color:white; padding:20px;">
-    <div class="footer-section"><h3>À propos:</h3><p>Maths Collège est ta plateforme permettant aux apprenants en cycle collège d'apprendre les mathématiques plus facilement</p></div>
-    <div class="footer-section"><h3>E-mail:</h3><p>ritakngot3@gmail.com</p></div>
-    <div class="footer-section"><h3>Téléphone</h3><p>00242 04 478 18 74</p></div>
+  <!-- Modale Signup -->
+  <div id="signup-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white p-6 rounded-3xl w-full max-w-sm relative shadow-xl space-y-4">
+          <span onclick="fermerModalSignup()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl cursor-pointer">&times;</span>
+          <h2 class="text-xl font-bold text-brand-500">Créer un compte</h2>
+          <input type="text" id="signup-user" placeholder="Nom d'utilisateur" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500">
+          <input type="email" id="signup-email" placeholder="Email" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500">
+          <input type="password" id="signup-pass" placeholder="Mot de passe" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500">
+          <select id="signup-niveau" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500 bg-white">
+              <option value="6ème">6ème</option>
+              <option value="5ème">5ème</option>
+              <option value="4ème">4ème</option>
+              <option value="3ème">3ème</option>
+          </select>
+          <button onclick="signup()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm rounded-xl transition">
+            S'inscrire
+          </button>
+      </div>
   </div>
-</footer>
 
-<script src="script.js"></script>
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-100 py-8 mt-12">
+    <div class="max-w-4xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+      <div>
+        <h3 class="font-bold text-slate-900 mb-2">À propos</h3>
+        <p class="text-slate-500 text-xs leading-relaxed">
+          MathsCollege est ta plateforme permettant aux apprenants en cycle collège d'apprendre les mathématiques plus facilement.
+        </p>
+      </div>
+      <div>
+        <h3 class="font-bold text-slate-900 mb-2">E-mail</h3>
+        <p class="text-slate-500 text-xs">ritakngot3@gmail.com</p>
+      </div>
+      <div>
+        <h3 class="font-bold text-slate-900 mb-2">Téléphone</h3>
+        <p class="text-slate-500 text-xs">00242 04 478 18 74</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>
