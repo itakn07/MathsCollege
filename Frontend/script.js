@@ -413,17 +413,42 @@ function enregistrerProgression(titreChapitre, leconsTerminees, totalLecons) {
 }
 
 // Mettre à jour l'affichage de la progression à l'écran
-function afficherProgression() {
-  const data = JSON.parse(localStorage.getItem('user_progression'));
-  if (!data) return;
+let currentNiveau = null;
+let currentUser = null;
 
-  document.getElementById('dernier-cours-titre').textContent = data.chapitre;
-  document.getElementById('progression-pourcentage').textContent = `${data.pourcentage}%`;
-  document.getElementById('progression-barre').style.width = `${data.pourcentage}%`;
-  document.getElementById('progression-etape').textContent = `${data.termes} / ${data.total} leçons terminées`;
+// Sélection du niveau (invité)
+function selectionnerNiveau(niveau) {
+  currentNiveau = niveau;
+  document.getElementById('current-niveau-display').textContent = niveau;
+  document.getElementById('levels-page').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
 }
 
-// Charger la progression au démarrage
-document.addEventListener('DOMContentLoaded', () => {
-  afficherProgression();
-});
+// Connexion / Inscription réussie
+function declarerUtilisateurConnecte(nom, classe) {
+  currentUser = { nom, classe };
+  
+  // Basculer bannières & header
+  document.getElementById('guest-zone').classList.add('hidden');
+  document.getElementById('user-zone').classList.remove('hidden');
+  document.getElementById('user-badge').textContent = `Classe : ${classe}`;
+  
+  document.getElementById('banner-guest').classList.add('hidden');
+  document.getElementById('banner-user').classList.remove('hidden');
+  document.getElementById('user-display-name').textContent = nom;
+  document.getElementById('user-display-class').textContent = classe;
+
+  // Ouvrir directement son niveau
+  selectionnerNiveau(classe);
+  document.getElementById('btn-changer-niveau').classList.add('hidden'); // Verrouille sur son niveau
+}
+
+// Reprendre la lecture du cours
+function reprendreLecture() {
+  afficherVueContent('cours');
+  // Logique pour scroller ou ouvrir le chapitre enregistré
+}
+
+function scrollToSolveur() {
+  document.getElementById('solveur-box').scrollIntoView({ behavior: 'smooth' });
+}
