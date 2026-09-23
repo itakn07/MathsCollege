@@ -128,7 +128,7 @@
         </button>
       </section>
 
-      <!-- Affichage du Contenu (Cours / Vidéos) -->
+      <!-- Affichage du Contenu (Cours / Vidéos / Exercices) -->
       <section id="content" class="hidden">
           <h2 id="content-title" class="text-xl font-bold text-slate-900 mb-4"></h2>
           
@@ -141,47 +141,52 @@
           </button>
       </section>
 
-      <!-- Solveur d'exercices -->
-      <div class="solveur-box bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
-          <div class="flex items-center gap-3">
-            <span class="text-2xl">🧮</span>
-            <h3 class="font-bold text-slate-900">Solveur d'exercices</h3>
-          </div>
-          <input type="text" id="equation-input" placeholder="Ex: sqrt(64)+3^2 ou 2x+4=0" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-500 text-sm">
-          <div class="flex gap-3">
-              <button onclick="resoudre()" class="flex-1 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">
-                Calculer
-              </button>
-              <button onclick="effacerSolveur()" class="flex-1 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm font-semibold rounded-xl transition">
-                Effacer
-              </button>
-          </div>
-          <div id="resultat-solveur" class="min-h-[20px]"></div>
-      </div>
-
-      <!-- Coach Sylvie IA -->
-      <div id="ai-chat-container" class="ai-box bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center text-xl">🤖</div>
-            <div>
-              <h3 class="font-bold text-slate-900 leading-tight">Coach Sylvie</h3>
-              <span class="text-xs text-emerald-600 font-semibold">En ligne • Ton assistante IA</span>
+      <!-- Outils interactifs : Solveur + Coach IA -->
+      <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Solveur d'exercices -->
+        <div class="solveur-box bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">🧮</span>
+              <h3 class="font-bold text-slate-900">Solveur d'exercices</h3>
             </div>
-          </div>
-          
-          <div id="reponseIA" class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-sm text-slate-600 min-h-[100px] max-h-[300px] overflow-y-auto space-y-2">
-              <div class="bot-msg bg-slate-100 p-3 rounded-2xl border-l-4 border-brand-500 text-sm">
-                <strong>Sylvie :</strong> Bonjour ! Je suis ta coach de maths. Pose-moi tes questions sur une leçon, un problème ou une équation !
+            <input type="text" id="equation-input" placeholder="Ex: sqrt(64)+3^2 ou 2x+4=0" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-500 text-sm">
+            <div class="flex gap-3">
+                <button onclick="resoudre()" class="flex-1 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">
+                  Calculer
+                </button>
+                <button onclick="effacerSolveur()" class="flex-1 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm font-semibold rounded-xl transition">
+                  Effacer
+                </button>
+            </div>
+            <div id="resultat-solveur" class="min-h-[20px]"></div>
+        </div>
+
+        <!-- Coach Sylvie IA -->
+        <div id="ai-chat-container" class="ai-box bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center text-xl">🤖</div>
+              <div>
+                <h3 class="font-bold text-slate-900 leading-tight">Coach Sylvie</h3>
+                <span class="text-xs text-emerald-600 font-semibold">En ligne • Ton assistante IA</span>
               </div>
-          </div>
-          
-          <div class="flex flex-col sm:flex-row gap-2">
-              <input type="text" id="monInputIA" placeholder="Ex: Explique-moi le théorème de Pythagore..." class="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-500 text-sm">
-              <button onclick="envoyerQuestionIA()" class="px-6 py-3 sm:py-0 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">
-                Demander
-              </button>
-          </div>
-      </div>
+            </div>
+            
+            <div id="reponseIA" class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-sm text-slate-600 min-h-[100px] max-h-[300px] overflow-y-auto space-y-2">
+                <div class="bot-msg bg-slate-100 p-3 rounded-2xl border-l-4 border-brand-500 text-sm">
+                  <strong>Sylvie :</strong> Bonjour ! Je suis ta coach de maths. Pose-moi tes questions sur une leçon, un problème ou une équation !
+                </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-2">
+                <input type="text" id="monInputIA" placeholder="Ex: Explique-moi le théorème de Pythagore..." class="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-500 text-sm">
+                <button onclick="envoyerQuestionIA()" class="px-6 py-3 sm:py-0 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">
+                  Demander
+                </button>
+            </div>
+        </div>
+
+      </section>
 
     </main>
   </div>
