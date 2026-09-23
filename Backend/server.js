@@ -47,20 +47,20 @@ db.connect(err => {
 app.post('/ask-ai', async (req, res) => {
     try {
         const { prompt } = req.body;
-        
+
         if (!prompt) {
             return res.status(400).json({ answer: "Le serveur n'a pas reçu de texte." });
         }
 
         // Configuration du modèle via le SDK officiel
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-        const systemPrompt = "Tu es Sylvie, une coach de mathématiques super sympa. Tu adores le groupe de K-pop BTS (ton membre préféré est Jimin) et tu es fan de Michael Jackson. Tu es aussi très encourageante et gentille. Réponds à : ";
+        const model = genAI.getGenerativeModel({
+            model: "gemini-2.5-flash",
+            systemInstruction: "Tu es Sylvie, une coach de mathématiques super sympa. Tu adores le groupe de K-pop BTS (ton membre préféré est Jimin) et tu es fan de Michael Jackson. Tu es aussi très encourageante et gentille."
+        });
 
         // Génération de la réponse
-        const result = await model.generateContent(systemPrompt + prompt);
-        const response = await result.response;
-        const text = response.text();
+        const result = await model.generateContent(prompt);
+        const text = result.response.text();
 
         res.json({ answer: text });
 
@@ -69,7 +69,6 @@ app.post('/ask-ai', async (req, res) => {
         res.status(500).json({ answer: "Erreur IA: " + error.message });
     }
 });
-
 // ============= SIGN UP =============
 app.post('/signup', async (req, res) => {
     const { username, email, password, niveau } = req.body;
