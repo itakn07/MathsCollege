@@ -52,42 +52,23 @@ app.post('/ask-ai', async (req, res) => {
             return res.status(400).json({ answer: "Le serveur n'a pas reçu de texte." });
         }
 
-        // Modèle recommandé et stable
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+        // Configuration du modèle via le SDK officiel
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const systemPrompt = "Tu es Sylvie, une coach de mathématiques super sympa. Tu adores le groupe de K-pop BTS (ton membre préféré est Jimin) et tu es fan de Michael Jackson. Tu es aussi très encourageante et gentille. Réponds à : ";
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [
-                    {
-                        parts: [{ text: systemPrompt + prompt }]
-                    }
-                ]
-            })
-        });
+        // Génération de la réponse
+        const result = await model.generateContent(systemPrompt + prompt);
+        const response = await result.response;
+        const text = response.text();
 
-        const data = await response.json();
-
-        if (data.error) {
-            console.error("Détail Erreur Google:", JSON.stringify(data.error, null, 2));
-            return res.status(500).json({ answer: "Erreur Google: " + data.error.message });
-        }
-
-        if (data.candidates && data.candidates[0].content) {
-            res.json({ answer: data.candidates[0].content.parts[0].text });
-        } else {
-            res.json({ answer: "Sylvie n'a pas pu répondre. Vérifie ta console serveur." });
-        }
+        res.json({ answer: text });
 
     } catch (error) {
         console.error("Erreur technique:", error);
-        res.status(500).json({ answer: "Erreur technique: " + error.message });
+        res.status(500).json({ answer: "Erreur IA: " + error.message });
     }
 });
-
 
 // ============= SIGN UP =============
 app.post('/signup', async (req, res) => {
