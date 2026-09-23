@@ -396,3 +396,34 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(err => console.error("Serveur Backend éteint ou inaccessible."));
     }
 });
+
+// Sauvegarder la progression quand l'utilisateur lit un cours
+function enregistrerProgression(titreChapitre, leconsTerminees, totalLecons) {
+  const pourcentage = Math.round((leconsTerminees / totalLecons) * 100);
+  
+  const progression = {
+    chapitre: titreChapitre,
+    termes: leconsTerminees,
+    total: totalLecons,
+    pourcentage: pourcentage
+  };
+
+  localStorage.setItem('user_progression', JSON.stringify(progression));
+  afficherProgression();
+}
+
+// Mettre à jour l'affichage de la progression à l'écran
+function afficherProgression() {
+  const data = JSON.parse(localStorage.getItem('user_progression'));
+  if (!data) return;
+
+  document.getElementById('dernier-cours-titre').textContent = data.chapitre;
+  document.getElementById('progression-pourcentage').textContent = `${data.pourcentage}%`;
+  document.getElementById('progression-barre').style.width = `${data.pourcentage}%`;
+  document.getElementById('progression-etape').textContent = `${data.termes} / ${data.total} leçons terminées`;
+}
+
+// Charger la progression au démarrage
+document.addEventListener('DOMContentLoaded', () => {
+  afficherProgression();
+});

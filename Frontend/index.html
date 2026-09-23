@@ -57,13 +57,21 @@
         <h1 class="text-xl font-extrabold bg-gradient-to-r from-brand-500 to-purple-600 bg-clip-text text-transparent cursor-pointer" onclick="location.reload()">
           MathsCollege
         </h1>
-        <div class="flex items-center gap-2">
-          <button class="login px-4 py-2 text-sm font-semibold text-brand-500 rounded-xl hover:bg-brand-50 transition" onclick="ouvrirModalLogin()">
-            Log in
-          </button>
-          <button class="nav-btn bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-md shadow-brand-500/20 transition" id="btn-signup-main" onclick="ouvrirModalSignup()">
-            Sign up
-          </button>
+        <div class="flex items-center gap-2" id="nav-actions">
+          <!-- Boutons de connexion (visibles si non connecté) -->
+          <div id="guest-buttons" class="flex gap-2">
+            <button class="login px-4 py-2 text-sm font-semibold text-brand-500 rounded-xl hover:bg-brand-50 transition" onclick="ouvrirModalLogin()">
+              Log in
+            </button>
+            <button class="nav-btn bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-md shadow-brand-500/20 transition" id="btn-signup-main" onclick="ouvrirModalSignup()">
+              Sign up
+            </button>
+          </div>
+          <!-- Profil utilisateur (visible si connecté) -->
+          <div id="user-badge" class="hidden flex items-center gap-3">
+            <span class="text-xs font-semibold text-slate-500" id="user-niveau-badge">Classe: 6ème</span>
+            <button onclick="deconnexion()" class="text-xs text-rose-500 hover:underline font-semibold">Déconnexion</button>
+          </div>
         </div>
       </div>
     </header>
@@ -71,15 +79,35 @@
     <!-- Conteneur Principal -->
     <main class="max-w-4xl mx-auto px-4 py-6 space-y-6">
 
-      <!-- Banner Welcome -->
-      <section class="welcome bg-gradient-to-br from-brand-50 to-purple-50 border border-brand-100 p-6 rounded-3xl relative">
-        <span class="inline-block bg-white text-brand-500 text-xs font-bold px-3 py-1 rounded-full shadow-sm mb-3">
-          Tu peux le faire ! 💜
-        </span>
-        <h2 class="text-2xl font-bold text-slate-900">Bienvenue sur MathsCollege ! 👋</h2>
-        <p class="welcome-text text-slate-600 text-sm mt-1">
-          Apprendre les maths devient facile ! Prêt(e) à progresser à ton rythme ?
-        </p>
+      <!-- Banner Profil & Progression Personnalisée (Rita) -->
+      <section class="welcome bg-gradient-to-br from-brand-50 to-purple-50 border border-brand-100 p-6 rounded-3xl relative space-y-4">
+        <div class="flex justify-between items-start">
+          <div>
+            <span class="inline-block bg-white text-brand-500 text-xs font-bold px-3 py-1 rounded-full shadow-sm mb-2">
+              Tu peux le faire ! 💜
+            </span>
+            <h2 class="text-2xl font-bold text-slate-900">Bienvenue <span id="welcome-username">Rita</span> ! 👋</h2>
+            <p class="text-xs text-slate-500 font-medium mt-0.5">Élève en classe de <span id="welcome-user-class" class="font-bold text-brand-600">6ème</span></p>
+          </div>
+        </div>
+
+        <!-- Suivi de progression dynamique -->
+        <div class="bg-white p-4 rounded-2xl border border-brand-100/60 shadow-sm space-y-2">
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-400 font-medium">Dernier cours consulté</span>
+            <span id="progression-pourcentage" class="font-bold text-brand-500">60%</span>
+          </div>
+          <p id="dernier-cours-titre" class="text-sm font-bold text-slate-800">Chapitre 3 : Les nombres premiers</p>
+          
+          <!-- Barre de progression -->
+          <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+            <div id="progression-barre" class="bg-brand-500 h-full rounded-full transition-all duration-500" style="width: 60%"></div>
+          </div>
+          <div class="flex justify-between items-center pt-1 text-[11px] text-slate-400">
+            <span id="progression-etape">3 / 5 leçons terminées</span>
+            <button onclick="continuerDernierCours()" class="text-brand-500 font-bold hover:underline">Reprendre →</button>
+          </div>
+        </div>
       </section>
 
       <!-- Page Choix des Niveaux -->
@@ -90,42 +118,60 @@
         </div>
       </section>
 
-      <!-- Dashboard Espace Travail -->
-      <section id="dashboard" class="hidden">
-        <h2 class="title text-lg font-bold text-slate-900 mb-4">Mon Espace Travail</h2>
-        <div class="container grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <!-- Dashboard Espace Travail (Cartes : Cours, Vidéos, Exercices, Calculateur) -->
+      <section id="dashboard" class="space-y-4">
+        <h2 class="title text-lg font-bold text-slate-900 mb-2">Accès rapide</h2>
+        <div class="container grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           
-          <div class="card recherche-item bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition">
-            <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-lg mb-3">📘</div>
-            <h3 class="font-bold text-slate-900 mb-1">Fiches de révisions</h3>
-            <p class="text-xs text-slate-500 mb-4">Tes cours résumés, clairs et faciles à comprendre !</p>
-            <button class="action w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition" id="btn-cours">
-              Accéder
+          <!-- Carte 1 : Cours -->
+          <div class="card bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+            <div>
+              <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-lg mb-3">📘</div>
+              <h3 class="font-bold text-slate-900 mb-1">Cours</h3>
+              <p class="text-xs text-slate-500 mb-4">Tes cours résumés et fiches de révision.</p>
+            </div>
+            <button class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition" id="btn-cours">
+              Consulter
             </button>
           </div>
 
-          <div class="card recherche-item bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition">
-            <div class="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-lg mb-3">🎬</div>
-            <h3 class="font-bold text-slate-900 mb-1">Vidéos</h3>
-            <p class="text-xs text-slate-500 mb-4">Des explications animées pas à pas !</p> 
-            <button class="action w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition" id="btn-videos">
+          <!-- Carte 2 : Vidéos -->
+          <div class="card bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+            <div>
+              <div class="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-lg mb-3">🎬</div>
+              <h3 class="font-bold text-slate-900 mb-1">Vidéos</h3>
+              <p class="text-xs text-slate-500 mb-4">Explications animées étape par étape.</p> 
+            </div>
+            <button class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition" id="btn-videos">
               Regarder
             </button>
           </div>
 
-          <div class="card recherche-item bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition">
-            <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-lg mb-3">✏️</div>
-            <h3 class="font-bold text-slate-900 mb-1">Exercices</h3>
-            <p class="text-xs text-slate-500 mb-4">Entraîne-toi avec des exercices simples pour garder la forme !</p> 
-            <button class="action-btn action w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition" onclick="declencherEntrainement()">
+          <!-- Carte 3 : Exercices -->
+          <div class="card bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+            <div>
+              <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-lg mb-3">✏️</div>
+              <h3 class="font-bold text-slate-900 mb-1">Exercices</h3>
+              <p class="text-xs text-slate-500 mb-4">S'entraîner pour valider ses acquis.</p> 
+            </div>
+            <button class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition" onclick="declencherEntrainement()">
               S'entraîner
             </button>
           </div>
 
+          <!-- Carte 4 : Mon Calculateur -->
+          <div class="card bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+            <div>
+              <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-lg mb-3">🧮</div>
+              <h3 class="font-bold text-slate-900 mb-1">Calculateur</h3>
+              <p class="text-xs text-slate-500 mb-4">Résous tes équations et opérations.</p> 
+            </div>
+            <button class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition" onclick="scrollToSolveur()">
+              Calculer
+            </button>
+          </div>
+
         </div>
-        <button class="mt-6 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-sm font-semibold rounded-xl transition" onclick="location.reload()">
-          ← Retour aux niveaux
-        </button>
       </section>
 
       <!-- Affichage du Contenu (Cours / Vidéos / Exercices) -->
@@ -141,51 +187,52 @@
           </button>
       </section>
 
-      <!-- Outils interactifs : Solveur + Coach IA -->
-      <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        <!-- Solveur d'exercices -->
-        <div class="solveur-box bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
-            <div class="flex items-center gap-3">
-              <span class="text-2xl">🧮</span>
-              <h3 class="font-bold text-slate-900">Solveur d'exercices</h3>
-            </div>
-            <input type="text" id="equation-input" placeholder="Ex: sqrt(64)+3^2 ou 2x+4=0" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-500 text-sm">
-            <div class="flex gap-3">
-                <button onclick="resoudre()" class="flex-1 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">
-                  Calculer
-                </button>
-                <button onclick="effacerSolveur()" class="flex-1 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm font-semibold rounded-xl transition">
-                  Effacer
-                </button>
-            </div>
-            <div id="resultat-solveur" class="min-h-[20px]"></div>
-        </div>
+      <!-- Section Solveur cachée ou accessible via ancrage -->
+      <div id="solveur-section" class="solveur-box bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🧮</span>
+            <h3 class="font-bold text-slate-900">Mon Calculateur & Solveur</h3>
+          </div>
+          <input type="text" id="equation-input" placeholder="Ex: sqrt(64)+3^2 ou 2x+4=0" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-500 text-sm">
+          <div class="flex gap-3">
+              <button onclick="resoudre()" class="flex-1 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">
+                Calculer
+              </button>
+              <button onclick="effacerSolveur()" class="flex-1 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm font-semibold rounded-xl transition">
+                Effacer
+              </button>
+          </div>
+          <div id="resultat-solveur" class="min-h-[20px]"></div>
+      </div>
 
-        <!-- Coach Sylvie IA -->
-        <div id="ai-chat-container" class="ai-box bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+      <!-- Widget de dialogue : Mon Coach Sylvie (Placé tout en bas) -->
+      <section id="ai-chat-container" class="ai-box bg-gradient-to-r from-brand-50 to-purple-50 p-6 rounded-3xl border border-brand-100 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center text-xl">🤖</div>
+              <div class="w-11 h-11 rounded-2xl bg-brand-500 text-white flex items-center justify-center text-xl shadow-md shadow-brand-500/20">🤖</div>
               <div>
-                <h3 class="font-bold text-slate-900 leading-tight">Coach Sylvie</h3>
-                <span class="text-xs text-emerald-600 font-semibold">En ligne • Ton assistante IA</span>
+                <h3 class="font-bold text-slate-900 leading-tight">Mon Coach Sylvie</h3>
+                <span class="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span> En ligne • À ton écoute
+                </span>
               </div>
             </div>
-            
-            <div id="reponseIA" class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-sm text-slate-600 min-h-[100px] max-h-[300px] overflow-y-auto space-y-2">
-                <div class="bot-msg bg-slate-100 p-3 rounded-2xl border-l-4 border-brand-500 text-sm">
-                  <strong>Sylvie :</strong> Bonjour ! Je suis ta coach de maths. Pose-moi tes questions sur une leçon, un problème ou une équation !
-                </div>
-            </div>
-            
-            <div class="flex flex-col sm:flex-row gap-2">
-                <input type="text" id="monInputIA" placeholder="Ex: Explique-moi le théorème de Pythagore..." class="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-500 text-sm">
-                <button onclick="envoyerQuestionIA()" class="px-6 py-3 sm:py-0 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">
-                  Demander
-                </button>
-            </div>
-        </div>
-
+          </div>
+          
+          <!-- Zone des messages / Bulle de conversation -->
+          <div id="reponseIA" class="bg-white p-4 rounded-2xl border border-slate-100 text-sm text-slate-600 min-h-[120px] max-h-[280px] overflow-y-auto space-y-3 shadow-inner">
+              <div class="bot-msg bg-brand-50/80 p-3 rounded-2xl border-l-4 border-brand-500 text-sm text-slate-700">
+                <strong>Sylvie :</strong> Coucou Rita ! Je suis là pour t'aider. Une question sur les nombres premiers ou une équation à résoudre ?
+              </div>
+          </div>
+          
+          <!-- Champ d'envoi -->
+          <div class="flex flex-col sm:flex-row gap-2">
+              <input type="text" id="monInputIA" placeholder="Pose ta question à Sylvie..." class="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-500 text-sm bg-white">
+              <button onclick="envoyerQuestionIA()" class="px-6 py-3 sm:py-0 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition shadow-sm">
+                Demander
+              </button>
+          </div>
       </section>
 
     </main>
@@ -243,6 +290,13 @@
       </div>
     </div>
   </footer>
+
+  <!-- Script helper pour défiler vers le solveur -->
+  <script>
+    function scrollToSolveur() {
+      document.getElementById('solveur-section').scrollIntoView({ behavior: 'smooth' });
+    }
+  </script>
 
   <script src="script.js"></script>
 </body>
