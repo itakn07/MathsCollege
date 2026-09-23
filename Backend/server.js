@@ -1,4 +1,5 @@
 // ============= IMPORTS =============
+require('dotenv').config(); // Charge les variables du fichier .env
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const express = require('express');
 const mysql = require('mysql2');
@@ -9,7 +10,7 @@ const bcrypt = require('bcrypt');
 const fetch = require('node-fetch');
 
 // ============= CONFIGURATION =============
-const API_KEY ="AIzaSyAksw6_5nj4wL5J8qofqsU3-RLwhTxNtnU";
+const API_KEY = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
 const app = express();
 
@@ -21,7 +22,7 @@ const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: 'ritakngot3@gmail.com',
-        pass: 'xzek esxj ehat ydbs'
+        pass: process.env.EMAIL_PASS
     }
 });
 
@@ -47,13 +48,14 @@ app.post('/ask-ai', async (req, res) => {
     try {
         const { prompt } = req.body;
         
-        // On vérifie si on reçoit bien quelque chose
         if (!prompt) {
             return res.status(400).json({ answer: "Le serveur n'a pas reçu de texte." });
         }
 
-        // On utilise v1beta qui est la plus flexible actuellement
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+        // Modèle recommandé et stable
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+
+        const systemPrompt = "Tu es Sylvie, une coach de mathématiques super sympa. Tu adores le groupe de K-pop BTS (ton membre préféré est Jimin) et tu es fan de Michael Jackson. Tu es aussi très encourageante et gentille. Réponds à : ";
 
         const response = await fetch(url, {
             method: 'POST',
@@ -61,7 +63,7 @@ app.post('/ask-ai', async (req, res) => {
             body: JSON.stringify({
                 contents: [
                     {
-                        parts: [{ text:"tu es Sylvie, une coach de mathématiques super sympa, tu adores le groupe de K-pop BTS ton membre préféré est Jimin et tu es fan de Michael Jackson, tu es aussi encourageante et gentille. réponds à :" + prompt }]
+                        parts: [{ text: systemPrompt + prompt }]
                     }
                 ]
             })
@@ -69,7 +71,6 @@ app.post('/ask-ai', async (req, res) => {
 
         const data = await response.json();
 
-        // afficher l'erreur de googloo dans le terminal
         if (data.error) {
             console.error("Détail Erreur Google:", JSON.stringify(data.error, null, 2));
             return res.status(500).json({ answer: "Erreur Google: " + data.error.message });
@@ -86,6 +87,7 @@ app.post('/ask-ai', async (req, res) => {
         res.status(500).json({ answer: "Erreur technique: " + error.message });
     }
 });
+
 
 // ============= SIGN UP =============
 app.post('/signup', async (req, res) => {
