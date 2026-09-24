@@ -134,15 +134,17 @@
         </div>
       </section>
 
-      <!-- DASHBOARD : Espace de Travail (Les Cartes) -->
+      <!-- DASHBOARD : Espace de Travail (4 Cartes) -->
       <section id="dashboard" class="hidden space-y-6">
         <div class="flex justify-between items-center">
           <h2 class="text-lg font-bold text-slate-900">Espace Travail - <span id="current-niveau-display" class="text-brand-500">6ème</span></h2>
           <button onclick="revenirAccueil()" id="btn-changer-niveau" class="text-xs font-semibold text-slate-500 hover:text-brand-500">← Changer de niveau</button>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <!-- Carte Cours -->
+        <!-- Grille de 4 cartes -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          
+          <!-- Carte 1 : Cours -->
           <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
             <div>
               <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-lg mb-3">📘</div>
@@ -152,7 +154,7 @@
             <button onclick="afficherVueContent('cours')" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Consulter</button>
           </div>
 
-          <!-- Carte Vidéos -->
+          <!-- Carte 2 : Vidéos -->
           <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
             <div>
               <div class="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-lg mb-3">🎬</div>
@@ -162,7 +164,7 @@
             <button onclick="afficherVueContent('videos')" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Regarder</button>
           </div>
 
-          <!-- Carte Exercices -->
+          <!-- Carte 3 : Exercices -->
           <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
             <div>
               <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-lg mb-3">✏️</div>
@@ -171,10 +173,21 @@
             </div>
             <button onclick="afficherVueContent('exercices')" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">S'entraîner</button>
           </div>
+
+          <!-- Carte 4 : Mon Calculateur -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-lg mb-3">🧮</div>
+              <h3 class="font-bold text-slate-900 mb-1">Mon Calculateur</h3>
+              <p class="text-xs text-slate-500 mb-4">Résous tes équations et opérations.</p>
+            </div>
+            <button onclick="afficherVueContent('calculateur')" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Utiliser</button>
+          </div>
+
         </div>
       </section>
 
-      <!-- PAGE DE CONTENU (Liste des cours/exercices/vidéos) -->
+      <!-- PAGE DE CONTENU (Affichage des Cours, Vidéos, Exercices OU Calculateur) -->
       <section id="content-page" class="hidden space-y-6">
         <button onclick="revenirDashboard()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold rounded-xl transition">
           ← Retour à l'Espace Travail
@@ -182,53 +195,51 @@
         
         <h2 id="content-title" class="text-xl font-bold text-slate-900"></h2>
 
+        <!-- Bloc Cours, Vidéos, Exercices -->
         <div id="cours-list" class="content-block space-y-3"></div>
         <div id="videos-list" class="content-block space-y-3 hidden"></div>
         <div id="exercices-list" class="content-block space-y-3 hidden"></div>
+
+        <!-- Bloc Calculateur (S'affiche uniquement quand la carte Calculateur est cliquée) -->
+        <div id="calculateur-block" class="content-block hidden">
+          <div id="solveur-box" class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+              <div class="flex items-center gap-3">
+                <span class="text-2xl">🧮</span>
+                <h3 class="font-bold text-slate-900">Mon Calculateur & Solveur</h3>
+              </div>
+              <input type="text" id="equation-input" placeholder="Ex: sqrt(64)+3^2 ou 2x+4=0" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-500 text-sm">
+              <div class="flex gap-3">
+                  <button onclick="resoudre()" class="flex-1 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Calculer</button>
+                  <button onclick="effacerSolveur()" class="flex-1 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm font-semibold rounded-xl transition">Effacer</button>
+              </div>
+              <div id="resultat-solveur" class="min-h-[20px]"></div>
+          </div>
+        </div>
       </section>
 
-      <!-- BLOC OUTILS ACCESSIBLES PARTOUT (Calculateur & Coach Sylvie) -->
-      <div id="tools-section" class="space-y-6">
-        <hr class="border-slate-200">
-
-        <!-- CALCULATEUR ET SOLVEUR -->
-        <div id="solveur-box" class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
-            <div class="flex items-center gap-3">
-              <span class="text-2xl">🧮</span>
-              <h3 class="font-bold text-slate-900">Mon Calculateur</h3>
+      <!-- WIDGET MON COACH SYLVIE (Positionné juste sous l'Espace Travail / Contenu) -->
+      <section id="ai-chat-container" class="bg-gradient-to-r from-brand-50 to-purple-50 p-6 rounded-3xl border border-brand-100 shadow-sm space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-brand-500 text-white flex items-center justify-center text-xl shadow-md shadow-brand-500/20">🤖</div>
+            <div>
+              <h3 class="font-bold text-slate-900 leading-tight">Mon Coach Sylvie</h3>
+              <span class="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span> En ligne • À ton écoute
+              </span>
             </div>
-            <input type="text" id="equation-input" placeholder="Ex: sqrt(64)+3^2 ou 2x+4=0" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-500 text-sm">
-            <div class="flex gap-3">
-                <button onclick="resoudre()" class="flex-1 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Calculer</button>
-                <button onclick="effacerSolveur()" class="flex-1 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm font-semibold rounded-xl transition">Effacer</button>
-            </div>
-            <div id="resultat-solveur" class="min-h-[20px]"></div>
-        </div>
-
-        <!-- WIDGET MON COACH SYLVIE -->
-        <section id="ai-chat-container" class="bg-gradient-to-r from-brand-50 to-purple-50 p-6 rounded-3xl border border-brand-100 shadow-sm space-y-4">
-            <div class="flex items-center gap-3">
-              <div class="w-11 h-11 rounded-2xl bg-brand-500 text-white flex items-center justify-center text-xl shadow-md shadow-brand-500/20">🤖</div>
-              <div>
-                <h3 class="font-bold text-slate-900 leading-tight">Mon Coach Sylvie</h3>
-                <span class="text-xs text-emerald-600 font-semibold flex items-center gap-1">
-                  <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span> En ligne • À ton écoute
-                </span>
+          </div>
+          
+          <div id="reponseIA" class="bg-white p-4 rounded-2xl border border-slate-100 text-sm text-slate-600 min-h-[120px] max-h-[280px] overflow-y-auto space-y-3 shadow-inner">
+              <div class="bot-msg bg-brand-50/80 p-3 rounded-2xl border-l-4 border-brand-500 text-sm text-slate-700">
+                <strong>Sylvie :</strong> Pose-moi tes questions sur les cours ou un exercice !
               </div>
-            </div>
-            
-            <div id="reponseIA" class="bg-white p-4 rounded-2xl border border-slate-100 text-sm text-slate-600 min-h-[120px] max-h-[280px] overflow-y-auto space-y-3 shadow-inner">
-                <div class="bot-msg bg-brand-50/80 p-3 rounded-2xl border-l-4 border-brand-500 text-sm text-slate-700">
-                  <strong>Sylvie :</strong> Pose-moi tes questions sur les cours ou un exercice !
-                </div>
-            </div>
-            
-            <div class="flex flex-col sm:flex-row gap-2">
-                <input type="text" id="monInputIA" placeholder="Pose ta question à Sylvie..." class="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-500 text-sm bg-white">
-                <button onclick="envoyerQuestionIA()" class="px-6 py-3 sm:py-0 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Demander</button>
-            </div>
-        </section>
-      </div>
+          </div>
+          
+          <div class="flex flex-col sm:flex-row gap-2">
+              <input type="text" id="monInputIA" placeholder="Pose ta question à Sylvie..." class="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-500 text-sm bg-white">
+              <button onclick="envoyerQuestionIA()" class="px-6 py-3 sm:py-0 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Demander</button>
+          </div>
+      </section>
 
     </main>
   </div>
@@ -261,7 +272,7 @@
       </div>
   </div>
 
-  <!-- Footer (Juste après le Coach Sylvie) -->
+  <!-- Footer -->
   <footer class="bg-white border-t border-slate-100 py-8 mt-12">
     <div class="max-w-4xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
       <div>
