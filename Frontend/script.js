@@ -4,7 +4,7 @@ let currentNiveauId = null;
 const levelsContainer = document.getElementById("levels-container");
 const dashboard = document.getElementById("dashboard");
 const levelsPage = document.getElementById("levels-page");
-const contentPage = document.getElementById("content");
+const contentPage = document.getElementById("content") || document.getElementById("content-page");
 
 // Fonctions pour l'ouverture/fermeture des Modals (Compatible Tailwind)
 function ouvrirModalLogin() { 
@@ -82,9 +82,15 @@ async function login() {
     } catch (e) { alert("Erreur serveur."); }
 }
 
+// Déconnexion complète
 function logout() {
     localStorage.removeItem('user');
+    localStorage.removeItem('user_progression');
     location.reload();
+}
+// Alias si appelé via deconnexion()
+function deconnexion() {
+    logout();
 }
 
 function mettreAJourInterface(data) {
@@ -101,21 +107,35 @@ function mettreAJourInterface(data) {
     if (welcomeH2) welcomeH2.innerText = "Ravi de te revoir, " + data.username + " !";
 }
 
-// AFFICHER COURS / VIDEOS / EXERCICES
+// AFFICHER COURS / VIDEOS / EXERCICES / CALCULATEUR
 
 function showContent(blockId, title) {
     if (dashboard) dashboard.style.display = "none";
-    if (contentPage) contentPage.style.display = "block";
+    if (contentPage) {
+        contentPage.style.display = "block";
+        contentPage.classList.remove("hidden");
+    }
     
     const pageTitle = document.getElementById("content-title");
     if (pageTitle) pageTitle.textContent = title;
 
+    // Cacher tous les blocs de contenu
     document.querySelectorAll(".content-block").forEach(b => {
         b.style.display = "none";
         b.classList.add("hidden");
     });
+
+    // Si le bloc cliqué est le calculateur
+    if (blockId === "calculateur" || blockId === "calculateur-block") {
+        const calcBlock = document.getElementById("calculateur-block");
+        if (calcBlock) {
+            calcBlock.style.display = "block";
+            calcBlock.classList.remove("hidden");
+        }
+        return;
+    }
     
-    const container = document.getElementById(blockId);
+    const container = document.getElementById(blockId) || document.getElementById(blockId + "-list");
     if (!container) return;
     
     container.style.display = "block";
@@ -194,6 +214,17 @@ function showContent(blockId, title) {
         });
 }
 
+// Fonction wrapper pour compatibilité HTML
+function afficherVueContent(type) {
+    let titre = "Contenu";
+    if (type === 'cours') titre = "Les Cours";
+    if (type === 'videos') titre = "Les Vidéos";
+    if (type === 'exercices') titre = "Les Exercices";
+    if (type === 'calculateur') titre = "Mon Calculateur";
+    
+    showContent(type, titre);
+}
+
 // SOLVEUR D'EXERCICES
 
 function resoudre() {
@@ -211,7 +242,7 @@ function resoudre() {
             let calcul = input.toLowerCase()
                 .replace(/racine\(/g, 'Math.sqrt(') 
                 .replace(/sqrt\(/g, 'Math.sqrt(')  
-                .replace(/\^/g, '**')              // Correction : ** pour exposants en JS
+                .replace(/\^/g, '**')              
                 .replace(/:/g, '/');               
             
             const res = eval(calcul);
@@ -290,7 +321,7 @@ async function envoyerQuestionIA() {
     input.value = "";
     
     // 2. Création de la bulle d'attente
-    const loadingId = "rita-load-" + Date.now();
+    const loadingId = "load-" + Date.now();
     reponseZone.innerHTML += `
         <div id="${loadingId}" class="bot-msg bg-slate-100 text-slate-600 p-3 rounded-2xl mb-3 max-w-[85%] text-sm">
             <em>Sylvie réfléchit...</em>
@@ -307,16 +338,16 @@ async function envoyerQuestionIA() {
 
         const data = await response.json();
 
-        const ritaBubble = document.getElementById(loadingId);
+        const botBubble = document.getElementById(loadingId);
         if (data.answer) {
             const htmlContent = marked.parse(data.answer);
-            ritaBubble.innerHTML = `<strong class="text-brand-500">Sylvie :</strong> ${htmlContent}`;
+            botBubble.innerHTML = `<strong class="text-brand-500">Sylvie :</strong> ${htmlContent}`;
 
             if (window.MathJax && window.MathJax.typesetPromise) {
-                window.MathJax.typesetPromise([ritaBubble]);
+                window.MathJax.typesetPromise([botBubble]);
             }
         } else {
-            ritaBubble.innerHTML = "Désolée, je n'ai pas pu obtenir de réponse.";
+            botBubble.innerHTML = "Désolée, je n'ai pas pu obtenir de réponse.";
         }
 
     } catch (error) {
@@ -330,7 +361,7 @@ async function envoyerQuestionIA() {
 
 function declencherEntrainement() {
     const user = JSON.parse(localStorage.getItem('user'));
-    const prenom = user ? user.username : "l'ami";
+    const prenom = (user && user.username) ? user.username : "l'ami";
 
     const aiContainer = document.getElementById('ai-chat-container') || document.getElementById('reponseIA');
     if (aiContainer) aiContainer.scrollIntoView({ behavior: 'smooth' });
@@ -339,27 +370,56 @@ function declencherEntrainement() {
     if (reponseZone) {
         reponseZone.innerHTML += `
             <div class="bot-msg bg-amber-50 border-l-4 border-brand-500 text-slate-800 p-3 rounded-xl mt-3 text-sm">
-                <strong>Sylvie:</strong> C'est parti ${prenom} ! Je te prépare une série d'exercices. 
+                <strong>Sylvie :</strong> C'est parti ${prenom} ! Je te prépare une série d'exercices. 
                 Dis-moi sur quel chapitre tu veux t'exercer !
             </div>`;
         reponseZone.scrollTop = reponseZone.scrollHeight;
     }
 }
 
-// INITIALISATION AU CHARGEMENT DE LA PAGE
+// INITIALISATION ET GESTION DE LA SESSION AU CHARGEMENT DE LA PAGE
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Récupération Utilisateur
     const userStocke = localStorage.getItem('user');
+    const reponseIA = document.getElementById('reponseIA');
+
     if (userStocke) {
+        // --- CAS 1 : UTILISATEUR CONNECTÉ ---
         const userData = JSON.parse(userStocke);
         mettreAJourInterface(userData);
         
-        const reponseIA = document.getElementById('reponseIA');
+        // Bannières & Profils
+        document.getElementById('guest-zone')?.classList.add('hidden');
+        document.getElementById('user-zone')?.classList.remove('hidden');
+        document.getElementById('banner-guest')?.classList.add('hidden');
+        document.getElementById('banner-user')?.classList.remove('hidden');
+
+        const nom = userData.username || userData.nom || "Élève";
+        const classe = userData.niveau || userData.classe || "6ème";
+
+        if (document.getElementById('user-badge')) document.getElementById('user-badge').textContent = `Classe : ${classe}`;
+        if (document.getElementById('user-display-name')) document.getElementById('user-display-name').textContent = nom;
+        if (document.getElementById('user-display-class')) document.getElementById('user-display-class').textContent = classe;
+
+        // Message de bienvenue du Coach Sylvie pour l'élève connecté
         if (reponseIA) {
             reponseIA.innerHTML = `
-                <div class="bot-msg bg-slate-100 p-3 rounded-2xl mb-3 border-l-4 border-brand-500 text-sm">
-                    <strong>Sylvie :</strong> Bonjour <strong>${userData.username}</strong> ! Je suis prête à t'aider. Que veux-tu réviser ?
+                <div class="bot-msg bg-brand-50/80 p-3 rounded-2xl border-l-4 border-brand-500 text-sm text-slate-700">
+                    <strong>Sylvie :</strong> Bonjour <strong>${nom}</strong> ! Je suis prête à t'aider. Que veux-tu réviser ?
+                </div>`;
+        }
+    } else {
+        // --- CAS 2 : INVITÉ (NON CONNECTÉ) ---
+        document.getElementById('guest-zone')?.classList.remove('hidden');
+        document.getElementById('user-zone')?.classList.add('hidden');
+        document.getElementById('banner-guest')?.classList.remove('hidden');
+        document.getElementById('banner-user')?.classList.add('hidden');
+
+        // Message de bienvenue générique pour l'invité (sans prénom)
+        if (reponseIA) {
+            reponseIA.innerHTML = `
+                <div class="bot-msg bg-brand-50/80 p-3 rounded-2xl border-l-4 border-brand-500 text-sm text-slate-700">
+                    <strong>Sylvie :</strong> Bonjour ! Je suis ta coach de maths. Pose-moi tes questions sur les cours ou un exercice !
                 </div>`;
         }
     }
@@ -368,8 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById("btn-cours")?.addEventListener("click", () => showContent("cours", "Cours"));
     document.getElementById("btn-videos")?.addEventListener("click", () => showContent("videos", "Vidéos"));
     document.getElementById("back-dashboard")?.addEventListener("click", () => {
-        if (contentPage) contentPage.style.display = "none";
-        if (dashboard) dashboard.style.display = "block";
+        revenirDashboard();
     });
 
     // 3. Écouteur Touche Entrée pour l'IA
@@ -397,58 +456,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Sauvegarder la progression quand l'utilisateur lit un cours
+// NAVIGATION ET SECTIONS
+
+let currentNiveau = null;
+
+function selectionnerNiveau(niveau) {
+  currentNiveau = niveau;
+  if (document.getElementById('current-niveau-display')) {
+      document.getElementById('current-niveau-display').textContent = niveau;
+  }
+  document.getElementById('levels-page')?.classList.add('hidden');
+  document.getElementById('dashboard')?.classList.remove('hidden');
+}
+
+function revenirAccueil() {
+  document.getElementById('dashboard')?.classList.add('hidden');
+  document.getElementById('content-page')?.classList.add('hidden');
+  document.getElementById('levels-page')?.classList.remove('hidden');
+}
+
+function revenirDashboard() {
+  document.getElementById('content-page')?.classList.add('hidden');
+  document.getElementById('dashboard')?.classList.remove('hidden');
+}
+
 function enregistrerProgression(titreChapitre, leconsTerminees, totalLecons) {
   const pourcentage = Math.round((leconsTerminees / totalLecons) * 100);
-  
   const progression = {
     chapitre: titreChapitre,
     termes: leconsTerminees,
     total: totalLecons,
     pourcentage: pourcentage
   };
-
   localStorage.setItem('user_progression', JSON.stringify(progression));
-  afficherProgression();
 }
 
-// Mettre à jour l'affichage de la progression à l'écran
-let currentNiveau = null;
-let currentUser = null;
-
-// Sélection du niveau (invité)
-function selectionnerNiveau(niveau) {
-  currentNiveau = niveau;
-  document.getElementById('current-niveau-display').textContent = niveau;
-  document.getElementById('levels-page').classList.add('hidden');
-  document.getElementById('dashboard').classList.remove('hidden');
-}
-
-// Connexion / Inscription réussie
-function declarerUtilisateurConnecte(nom, classe) {
-  currentUser = { nom, classe };
-  
-  // Basculer bannières & header
-  document.getElementById('guest-zone').classList.add('hidden');
-  document.getElementById('user-zone').classList.remove('hidden');
-  document.getElementById('user-badge').textContent = `Classe : ${classe}`;
-  
-  document.getElementById('banner-guest').classList.add('hidden');
-  document.getElementById('banner-user').classList.remove('hidden');
-  document.getElementById('user-display-name').textContent = nom;
-  document.getElementById('user-display-class').textContent = classe;
-
-  // Ouvrir directement son niveau
-  selectionnerNiveau(classe);
-  document.getElementById('btn-changer-niveau').classList.add('hidden'); // Verrouille sur son niveau
-}
-
-// Reprendre la lecture du cours
 function reprendreLecture() {
   afficherVueContent('cours');
-  // Logique pour scroller ou ouvrir le chapitre enregistré
 }
 
 function scrollToSolveur() {
-  document.getElementById('solveur-box').scrollIntoView({ behavior: 'smooth' });
+  const box = document.getElementById('solveur-box') || document.getElementById('calculateur-block');
+  box?.scrollIntoView({ behavior: 'smooth' });
 }
