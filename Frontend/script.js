@@ -427,9 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Écouteurs d'événements des boutons du Dashboard
     document.getElementById("btn-cours")?.addEventListener("click", () => showContent("cours", "Cours"));
     document.getElementById("btn-videos")?.addEventListener("click", () => showContent("videos", "Vidéos"));
-    document.getElementById("back-dashboard")?.addEventListener("click", () => {
-        revenirDashboard();
-    });
+   
 
     // 3. Écouteur Touche Entrée pour l'IA
     document.getElementById('monInputIA')?.addEventListener('keypress', (e) => {
