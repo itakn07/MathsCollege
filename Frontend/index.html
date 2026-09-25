@@ -102,7 +102,7 @@
           </div>
           <div class="flex justify-between items-center pt-1 text-[11px]">
             <span id="progression-etape" class="text-slate-400">Leçon 3 sur 5</span>
-            <button onclick="reprendreLecture()" class="text-brand-500 font-bold hover:underline">Reprendre ma lecture →</button>
+            <button onclick="ouvrirPageCours()" class="text-brand-500 font-bold hover:underline">Reprendre ma lecture →</button>
           </div>
         </div>
       </section>
@@ -111,22 +111,22 @@
       <section id="levels-page">
         <h2 class="text-lg font-bold text-slate-900 mb-4">Choisis ton niveau</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <button onclick="selectionnerNiveau('6ème')" class="p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md hover:border-brand-500 text-left transition">
+          <button onclick="selectionnerNiveau('6e')" class="p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md hover:border-brand-500 text-left transition">
             <div class="text-2xl mb-2">📗</div>
             <h3 class="font-bold text-slate-900">6ème</h3>
             <p class="text-xs text-slate-400 mt-1">Bases et consolidation</p>
           </button>
-          <button onclick="selectionnerNiveau('5ème')" class="p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md hover:border-brand-500 text-left transition">
+          <button onclick="selectionnerNiveau('5e')" class="p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md hover:border-brand-500 text-left transition">
             <div class="text-2xl mb-2">📘</div>
             <h3 class="font-bold text-slate-900">5ème</h3>
             <p class="text-xs text-slate-400 mt-1">Approfondissement</p>
           </button>
-          <button onclick="selectionnerNiveau('4ème')" class="p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md hover:border-brand-500 text-left transition">
+          <button onclick="selectionnerNiveau('4e')" class="p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md hover:border-brand-500 text-left transition">
             <div class="text-2xl mb-2">📙</div>
             <h3 class="font-bold text-slate-900">4ème</h3>
             <p class="text-xs text-slate-400 mt-1">Passage au raisonnement</p>
           </button>
-          <button onclick="selectionnerNiveau('3ème')" class="p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md hover:border-brand-500 text-left transition">
+          <button onclick="selectionnerNiveau('3e')" class="p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md hover:border-brand-500 text-left transition">
             <div class="text-2xl mb-2">📕</div>
             <h3 class="font-bold text-slate-900">3ème</h3>
             <p class="text-xs text-slate-400 mt-1">Préparation au Brevet</p>
@@ -144,14 +144,14 @@
         <!-- Grille de 4 cartes -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           
-          <!-- Carte 1 : Cours -->
+          <!-- Carte 1 : Cours (Redirige vers cours.html) -->
           <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
             <div>
               <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-lg mb-3">📘</div>
               <h3 class="font-bold text-slate-900 mb-1">Cours</h3>
               <p class="text-xs text-slate-500 mb-4">Tes cours résumés et fiches théoriques.</p>
             </div>
-            <button onclick="afficherVueContent('cours')" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Consulter</button>
+            <button onclick="ouvrirPageCours()" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Consulter</button>
           </div>
 
           <!-- Carte 2 : Vidéos -->
@@ -187,7 +187,7 @@
         </div>
       </section>
 
-      <!-- PAGE DE CONTENU (Affichage des Cours, Vidéos, Exercices OU Calculateur) -->
+      <!-- PAGE DE CONTENU (Affichage des Vidéos, Exercices OU Calculateur) -->
       <section id="content-page" class="hidden space-y-6">
         <button onclick="revenirDashboard()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold rounded-xl transition">
           ← Retour à l'Espace Travail
@@ -195,12 +195,11 @@
         
         <h2 id="content-title" class="text-xl font-bold text-slate-900"></h2>
 
-        <!-- Bloc Cours, Vidéos, Exercices -->
-        <div id="cours-list" class="content-block space-y-3"></div>
+        <!-- Bloc Vidéos & Exercices -->
         <div id="videos-list" class="content-block space-y-3 hidden"></div>
         <div id="exercices-list" class="content-block space-y-3 hidden"></div>
 
-        <!-- Bloc Calculateur (S'affiche uniquement quand la carte Calculateur est cliquée) -->
+        <!-- Bloc Calculateur -->
         <div id="calculateur-block" class="content-block hidden">
           <div id="solveur-box" class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
               <div class="flex items-center gap-3">
@@ -217,7 +216,7 @@
         </div>
       </section>
 
-      <!-- WIDGET MON COACH SYLVIE (Positionné juste sous l'Espace Travail / Contenu) -->
+      <!-- WIDGET MON COACH SYLVIE -->
       <section id="ai-chat-container" class="bg-gradient-to-r from-brand-50 to-purple-50 p-6 rounded-3xl border border-brand-100 shadow-sm space-y-4">
           <div class="flex items-center gap-3">
             <div class="w-11 h-11 rounded-2xl bg-brand-500 text-white flex items-center justify-center text-xl shadow-md shadow-brand-500/20">🤖</div>
@@ -263,10 +262,10 @@
           <input type="email" id="signup-email" placeholder="Email" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500">
           <input type="password" id="signup-pass" placeholder="Mot de passe" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500">
           <select id="signup-niveau" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500 bg-white">
-              <option value="6ème">6ème</option>
-              <option value="5ème">5ème</option>
-              <option value="4ème">4ème</option>
-              <option value="3ème">3ème</option>
+              <option value="6e">6ème</option>
+              <option value="5e">5ème</option>
+              <option value="4e">4ème</option>
+              <option value="3e">3ème</option>
           </select>
           <button onclick="signup()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm rounded-xl transition">S'inscrire</button>
       </div>
@@ -291,5 +290,15 @@
   </footer>
 
   <script src="script.js"></script>
+  
+  <script>
+    // Helper JS pour la redirection directe vers cours.html
+    function ouvrirPageCours() {
+      // Vérification du niveau sélectionné (par défaut 6e)
+      const niveau = localStorage.getItem('niveauSelectionne') || '6e';
+      localStorage.setItem('niveauSelectionne', niveau);
+      window.location.href = 'cours.html';
+    }
+  </script>
 </body>
 </html>
