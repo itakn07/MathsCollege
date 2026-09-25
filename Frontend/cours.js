@@ -94,7 +94,24 @@ function lireLecon(idCours) {
     document.getElementById("vue-lecteur-cours").classList.remove("hidden");
 
     // Injection du contenu HTML du cours
-    document.getElementById("contenu-cours").innerHTML = chapitre.contenu_html;
+   let htmlContenu = chapitre.contenu_html;
+
+// Vérifie si un fichier PDF est associé à ce cours
+if (chapitre.pdf_path) {
+    htmlContenu += `
+        <div class="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
+            <div>
+                <p class="font-bold text-slate-800 text-sm">Fiche de cours (PDF)</p>
+                <p class="text-xs text-slate-500">Télécharge le résumé imprimable de cette leçon.</p>
+            </div>
+            <a href="http://localhost:3000${chapitre.pdf_path}" target="_blank" download class="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold text-xs rounded-xl shadow-sm transition">
+                📥 Télécharger le PDF
+            </a>
+        </div>
+    `;
+}
+
+document.getElementById("contenu-cours").innerHTML = htmlContenu;
 
     // Déclenchement du rendu MathJax pour afficher correctement les formules mathématiques
     if (window.MathJax) {
