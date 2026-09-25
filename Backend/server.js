@@ -209,11 +209,23 @@ app.get('/niveaux', (req, res) => {
     });
 });
 
-app.get('/api/cours/:idDuNiveau', (req, res) => {
-    const niveauId = req.params.idDuNiveau;
-    const sql = "SELECT * FROM cours WHERE niveau_id = ?";
-    db.query(sql, [niveauId], (err, results) => {
-        if (err) return res.status(500).send("Erreur serveur");
+app.get('/api/cours/:niveau/:domaine', (req, res) => {
+    const { niveau, domaine } = req.params;
+
+    // Requête qui cherche par ID de niveau OU par nom (ex: "1" ou "6e")
+    const sql = `
+        SELECT c.* 
+        FROM cours c
+        JOIN niveaux n ON c.niveau_id = n.id
+        WHERE (c.niveau_id = ? OR LOWER(n.nom) = LOWER(?))
+          AND LOWER(c.domaine) = LOWER(?)
+    `;
+
+    db.query(sql, [niveau, niveau, domaine], (err, results) => {
+        if (err) {
+            console.error("Erreur SQL :", err);
+            return res.status(500).send("Erreur serveur");
+        }
         res.json(results);
     });
 });
