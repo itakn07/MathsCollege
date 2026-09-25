@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mes Cours - MathsCollège</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- MathJax pour l'affichage des formules mathématiques -->
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body class="h-full font-sans text-slate-800 flex flex-col">
+
+  <!-- Barre de navigation supérieure -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="index.html" class="p-2 text-slate-500 hover:text-brand-600 hover:bg-slate-100 rounded-xl transition flex items-center gap-1 font-medium text-sm" title="Retour au tableau de bord">
+          ← Dashboard
+        </a>
+        <h1 class="text-xl font-bold text-slate-900">Espace Cours</h1>
+      </div>
+
+      <!-- Badge indiquant le niveau récupéré depuis index -->
+      <span id="badge-niveau-header" class="px-3 py-1 bg-brand-100 text-brand-700 font-bold text-xs rounded-full">
+        Classe de 6ème
+      </span>
+    </div>
+  </header>
+
+  <!-- Contenu Principal -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-8">
+
+    <!-- ÉTAPE 1 : Choix du Domaine (Les 2 Cartes Flottantes) -->
+    <section id="vue-domaine" class="space-y-6">
+      <div class="text-center space-y-2 max-w-lg mx-auto">
+        <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900">Que veux-tu étudier aujourd'hui ?</h2>
+        <p class="text-slate-500 text-sm">Choisis une matière pour consulter la liste de tes chapitres.</p>
+      </div>
+
+      <!-- Cartes Flottantes -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto pt-4">
+        
+        <!-- Carte Algèbre -->
+        <div onclick="selectionnerDomaine('algebre')" class="cursor-pointer bg-white p-8 rounded-3xl border border-slate-100 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-center text-center group">
+          <div class="w-16 h-16 bg-brand-100 text-brand-600 rounded-2xl flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition duration-300">
+            🔢
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 mb-2">Algèbre</h3>
+          <p class="text-slate-500 text-sm mb-6">Activités numériques, nombres entiers, décimaux, fractions, équations et proportionnalité.</p>
+          <span class="mt-auto px-5 py-2.5 bg-brand-500 group-hover:bg-brand-600 text-white font-semibold rounded-xl text-sm transition shadow-sm">
+            Voir les cours d'Algèbre →
+          </span>
+        </div>
+
+        <!-- Carte Géométrie -->
+        <div onclick="selectionnerDomaine('geometrie')" class="cursor-pointer bg-white p-8 rounded-3xl border border-slate-100 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-center text-center group">
+          <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition duration-300">
+            📐
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 mb-2">Géométrie</h3>
+          <p class="text-slate-500 text-sm mb-6">Activités géométriques, figures du plan, droites, angles, aires et constructions.</p>
+          <span class="mt-auto px-5 py-2.5 bg-emerald-500 group-hover:bg-emerald-600 text-white font-semibold rounded-xl text-sm transition shadow-sm">
+            Voir les cours de Géométrie →
+          </span>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ÉTAPE 2 : Liste des Chapitres depuis la BDD -->
+    <section id="vue-liste-cours" class="hidden space-y-6">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+        <div>
+          <button onclick="retourAuxDomaines()" class="text-sm text-brand-600 font-semibold hover:underline flex items-center gap-1 mb-1">
+            ← Changer de domaine
+          </button>
+          <h2 id="titre-domaine" class="text-2xl font-bold text-slate-900">Cours d'Algèbre</h2>
+        </div>
+      </div>
+
+      <!-- Conteneur d'affichage dynamique des cartes des chapitres -->
+      <div id="conteneur-chapitres" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Rempli dynamiquement en JS -->
+      </div>
+    </section>
+
+    <!-- ÉTAPE 3 : Affichage du cours complet -->
+    <section id="vue-lecteur-cours" class="hidden space-y-6 max-w-3xl mx-auto">
+      <button onclick="retourALaListe()" class="text-sm text-brand-600 font-semibold hover:underline flex items-center gap-1">
+        ← Retour à la liste des cours
+      </button>
+
+      <div class="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
+        <div id="contenu-cours">
+          <!-- Le contenu HTML du cours est injecté ici -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="cours.js"></script>
+</body>
+</html>
