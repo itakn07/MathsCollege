@@ -1,6 +1,6 @@
-// Récupération du niveau sélectionné sur la page d'accueil (ex: '6e', '5e', '4e', '3e')
-const niveauChoisi = localStorage.getItem('niveauSelectionne') || '6e';
-
+// Récupération et nettoyage du niveau pour correspondre exactement à la BD ("6e", "5e", etc.)
+const niveauBrut = localStorage.getItem('niveauSelectionne') || '6e';
+const niveauChoisi = niveauBrut.toLowerCase().replace('ème', 'e').replace('E', 'e');
 let domaineActuel = "algebre";
 let listeCoursCharges = [];
 
