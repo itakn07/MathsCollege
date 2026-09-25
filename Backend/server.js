@@ -8,11 +8,23 @@ const { evaluate } = require('mathjs');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcrypt');
 const fetch = require('node-fetch');
+const fs = require('fs');
+const path = require('path');
 
 // ============= CONFIGURATION =============
 const API_KEY = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
 const app = express();
+
+// Création automatique du dossier 'uploads/fiches'
+const uploadDir = path.join(__dirname, 'uploads', 'fiches');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+    console.log('Dossier uploads/fiches créé avec succès !');
+}
+
+// Rendre le dossier 'uploads' accessible au navigateur
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(cors());
 app.use(express.json());
