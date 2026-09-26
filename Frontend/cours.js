@@ -96,6 +96,9 @@ function lireLecon(idCours) {
 
     // Affichage du bouton PDF si le fichier existe
     if (chapitre.pdf_path) {
+
+        const pdfUrl = chapitre.pdf_path.startWith('/')? chapitre.pdf_path : '/'+ chapitre.pdf_path;
+
         htmlContenu += `
             <div class="mt-8 p-5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between shadow-sm">
                 <div>
