@@ -54,25 +54,23 @@ async function selectionnerDomaine(domaine) {
         }
 
         // Génération des cartes de chaque chapitre
-        conteneur.innerHTML = listeCoursCharges.map((chapitre) => `
-            <div onclick="lireLecon(${chapitre.id})" class="bg-white p-5 rounded-2xl border border-slate-200 hover:border-brand-500 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col justify-between group">
-                <div>
-                    <span class="text-xs font-semibold text-brand-600 bg-brand-50 px-2.5 py-1 rounded-lg">
-                        Chapitre ${chapitre.chapitre_num}
-                    </span>
-                    <h3 class="text-lg font-bold text-slate-900 mt-3 group-hover:text-brand-600 transition">
-                        ${chapitre.titre}
-                    </h3>
-                    <p class="text-sm text-slate-500 mt-1 line-clamp-2">
-                        ${chapitre.description || ''}
-                    </p>
-                </div>
-                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-brand-600">
-                    <span>Consulter la leçon</span>
-                    <span>→</span>
-                </div>
-            </div>
-        `).join("");
+       // Génération des cartes de chaque chapitre
+conteneur.innerHTML = listeCoursCharges.map((chapitre, index) => `
+    <div onclick="lireLecon(${chapitre.id})" class="bg-white p-5 rounded-2xl border border-slate-200 hover:border-brand-500 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col justify-between group">
+        <div>
+            <span class="text-xs font-semibold text-brand-600 bg-brand-50 px-2.5 py-1 rounded-lg">
+                Chapitre ${index + 1}
+            </span>
+            <h3 class="text-lg font-bold text-slate-900 mt-3 group-hover:text-brand-600 transition">
+                ${chapitre.titre}
+            </h3>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-brand-600">
+            <span>Consulter la leçon</span>
+            <span>→</span>
+        </div>
+    </div>
+`).join("");
 
     } catch (error) {
         console.error("Erreur lors de la récupération des cours :", error);
@@ -93,32 +91,30 @@ function lireLecon(idCours) {
     document.getElementById("vue-liste-cours").classList.add("hidden");
     document.getElementById("vue-lecteur-cours").classList.remove("hidden");
 
-    // Injection du contenu HTML du cours
-   let htmlContenu = chapitre.contenu_html;
+    // On utilise la colonne 'contenu' de MySQL
+    let htmlContenu = chapitre.contenu || "<p class='text-slate-500'>Contenu indisponible.</p>";
 
-// Vérifie si un fichier PDF est associé à ce cours
-if (chapitre.pdf_path) {
-    htmlContenu += `
-        <div class="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
-            <div>
-                <p class="font-bold text-slate-800 text-sm">Fiche de cours (PDF)</p>
-                <p class="text-xs text-slate-500">Télécharge le résumé imprimable de cette leçon.</p>
+    // Affichage du bouton PDF si le fichier existe
+    if (chapitre.pdf_path) {
+        htmlContenu += `
+            <div class="mt-8 p-5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between shadow-sm">
+                <div>
+                    <p class="font-bold text-slate-800 text-sm">Fiche de cours (PDF)</p>
+                    <p class="text-xs text-slate-500">Télécharge le résumé imprimable de cette leçon.</p>
+                </div>
+                <a href="http://localhost:3000/${chapitre.pdf_path}" target="_blank" download class="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs rounded-xl shadow-sm transition flex items-center gap-2">
+                    📄 Télécharger le PDF
+                </a>
             </div>
-            <a href="http://localhost:3000${chapitre.pdf_path}" target="_blank" download class="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold text-xs rounded-xl shadow-sm transition">
-                📥 Télécharger le PDF
-            </a>
-        </div>
-    `;
-}
+        `;
+    }
 
-document.getElementById("contenu-cours").innerHTML = htmlContenu;
+    document.getElementById("contenu-cours").innerHTML = htmlContenu;
 
-    // Déclenchement du rendu MathJax pour afficher correctement les formules mathématiques
     if (window.MathJax) {
         MathJax.typesetPromise();
     }
 }
-
 // 3. Navigation de retour vers le choix du domaine
 function retourAuxDomaines() {
     document.getElementById("vue-liste-cours").classList.add("hidden");
