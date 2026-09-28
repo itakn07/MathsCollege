@@ -91,13 +91,14 @@ function lireLecon(idCours) {
     document.getElementById("vue-liste-cours").classList.add("hidden");
     document.getElementById("vue-lecteur-cours").classList.remove("hidden");
 
-    // On utilise la colonne 'contenu' de MySQL
+    // Récupération du texte de la leçon
     let htmlContenu = chapitre.contenu || "<p class='text-slate-500'>Contenu indisponible.</p>";
 
-    // Affichage du bouton PDF si le fichier existe
+    // Traitement propre de l'URL du PDF
     if (chapitre.pdf_path) {
-
-        const pdfUrl = chapitre.pdf_path.startWith('/')? chapitre.pdf_path : '/'+ chapitre.pdf_path;
+        // Nettoie les éventuels doubles slashes au début
+        const cheminPropre = chapitre.pdf_path.startsWith('/') ? chapitre.pdf_path : '/' + chapitre.pdf_path;
+        const pdfUrl = `http://localhost:3000${cheminPropre}`;
 
         htmlContenu += `
             <div class="mt-8 p-5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between shadow-sm">
@@ -105,7 +106,7 @@ function lireLecon(idCours) {
                     <p class="font-bold text-slate-800 text-sm">Fiche de cours (PDF)</p>
                     <p class="text-xs text-slate-500">Télécharge le résumé imprimable de cette leçon.</p>
                 </div>
-                <a href="http://localhost:3000/${chapitre.pdf_path}" target="_blank" download class="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs rounded-xl shadow-sm transition flex items-center gap-2">
+                <a href="${pdfUrl}" target="_blank" download class="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs rounded-xl shadow-sm transition flex items-center gap-2">
                     📄 Télécharger le PDF
                 </a>
             </div>
