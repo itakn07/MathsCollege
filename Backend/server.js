@@ -230,11 +230,29 @@ app.get('/api/cours/:niveau/:domaine', (req, res) => {
     });
 });
 
-app.get('/api/exercices/:idDuNiveau', (req, res) => {
-    const niveauId = req.params.idDuNiveau;
-    const sql = "SELECT * FROM exercices WHERE niveau_id = ?";
-    db.query(sql, [niveauId], (err, results) => {
-        if (err) return res.status(500).send("Erreur serveur");
+app.get('/api/exercices/:niveau/:domaine', (req, res) => {
+    const { niveau, domaine } = req.params;
+
+    const sql = `
+        SELECT 
+            e.id, 
+            e.titre, 
+            e.enonce, 
+            e.reponse_correcte, 
+            e.pdf_path, 
+            c.titre AS cours_titre
+        FROM exercices e
+        JOIN cours c ON e.cours_id = c.id
+        JOIN niveaux n ON c.niveau_id = n.id
+        WHERE (c.niveau_id = ? OR LOWER(n.nom) = LOWER(?))
+          AND LOWER(c.domaine) = LOWER(?)
+    `;
+
+    db.query(sql, [niveau, niveau, domaine], (err, results) => {
+        if (err) {
+            console.error("Erreur SQL exercices :", err);
+            return res.status(500).send("Erreur serveur");
+        }
         res.json(results);
     });
 });
