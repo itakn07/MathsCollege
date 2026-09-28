@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathsCollege - Vidéos</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: '#f0edff',
+                100: '#e2d9ff',
+                500: '#6c5ce7',
+                600: '#5b4bc4',
+              }
+            },
+            fontFamily: {
+              sans: ['Plus Jakarta Sans', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between">
+
+  <div>
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 py-3">
+      <div class="max-w-4xl mx-auto flex justify-between items-center">
+        <h1 class="text-xl font-extrabold bg-gradient-to-r from-brand-500 to-purple-600 bg-clip-text text-transparent cursor-pointer" onclick="window.location.href='index.html'">
+          MathsCollege
+        </h1>
+        <a href="index.html" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition">
+          ← Retour à l'accueil
+        </a>
+      </div>
+    </header>
+
+    <!-- Conteneur Principal -->
+    <main class="max-w-4xl mx-auto px-4 py-6 space-y-6">
+
+      <!-- Titre de la page -->
+      <div class="bg-gradient-to-br from-brand-50 to-purple-50 border border-brand-100 p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <span class="inline-block bg-white text-brand-500 text-xs font-bold px-3 py-1 rounded-full shadow-sm mb-2">
+            Explications animées 🎬
+          </span>
+          <h2 class="text-2xl font-bold text-slate-900">Vidéos - <span id="niveau-titre" class="text-brand-500">6ème</span></h2>
+          <p class="text-slate-600 text-xs mt-1">Regarde et révise tes chapitres pas à pas.</p>
+        </div>
+      </div>
+
+      <!-- Grille des Vidéos -->
+      <div id="videos-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Les cartes vidéos s'afficheront ici -->
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-100 py-8 mt-12">
+    <div class="max-w-4xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+      <div>
+        <h3 class="font-bold text-slate-900 mb-2">À propos</h3>
+        <p class="text-slate-500 text-xs leading-relaxed">MathsCollege est ta plateforme permettant aux apprenants en cycle collège d'apprendre les mathématiques plus facilement.</p>
+      </div>
+      <div>
+        <h3 class="font-bold text-slate-900 mb-2">E-mail</h3>
+        <p class="text-slate-500 text-xs">ritakngot3@gmail.com</p>
+      </div>
+      <div>
+        <h3 class="font-bold text-slate-900 mb-2">Téléphone</h3>
+        <p class="text-slate-500 text-xs">00242 04 478 18 74</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="videos.js"></script>
+</body>
+</html>

@@ -161,7 +161,7 @@
               <h3 class="font-bold text-slate-900 mb-1">Vidéos</h3>
               <p class="text-xs text-slate-500 mb-4">Explications animées pas à pas.</p>
             </div>
-            <button onclick="afficherVueContent('videos')" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Regarder</button>
+            <button onclick="ouvrirPageVideos()" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Regarder</button>
           </div>
 
          <!-- Carte 3 : Exercices -->
@@ -195,8 +195,7 @@
         
         <h2 id="content-title" class="text-xl font-bold text-slate-900"></h2>
 
-        <!-- Bloc Vidéos & Exercices -->
-        <div id="videos-list" class="content-block space-y-3 hidden"></div>
+ 
       
 
         <!-- Bloc Calculateur -->
@@ -304,6 +303,12 @@
     localStorage.setItem('niveauSelectionne', niveau);
     window.location.href = 'exercices.html';
   }
+
+  function ouvrirPageVideos() {
+  const niveau = localStorage.getItem('niveauSelectionne') || '6e';
+  localStorage.setItem('niveauSelectionne', niveau);
+  window.location.href = 'videos.html';
+}
 </script>
 
 </body>
