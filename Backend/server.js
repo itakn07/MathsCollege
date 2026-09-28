@@ -40,11 +40,11 @@ const transporter = nodemailer.createTransport({
 
 // ============= CONNEXION MYSQL =============
 const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    port: 3307,
-    database: 'maths_college'
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password:process.env.DB_PASSWORD,
+    port:process.env.DB_PORT,
+    database: process.env.DB_NAME
 });
 
 db.connect(err => {
