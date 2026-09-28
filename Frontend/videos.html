@@ -59,9 +59,19 @@
         </div>
       </div>
 
+      <!-- Filtres par Domaine (Algèbre / Géométrie) -->
+      <div class="flex gap-3">
+        <button id="btn-algebre" onclick="filtrerDomaine('algebre')" class="px-4 py-2 rounded-xl text-xs font-semibold bg-brand-500 text-white shadow-sm transition">
+          Algèbre
+        </button>
+        <button id="btn-geometrie" onclick="filtrerDomaine('geometrie')" class="px-4 py-2 rounded-xl text-xs font-semibold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition">
+          Géométrie
+        </button>
+      </div>
+
       <!-- Grille des Vidéos -->
       <div id="videos-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Les cartes vidéos s'afficheront ici -->
+        <!-- Les cartes vidéos s'afficheront ici via JS -->
       </div>
 
     </main>
