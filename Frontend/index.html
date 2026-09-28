@@ -164,15 +164,15 @@
             <button onclick="afficherVueContent('videos')" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Regarder</button>
           </div>
 
-          <!-- Carte 3 : Exercices -->
-          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
-            <div>
-              <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-lg mb-3">✏️</div>
-              <h3 class="font-bold text-slate-900 mb-1">Exercices</h3>
-              <p class="text-xs text-slate-500 mb-4">Entraînements pratiques et QCM.</p>
-            </div>
-            <button onclick="afficherVueContent('exercices')" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">S'entraîner</button>
-          </div>
+         <!-- Carte 3 : Exercices -->
+<div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
+  <div>
+    <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-lg mb-3">✏️</div>
+    <h3 class="font-bold text-slate-900 mb-1">Exercices</h3>
+    <p class="text-xs text-slate-500 mb-4">Entraînements pratiques et QCM.</p>
+  </div>
+  <button onclick="ouvrirPageExercices()" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">S'entraîner</button>
+</div>
 
           <!-- Carte 4 : Mon Calculateur -->
           <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
@@ -197,7 +197,7 @@
 
         <!-- Bloc Vidéos & Exercices -->
         <div id="videos-list" class="content-block space-y-3 hidden"></div>
-        <div id="exercices-list" class="content-block space-y-3 hidden"></div>
+      
 
         <!-- Bloc Calculateur -->
         <div id="calculateur-block" class="content-block hidden">
@@ -291,14 +291,20 @@
 
   <script src="script.js"></script>
   
-  <script>
-    // Helper JS pour la redirection directe vers cours.html
-    function ouvrirPageCours() {
-      // Vérification du niveau sélectionné (par défaut 6e)
-      const niveau = localStorage.getItem('niveauSelectionne') || '6e';
-      localStorage.setItem('niveauSelectionne', niveau);
-      window.location.href = 'cours.html';
-    }
-  </script>
+ <script>
+  // Helper JS pour les redirections
+  function ouvrirPageCours() {
+    const niveau = localStorage.getItem('niveauSelectionne') || '6e';
+    localStorage.setItem('niveauSelectionne', niveau);
+    window.location.href = 'cours.html';
+  }
+
+  function ouvrirPageExercices() {
+    const niveau = localStorage.getItem('niveauSelectionne') || '6e';
+    localStorage.setItem('niveauSelectionne', niveau);
+    window.location.href = 'exercices.html';
+  }
+</script>
+
 </body>
 </html>
