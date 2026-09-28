@@ -259,9 +259,18 @@ app.get('/api/exercices/:niveau/:domaine', (req, res) => {
 
 app.get('/api/videos/:idDuNiveau', (req, res) => {
     const niveauId = req.params.idDuNiveau;
-    const sql = "SELECT * FROM videos WHERE niveau_id = ?";
-    db.query(sql, [niveauId], (err, results) => {
-        if (err) return res.status(500).send(err);
+    const sql = `
+        SELECT v.* 
+        FROM videos v
+        LEFT JOIN niveaux n ON v.niveau_id = n.id
+        WHERE v.niveau_id = ? OR LOWER(n.nom) = LOWER(?)
+    `;
+    
+    db.query(sql, [niveauId, niveauId], (err, results) => {
+        if (err) {
+            console.error("Erreur SQL videos :", err);
+            return res.status(500).send(err);
+        }
         res.json(results);
     });
 });
