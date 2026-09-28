@@ -4,7 +4,7 @@ let currentNiveauId = null;
 const levelsContainer = document.getElementById("levels-container");
 const dashboard = document.getElementById("dashboard");
 const levelsPage = document.getElementById("levels-page");
-const contentPage = document.getElementById("content") || document.getElementById("content-page");
+const contentPage = document.getElementById("content-page") || document.getElementById("content");
 
 // Fonctions pour l'ouverture/fermeture des Modals (Compatible Tailwind)
 function ouvrirModalLogin() { 
@@ -28,9 +28,13 @@ function fermerModalSignup() {
 window.entrerDansNiveau = function(id, nom) {
     currentNiveauId = id;
     const welcome = document.querySelector(".welcome");
-    if (welcome) welcome.style.display = "none";
-    if (levelsPage) levelsPage.style.display = "none";
-    if (dashboard) dashboard.style.display = "block";
+    if (welcome) welcome.classList.add("hidden");
+    if (levelsPage) levelsPage.classList.add("hidden");
+    
+    if (dashboard) {
+        dashboard.classList.remove("hidden");
+        dashboard.style.display = ""; // Nettoie les styles inline qui gêneraient Tailwind
+    }
     
     const titleElement = dashboard ? dashboard.querySelector(".title") : null;
     if (titleElement) titleElement.textContent = "Niveau : " + nom;
@@ -110,27 +114,34 @@ function mettreAJourInterface(data) {
 // AFFICHER COURS / VIDEOS / EXERCICES / CALCULATEUR
 
 function showContent(blockId, title) {
-    if (dashboard) dashboard.style.display = "none";
-    if (contentPage) {
-        contentPage.style.display = "block";
-        contentPage.classList.remove("hidden");
+    const db = document.getElementById("dashboard");
+    const cp = document.getElementById("content-page") || document.getElementById("content");
+
+    if (db) {
+        db.classList.add("hidden");
+        db.style.display = ""; // Réinitialise l'attribut style inline
+    }
+    
+    if (cp) {
+        cp.classList.remove("hidden");
+        cp.style.display = "";
     }
     
     const pageTitle = document.getElementById("content-title");
     if (pageTitle) pageTitle.textContent = title;
 
-    // Cacher tous les blocs de contenu
+    // Cacher tous les blocs de contenu secondaires
     document.querySelectorAll(".content-block").forEach(b => {
-        b.style.display = "none";
         b.classList.add("hidden");
+        b.style.display = "";
     });
 
     // Si le bloc cliqué est le calculateur
     if (blockId === "calculateur" || blockId === "calculateur-block") {
         const calcBlock = document.getElementById("calculateur-block");
         if (calcBlock) {
-            calcBlock.style.display = "block";
             calcBlock.classList.remove("hidden");
+            calcBlock.style.display = "";
         }
         return;
     }
@@ -138,8 +149,8 @@ function showContent(blockId, title) {
     const container = document.getElementById(blockId) || document.getElementById(blockId + "-list");
     if (!container) return;
     
-    container.style.display = "block";
     container.classList.remove("hidden");
+    container.style.display = "";
     container.innerHTML = "<h3 class='text-slate-500 font-semibold p-4'>Chargement...</h3>";
 
     fetch(`http://localhost:3000/api/${blockId}/${currentNiveauId}`)
@@ -464,18 +475,36 @@ function selectionnerNiveau(niveau) {
       document.getElementById('current-niveau-display').textContent = niveau;
   }
   document.getElementById('levels-page')?.classList.add('hidden');
-  document.getElementById('dashboard')?.classList.remove('hidden');
+  
+  const db = document.getElementById('dashboard');
+  if (db) {
+      db.classList.remove('hidden');
+      db.style.display = "";
+  }
 }
 
 function revenirAccueil() {
-  document.getElementById('dashboard')?.classList.add('hidden');
-  document.getElementById('content-page')?.classList.add('hidden');
-  document.getElementById('levels-page')?.classList.remove('hidden');
+  const db = document.getElementById('dashboard');
+  const cp = document.getElementById('content-page') || document.getElementById('content');
+  const lp = document.getElementById('levels-page');
+
+  if (db) { db.classList.add('hidden'); db.style.display = ""; }
+  if (cp) { cp.classList.add('hidden'); cp.style.display = ""; }
+  if (lp) { lp.classList.remove('hidden'); lp.style.display = ""; }
 }
 
 function revenirDashboard() {
-  document.getElementById('content-page')?.classList.add('hidden');
-  document.getElementById('dashboard')?.classList.remove('hidden');
+  const cp = document.getElementById('content-page') || document.getElementById('content');
+  const db = document.getElementById('dashboard');
+
+  if (cp) {
+      cp.classList.add('hidden');
+      cp.style.display = "";
+  }
+  if (db) {
+      db.classList.remove('hidden');
+      db.style.display = "";
+  }
 }
 
 function enregistrerProgression(titreChapitre, leconsTerminees, totalLecons) {
