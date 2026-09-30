@@ -236,79 +236,491 @@ function afficherVueContent(type) {
     showContent(type, titre);
 }
 
-// SOLVEUR D'EXERCICES
+// SOLVEUR UNIVERSEL COMPLET (6ème à 3ème) — version corrigée
+// Appel depuis le HTML : onclick="resoudre()"
+// Éléments requis : #equation-input (champ) et #resultat-solveur (zone d'affichage)
 
-function resoudre() {
-    const input = document.getElementById('equation-input').value.replace(/\s/g, '').replace(/,/g, '.');
-    const display = document.getElementById('resultat-solveur');
+(function () {
+    'use strict';
 
-    if (!input) {
-        display.innerHTML = "<span class='text-rose-500'>Veuillez entrer un calcul ou une équation.</span>";
-        return;
+    const EPS = 1e-9;
+    const REL_HTML = { '=': '=', '<': '&lt;', '>': '&gt;', '<=': '≤', '>=': '≥' };
+
+    // ---------------------------------------------------------------
+    // Utilitaires
+    // ---------------------------------------------------------------
+
+    // Arrondi à 4 décimales max, sans zéros inutiles ni "-0"
+    function fmt(n) {
+        if (!isFinite(n)) return String(n);
+        const r = Math.round(n * 1e4) / 1e4;
+        return String(Object.is(r, -0) ? 0 : r);
     }
 
-    // 1. CAS DES CALCULS SIMPLES (Arithmétique + Racines + Puissances)
-    if (!input.includes('x') && !input.includes('=') && !input.includes('>') && !input.includes('<')) {
-        try {
-            let calcul = input.toLowerCase()
-                .replace(/racine\(/g, 'Math.sqrt(') 
-                .replace(/sqrt\(/g, 'Math.sqrt(')  
-                .replace(/\^/g, '**')              
-                .replace(/:/g, '/');               
-            
-            const res = eval(calcul);
-            
-            display.innerHTML = `
-                <div class="bg-brand-50 border border-brand-100 p-4 rounded-xl text-slate-800 mt-2">
-                    <small class="text-xs text-slate-500">Résultat du calcul :</small><br>
-                    <span class="text-2xl font-bold text-brand-500">${res}</span>
-                </div>`;
-            return;
-        } catch (e) {
-            display.innerHTML = "<span class='text-rose-500'>Erreur : format invalide (ex: racine(16) + 2^3)</span>";
-            return;
+    const isExact = (n) => Math.abs(n - Math.round(n * 1e4) / 1e4) < EPS;
+    const esc = (s) => String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    // Coefficient devant une variable : 1 -> "", -1 -> "-", 3 -> "3"
+    const cx = (c) => (c === 1 ? '' : c === -1 ? '-' : fmt(c));
+
+    // Construit "2x² - 5x + 6" à partir de [[coef, symbole], ...]
+    function poly(terms) {
+        let s = '';
+        for (const [c, sym] of terms) {
+            if (Math.abs(c) < EPS) continue;
+            const abs = Math.abs(c);
+            const body = sym ? (abs === 1 ? sym : fmt(abs) + sym) : fmt(abs);
+            if (!s) s = (c < 0 ? '-' : '') + body;
+            else s += (c < 0 ? ' - ' : ' + ') + body;
         }
+        return s || '0';
     }
 
-    // 2. CAS DES ÉQUATIONS / INÉQUATIONS
-    let symbole = input.match(/[=<>]/) ? input.match(/[=<>]/)[0] : "=";
+    const errMsg = (msg) => `<span class="text-rose-500">${msg}</span>`;
 
-    // LE SECOND DEGRÉ
-    const quadraticMatch = input.match(/([+-]?\d*)x\^2([+-]?\d*)x([+-]?\d*)([=<>])0/);
-    if (quadraticMatch) {
-        let a = parseFloat(quadraticMatch[1] === "" || quadraticMatch[1] === "+" ? 1 : quadraticMatch[1] === "-" ? -1 : quadraticMatch[1]);
-        let b = parseFloat(quadraticMatch[2] === "" || quadraticMatch[2] === "+" ? 1 : quadraticMatch[2] === "-" ? -1 : quadraticMatch[2]);
-        let c = parseFloat(quadraticMatch[3] || 0);
+    function card({ title, steps = [], result = '', note = '' }) {
+        const stepsHtml = steps
+            .map((s, i) => `<p>• <b>Étape ${i + 1} :</b> ${s}</p>`)
+            .join('');
+        return `
+            <div class="bg-slate-50 border-l-4 border-indigo-500 p-4 rounded-r-xl text-left space-y-3 text-sm mt-2">
+                <div class="font-bold text-slate-800">${title}</div>
+                ${stepsHtml ? `<div class="bg-white p-3 rounded-lg border text-xs space-y-1 text-slate-700">${stepsHtml}</div>` : ''}
+                ${note ? `<p class="text-amber-700 bg-amber-50 p-2 rounded text-xs">${note}</p>` : ''}
+                <div class="text-base font-bold text-indigo-600">${result}</div>
+            </div>`;
+    }
 
-        const delta = (b * b) - (4 * a * c);
-        let html = `<div class="bg-slate-50 border-l-4 border-brand-500 p-4 rounded-r-xl text-left space-y-1 text-sm mt-2">`;
-        html += `<p><b>Forme :</b> ${a}x² + ${b}x + ${c} ${symbole} 0</p>`;
-        html += `<p><b>Δ =</b> ${delta}</p>`;
+    // ---------------------------------------------------------------
+    // Normalisation et analyse d'un membre (ax² + bx + cy + d)
+    // ---------------------------------------------------------------
 
+    function normalize(raw) {
+        return raw
+            .toLowerCase()
+            .replace(/\s/g, '')
+            .replace(/,/g, '.')
+            .replace(/²/g, '^2')
+            .replace(/≤/g, '<=')
+            .replace(/≥/g, '>=')
+            .replace(/×/g, '*')
+            .replace(/÷/g, ':')
+            .replace(/−/g, '-')
+            .replace(/\*(?=[xy])/g, ''); // 2*x -> 2x
+    }
+
+    // Retourne {a (x²), b (x), y, c (constante)} ou null si format invalide
+    function parseSide(str) {
+        if (!str) return null;
+        const tokens = str.match(/[+-]?[^+-]+/g) || [];
+        if (tokens.join('') !== str) return null;
+
+        const res = { a: 0, b: 0, y: 0, c: 0 };
+        for (const tok of tokens) {
+            const m = tok.match(/^([+-]?)(\d*\.?\d*)(x\^2|x|y)?$/);
+            if (!m) return null;
+            const [, sign, digits, v] = m;
+            if (!v && digits === '') return null;
+            if (digits === '.') return null;
+            const coef = (sign === '-' ? -1 : 1) * (digits === '' ? 1 : parseFloat(digits));
+            if (isNaN(coef)) return null;
+            if (v === 'x^2') res.a += coef;
+            else if (v === 'x') res.b += coef;
+            else if (v === 'y') res.y += coef;
+            else res.c += coef;
+        }
+        return res;
+    }
+
+    // ---------------------------------------------------------------
+    // 1. Division euclidienne
+    // ---------------------------------------------------------------
+
+    function divisionEuclidienne(a, b) {
+        if (b === 0) return errMsg('Erreur : division par zéro impossible.');
+        const q = Math.floor(a / b);
+        const r = a % b;
+        return `
+            <div class="bg-indigo-50 border border-indigo-200 p-4 rounded-xl text-slate-800 mt-2 space-y-3 text-left">
+                <div class="font-bold text-indigo-900">Division euclidienne</div>
+                <div class="bg-white p-3 rounded-lg border border-indigo-100 text-sm space-y-1">
+                    <p>• <b>Dividende :</b> ${a}</p>
+                    <p>• <b>Diviseur :</b> ${b}</p>
+                    <p>• <b>Quotient entier :</b> ${q}</p>
+                    <p>• <b>Reste :</b> ${r}</p>
+                </div>
+                <div class="bg-indigo-100/60 p-2.5 rounded-lg text-xs font-mono text-indigo-900">
+                    💡 <b>Résultat :</b> ${a} = (${b} × ${q}) + ${r}
+                </div>
+                <div class="text-xs text-slate-600">Valeur décimale : ${a} ÷ ${b} = ${fmt(a / b)}</div>
+            </div>`;
+    }
+
+    // ---------------------------------------------------------------
+    // 2. Équation à deux inconnues : A x² + B x + Y y + C = 0
+    // ---------------------------------------------------------------
+
+    function solveTwoVars(A, B, Y, C) {
+        const fa = -A / Y, fb = -B / Y, fc = -C / Y;
+        const type = Math.abs(A) > EPS ? 'Parabole' : Math.abs(B) > EPS ? 'Droite' : 'Droite horizontale';
+
+        const steps = [
+            `Isoler le terme en <i>y</i> : <code>${cx(Y)}y = ${poly([[-A, 'x²'], [-B, 'x'], [-C, '']])}</code>`
+        ];
+        if (Y !== 1) steps.push(`Diviser les deux membres par ${fmt(Y)}`);
+
+        return card({
+            title: `Équation à deux inconnues (<i>x</i> et <i>y</i>) — ${type}`,
+            steps,
+            result: `y = ${poly([[fa, 'x²'], [fb, 'x'], [fc, '']])}`
+        });
+    }
+
+    // ---------------------------------------------------------------
+    // 3. Premier degré : B x + C  (rel)  0
+    // ---------------------------------------------------------------
+
+    function solveLinear(B, C, rel) {
+        const sym = REL_HTML[rel];
+        const val = -C / B;
+        const flipped = B < 0 && rel !== '=';
+        const flipMap = { '<': '>', '>': '<', '<=': '>=', '>=': '<=' };
+        const finalRel = flipped ? flipMap[rel] : rel;
+        const fsym = REL_HTML[finalRel];
+
+        const steps = [
+            `Tout regrouper : <code>${poly([[B, 'x'], [C, '']])} ${sym} 0</code>`,
+            `Transposer la constante : <code>${cx(B)}x ${sym} ${fmt(-C)}</code>`,
+            `Diviser par ${fmt(B)} : <code>x ${fsym} ${fmt(-C)} / ${fmt(B)}</code>`
+        ];
+        const note = flipped
+            ? `⚠️ <b>Règle :</b> on divise par un nombre négatif (${fmt(B)}), le sens de l'inégalité est inversé !`
+            : '';
+        const approx = isExact(val) ? '' : ' (valeur arrondie)';
+
+        return card({
+            title: `1er degré (${rel === '=' ? 'équation' : 'inéquation'})`,
+            steps,
+            note,
+            result: rel === '='
+                ? `Solution : x = ${fmt(val)}${approx}`
+                : `Solution : x ${fsym} ${fmt(val)}${approx}`
+        });
+    }
+
+    // ---------------------------------------------------------------
+    // 4. Second degré : A x² + B x + C  (rel)  0
+    // ---------------------------------------------------------------
+
+    function inequalitySet(pos, strict, delta, roots) {
         if (delta > 0) {
-            const x1 = ((-b - Math.sqrt(delta)) / (2 * a)).toFixed(2);
-            const x2 = ((-b + Math.sqrt(delta)) / (2 * a)).toFixed(2);
-            html += `<p>Racines : <b>x₁ = ${x1}</b>, <b>x₂ = ${x2}</b></p>`;
-        } else if (delta === 0) {
-            html += `<p>Racine unique : <b>x = ${(-b/(2*a)).toFixed(2)}</b></p>`;
-        } else {
-            html += `<p>Pas de racines réelles dans ℝ.</p>`;
+            const [p, q] = roots.map(fmt);
+            if (pos) {
+                return strict
+                    ? { cond: `x < ${p} ou x > ${q}`, set: `]−∞ ; ${p}[ ∪ ]${q} ; +∞[` }
+                    : { cond: `x ≤ ${p} ou x ≥ ${q}`, set: `]−∞ ; ${p}] ∪ [${q} ; +∞[` };
+            }
+            return strict
+                ? { cond: `${p} < x < ${q}`, set: `]${p} ; ${q}[` }
+                : { cond: `${p} ≤ x ≤ ${q}`, set: `[${p} ; ${q}]` };
         }
-        display.innerHTML = html + `</div>`;
+        if (delta === 0) {
+            const p = fmt(roots[0]);
+            if (pos) {
+                return strict
+                    ? { cond: `x ≠ ${p}`, set: `ℝ \\ {${p}}` }
+                    : { cond: 'tout réel x', set: 'ℝ' };
+            }
+            return strict
+                ? { cond: 'aucune solution', set: '∅' }
+                : { cond: `x = ${p}`, set: `{${p}}` };
+        }
+        return pos ? { cond: 'tout réel x', set: 'ℝ' } : { cond: 'aucune solution', set: '∅' };
+    }
 
-    // LE PREMIER DEGRÉ
-    } else {
-        const linearMatch = input.match(/([+-]?\d*)x([+-]?\d*)([=<>])0/);
-        if (linearMatch) {
-            let a = parseFloat(linearMatch[1] === "" || linearMatch[1] === "+" ? 1 : linearMatch[1] === "-" ? -1 : linearMatch[1]);
-            let b = parseFloat(linearMatch[2] || 0);
-            let res = (-b / a).toFixed(2);
-            display.innerHTML = `<div class="mt-2 font-medium text-slate-800">Solution : <b class="text-brand-500">x ${symbole} ${res}</b></div>`;
+    function solveQuadratic(A, B, C, rel) {
+        const sym = REL_HTML[rel];
+        let delta = B * B - 4 * A * C;
+        if (Math.abs(delta) < EPS) delta = 0;
+
+        const steps = [
+            `Mettre sous la forme <i>ax² + bx + c</i> ${sym} 0 : <code>${poly([[A, 'x²'], [B, 'x'], [C, '']])} ${sym} 0</code>`,
+            `Identifier : a = ${fmt(A)}, b = ${fmt(B)}, c = ${fmt(C)}`,
+            `Discriminant : Δ = b² − 4ac = (${fmt(B)})² − 4×(${fmt(A)})×(${fmt(C)}) = <b>${fmt(delta)}</b>`
+        ];
+
+        let roots = [];
+        if (delta > 0) {
+            const s = Math.sqrt(delta);
+            roots = [(-B - s) / (2 * A), (-B + s) / (2 * A)].sort((p, q) => p - q);
+            steps.push(`Δ &gt; 0 : deux racines réelles <code>x = (−b ± √Δ) / 2a</code> → x₁ = <b>${fmt(roots[0])}</b> et x₂ = <b>${fmt(roots[1])}</b>`);
+        } else if (delta === 0) {
+            roots = [-B / (2 * A) + 0];
+            steps.push(`Δ = 0 : racine double <code>x = −b / 2a</code> = <b>${fmt(roots[0])}</b>`);
         } else {
-            display.innerHTML = "<span class='text-amber-600 text-xs'>Format attendu : 2x+4=0 ou 1x^2-5x+6=0</span>";
+            steps.push('Δ &lt; 0 : pas de racine réelle.');
+        }
+
+        // ----- Équation -----
+        if (rel === '=') {
+            const result = delta > 0
+                ? `S = { ${fmt(roots[0])} ; ${fmt(roots[1])} }`
+                : delta === 0
+                    ? `S = { ${fmt(roots[0])} }`
+                    : 'S = ∅ (aucune solution réelle)';
+            return card({ title: 'Second degré (équation)', steps, result });
+        }
+
+        // ----- Inéquation -----
+        // P(x) < 0  équivaut à  -P(x) > 0 : on se ramène toujours à "signe positif"
+        const wantPositive = rel === '>' || rel === '>=';
+        const pos = (wantPositive ? A : -A) > 0;
+        const strict = rel === '<' || rel === '>';
+        const { cond, set } = inequalitySet(pos, strict, delta, roots);
+
+        steps.push(
+            `Le trinôme est du signe de <i>a</i> à l'extérieur des racines et du signe contraire entre les racines (a ${A > 0 ? '&gt; 0' : '&lt; 0'}).`
+        );
+        return card({
+            title: 'Second degré (inéquation)',
+            steps,
+            result: `Solution : ${esc(cond)}<br><span class="text-sm">S = ${esc(set)}</span>`
+        });
+    }
+
+    // ---------------------------------------------------------------
+    // 5. Calcul arithmétique détaillé (sans eval)
+    // ---------------------------------------------------------------
+
+    const OPS = { '*': '×', '/': '÷', '^': '^', '+': '+', '-': '−' };
+    const formatError = () => new Error('format');
+
+    function tokenize(expr) {
+        const raw = expr.match(/\d+\.?\d*|\.\d+|[()+\-*/^]/g) || [];
+        if (raw.join('') !== expr) throw formatError();
+
+        const out = [];
+        for (let i = 0; i < raw.length; i++) {
+            const t = raw[i];
+            const prev = out[out.length - 1];
+            const prevIsValue = typeof prev === 'number' || prev === ')';
+
+            if (/^[\d.]/.test(t)) {
+                if (prevIsValue) throw formatError();
+                out.push(parseFloat(t));
+            } else if ((t === '-' || t === '+') && !prevIsValue) {
+                // signe unaire
+                const next = raw[i + 1];
+                if (next !== undefined && /^[\d.]/.test(next)) {
+                    if (t === '-' && raw[i + 2] === '^') {
+                        out.push(-1, '*', parseFloat(next)); // -2^2 = -(2^2)
+                    } else {
+                        out.push(t === '-' ? -parseFloat(next) : parseFloat(next));
+                    }
+                    i++;
+                } else if (next === '(') {
+                    if (t === '-') out.push(-1, '*');
+                } else {
+                    throw formatError();
+                }
+            } else if (t === '(') {
+                if (prevIsValue) out.push('*'); // 2(3+4) -> 2*(3+4)
+                out.push('(');
+            } else {
+                out.push(t);
+            }
+        }
+        return out;
+    }
+
+    function showTokens(tokens) {
+        return tokens
+            .map((t, i) => {
+                if (typeof t === 'number') {
+                    const s = fmt(t);
+                    return t < 0 && i > 0 && tokens[i - 1] !== '(' ? `(${s})` : s;
+                }
+                return OPS[t] || t;
+            })
+            .join(' ')
+            .replace(/\( /g, '(')
+            .replace(/ \)/g, ')');
+    }
+
+    // Effectue UNE opération dans tokens[lo:hi] en respectant les priorités
+    function reduceRange(tokens, lo, hi) {
+        let idx = -1;
+        for (let i = hi - 1; i > lo; i--) if (tokens[i] === '^') { idx = i; break; }
+        if (idx < 0) for (let i = lo; i < hi; i++) if (tokens[i] === '*' || tokens[i] === '/') { idx = i; break; }
+        if (idx < 0) for (let i = lo; i < hi; i++) if (tokens[i] === '+' || tokens[i] === '-') { idx = i; break; }
+        if (idx < 0) throw formatError();
+
+        const a = tokens[idx - 1];
+        const b = tokens[idx + 1];
+        const op = tokens[idx];
+        if (idx - 1 < lo || idx + 1 >= hi || typeof a !== 'number' || typeof b !== 'number') throw formatError();
+
+        let r;
+        if (op === '+') r = a + b;
+        else if (op === '-') r = a - b;
+        else if (op === '*') r = a * b;
+        else if (op === '^') r = Math.pow(a, b);
+        else {
+            if (b === 0) throw new Error('div0');
+            r = a / b;
+        }
+        if (!isFinite(r)) throw formatError();
+
+        tokens.splice(idx - 1, 3, r);
+        const num = (n) => (n < 0 ? `(${fmt(n)})` : fmt(n));
+        return `${num(a)} ${OPS[op]} ${num(b)} = <b>${fmt(r)}</b>`;
+    }
+
+    function evaluateWithSteps(expr) {
+        const tokens = tokenize(expr);
+        const steps = [];
+
+        for (let guard = 0; guard < 200; guard++) {
+            // Retire les parenthèses autour d'un simple nombre : (7) -> 7
+            let changed = true;
+            while (changed) {
+                changed = false;
+                for (let i = 0; i < tokens.length - 2; i++) {
+                    if (tokens[i] === '(' && typeof tokens[i + 1] === 'number' && tokens[i + 2] === ')') {
+                        tokens.splice(i, 3, tokens[i + 1]);
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+            if (tokens.length === 1 && typeof tokens[0] === 'number') {
+                return { steps, result: tokens[0] };
+            }
+
+            const before = showTokens(tokens);
+            let lo = 0, hi = tokens.length;
+            const close = tokens.indexOf(')');
+            if (close >= 0) {
+                const open = tokens.lastIndexOf('(', close);
+                if (open < 0) throw formatError();
+                lo = open + 1;
+                hi = close;
+            } else if (tokens.includes('(')) {
+                throw formatError();
+            }
+
+            const action = reduceRange(tokens, lo, hi);
+            steps.push({ before, action });
+        }
+        throw formatError();
+    }
+
+    function solveArithmetic(input) {
+        if (!/^[0-9+\-*/().^:]+$/.test(input)) {
+            return errMsg('Caractères non autorisés. Utilisez des chiffres et + − × ÷ ^ ( ).');
+        }
+        try {
+            const { steps, result } = evaluateWithSteps(input.replace(/:/g, '/'));
+            const stepsHtml = steps
+                .map((s, i) => `
+                    <div class="text-xs text-slate-700">
+                        <span class="font-bold text-indigo-600">Étape ${i + 1} :</span>
+                        <code>${s.before}</code><br>
+                        <span class="pl-4">→ Calculer : ${s.action}</span>
+                    </div>`)
+                .join('');
+            return `
+                <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl text-slate-800 mt-2 space-y-3 text-left">
+                    <div class="font-bold text-slate-800">Décomposition du calcul</div>
+                    <div class="bg-white p-3 rounded-lg border space-y-2">
+                        ${stepsHtml || '<p class="text-xs text-slate-500">Calcul direct</p>'}
+                    </div>
+                    <div class="text-xl font-bold text-indigo-600">Résultat final : ${isExact(result) ? '' : '≈ '}${fmt(result)}</div>
+                </div>`;
+        } catch (e) {
+            if (e.message === 'div0') return errMsg('Erreur : division par zéro impossible.');
+            return errMsg('Format invalide. Vérifiez les parenthèses ou la saisie.');
         }
     }
-}
+
+    // ---------------------------------------------------------------
+    // Fonction principale
+    // ---------------------------------------------------------------
+
+    function resoudre() {
+        const display = document.getElementById('resultat-solveur');
+        const raw = document.getElementById('equation-input').value;
+
+        const render = (html) => {
+            display.innerHTML = html;
+            if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([display]);
+        };
+
+        if (!raw.trim()) {
+            return render(errMsg('Veuillez entrer un calcul, une équation ou une inéquation.'));
+        }
+
+        const input = normalize(raw);
+
+        // 1. Division euclidienne : 47/5 ou 47:5
+        const div = input.match(/^(\d+)[\/:](\d+)$/);
+        if (div) return render(divisionEuclidienne(parseInt(div[1], 10), parseInt(div[2], 10)));
+
+        // Découpage autour de l'opérateur de comparaison
+        const parts = input.split(/(<=|>=|=|<|>)/);
+
+        // 2. Pas de comparaison -> calcul arithmétique
+        if (parts.length === 1) {
+            if (/[xy]/.test(input)) {
+                return render(errMsg('Ajoutez un signe <b>=</b>, <b>&lt;</b> ou <b>&gt;</b> (ex : 2x+4=0).'));
+            }
+            return render(solveArithmetic(input));
+        }
+
+        if (parts.length !== 3) return render(errMsg('Une seule relation (=, &lt;, &gt;, ≤, ≥) est autorisée.'));
+
+        const rel = parts[1];
+        const L = parseSide(parts[0]);
+        const R = parseSide(parts[2]);
+        if (!L || !R) {
+            return render(errMsg('Format non reconnu. Exemples : 2x+4=0, x^2-5x+6&gt;0, 2x+y=6.'));
+        }
+
+        // Tout ramener à gauche : A x² + B x + Y y + C  (rel)  0
+        const A = L.a - R.a;
+        const B = L.b - R.b;
+        const Y = L.y - R.y;
+        const C = L.c - R.c;
+
+        // Deux inconnues
+        if (Math.abs(Y) > EPS) {
+            if (rel !== '=') return render(errMsg('Les inéquations à deux inconnues ne sont pas gérées.'));
+            return render(solveTwoVars(A, B, Y, C));
+        }
+
+        // Second degré
+        if (Math.abs(A) > EPS) return render(solveQuadratic(A, B, C, rel));
+
+        // Premier degré
+        if (Math.abs(B) > EPS) return render(solveLinear(B, C, rel));
+
+        // Plus aucune inconnue après simplification (ex : x = x, ou 3 = 5)
+        const truth = {
+            '=': Math.abs(C) < EPS,
+            '<': C < -EPS,
+            '>': C > EPS,
+            '<=': C <= EPS,
+            '>=': C >= -EPS
+        }[rel];
+        return render(card({
+            title: 'Relation sans inconnue après simplification',
+            steps: [`Tout regrouper : <code>${fmt(C)} ${REL_HTML[rel]} 0</code>`],
+            result: truth ? 'Toujours vraie : S = ℝ' : 'Jamais vraie : S = ∅'
+        }));
+    }
+
+    window.resoudre = resoudre;
+})();
 
 function effacerSolveur() {
     document.getElementById('equation-input').value = "";
