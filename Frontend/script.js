@@ -919,20 +919,25 @@ function revenirDashboard() {
   }
 }
 
-function enregistrerProgression(titreChapitre, leconsTerminees, totalLecons) {
-  const pourcentage = Math.round((leconsTerminees / totalLecons) * 100);
-  const progression = {
-    chapitre: titreChapitre,
-    termes: leconsTerminees,
-    total: totalLecons,
-    pourcentage: pourcentage
-  };
-  localStorage.setItem('user_progression', JSON.stringify(progression));
-}
+//function enregistrerProgression(titreChapitre, leconsTerminees, totalLecons) {
+  //const pourcentage = Math.round((leconsTerminees / totalLecons) * 100);
+  //const progression = {
+    //chapitre: titreChapitre,
+    //termes: leconsTerminees,
+    //total: totalLecons,
+    //pourcentage: pourcentage
+  //};
+  //localStorage.setItem('user_progression', JSON.stringify(progression));
+//}
 
-function reprendreLecture() {
-  afficherVueContent('cours');
-}
+//function reprendreLecture() {
+  //afficherVueContent('cours');
+//}
+
+
+
+// Exécuter au chargement de la page
+document.addEventListener('DOMContentLoaded', chargerDerniereLectureAccueil);
 
 function scrollToSolveur() {
   const box = document.getElementById('solveur-box') || document.getElementById('calculateur-block');
