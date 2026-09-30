@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion - MathsCollege</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans">
+
+  <!-- Carte Principale -->
+  <div class="max-w-xl w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 p-6 sm:p-10">
+    
+    <!-- Bouton Retour à l'accueil -->
+    <a href="index.html" class="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-brand-500 font-medium mb-6 transition-colors">
+      <span>←</span> Retour à l'accueil
+    </a>
+
+    <!-- 1. EN-TÊTE ET ILLUSTRATION (Reproduction du visuel) -->
+    <div class="text-center mb-8 flex flex-col items-center">
+      
+      <!-- Icône Chapeau de diplômé -->
+      <div class="w-16 h-16 bg-gradient-to-tr from-indigo-500 to-brand-500 rounded-2xl flex items-center justify-center text-white text-3xl shadow-lg shadow-brand-500/30 mb-3 transform hover:rotate-3 transition-transform">
+        🎓
+      </div>
+
+      <!-- Titre de la Marque -->
+      <h1 class="text-3xl font-extrabold text-indigo-950 tracking-tight">
+        Maths<span class="text-brand-500">College</span>
+      </h1>
+
+      <!-- Slogan dans son badge -->
+      <p class="text-sm font-semibold text-indigo-900 mt-2 bg-indigo-50 px-4 py-1.5 rounded-full border border-indigo-100/80 shadow-sm">
+        Les maths, plus simples que tu ne le penses ! ✨
+      </p>
+
+      <!-- Illustration centrale (Livres + Crayons) -->
+      <div class="my-6 relative w-full max-w-[220px] py-2 flex justify-center items-center">
+        <div class="absolute inset-0 bg-indigo-100/70 rounded-full blur-xl -z-10"></div>
+        <div class="flex items-end gap-3 text-4xl">
+          <span class="transform -rotate-6 hover:scale-110 transition-transform cursor-default">📚</span>
+          <span class="transform rotate-6 hover:scale-110 transition-transform cursor-default">✏️</span>
+        </div>
+      </div>
+
+      <!-- Texte de présentation -->
+      <p class="text-xs text-slate-500 leading-relaxed max-w-sm">
+        Apprends, comprends, progresse à ton rythme avec des cours clairs, des exercices et ton IA toujours là pour t'accompagner.
+      </p>
+    </div>
+
+    <!-- 2. FORMULAIRE DE CONNEXION -->
+    <form onsubmit="gererConnexionSurPage(event)" class="space-y-4">
+      
+      <!-- Champ Email -->
+      <div>
+        <label for="login-email" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+          Adresse E-mail
+        </label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">📧</span>
+          <input 
+            id="login-email"
+            type="email" 
+            required 
+            placeholder="eleve@exemple.com" 
+            class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
+          />
+        </div>
+      </div>
+
+      <!-- Champ Mot de Passe -->
+      <div>
+        <div class="flex justify-between items-center mb-1.5">
+          <label for="login-pass" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+            Mot de passe
+          </label>
+          <a href="#" class="text-xs text-brand-500 hover:underline">Oublié ?</a>
+        </div>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">🔒</span>
+          <input 
+            id="login-pass"
+            type="password" 
+            required 
+            placeholder="••••••••" 
+            class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
+          />
+        </div>
+      </div>
+
+      <!-- Bouton de Connexion -->
+      <button 
+        type="submit" 
+        class="w-full py-3.5 px-4 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl shadow-md shadow-brand-500/20 hover:shadow-lg transition-all transform active:scale-[0.99] mt-2"
+      >
+        Se connecter
+      </button>
+    </form>
+
+    <!-- Pied de page : Lien Inscription -->
+    <p class="text-center text-xs text-slate-500 mt-8">
+      Pas encore de compte ? 
+      <a href="signup.html" class="text-brand-500 font-semibold hover:underline">Inscris-toi gratuitement</a>
+    </p>
+
+  </div>
+
+  <!-- Script JS lié -->
+  <script src="script.js"></script>
+  <script>
+    async function gererConnexionSurPage(e) {
+      e.preventDefault();
+      if (typeof login === "function") {
+        await login();
+        if (localStorage.getItem('user')) {
+          window.location.href = "index.html";
+        }
+      }
+    }
+  </script>
+</body>
+</html>

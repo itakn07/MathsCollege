@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inscription - MathsCollege</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans">
+
+  <!-- Carte Principale -->
+  <div class="max-w-xl w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 p-6 sm:p-10">
+    
+    <!-- Bouton Retour à l'accueil -->
+    <a href="index.html" class="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-brand-500 font-medium mb-4 transition-colors">
+      <span>←</span> Retour à l'accueil
+    </a>
+
+    <!-- 1. EN-TÊTE ET ILLUSTRATION (Livre ouvert sur cercle violet) -->
+    <div class="text-center mb-6 flex flex-col items-center">
+      
+      <!-- Titre de la Marque -->
+      <h1 class="text-3xl font-extrabold text-indigo-950 tracking-tight">
+        Maths<span class="text-brand-500">College</span>
+      </h1>
+
+      <!-- Slogan dans son badge -->
+      <p class="text-sm font-semibold text-indigo-900 mt-2 bg-indigo-50 px-4 py-1.5 rounded-full border border-indigo-100/80 shadow-sm">
+        Rejoins l'aventure des mathématiques ! ✨
+      </p>
+
+      <!-- Illustration SVG : Livre ouvert sur cercle violet clair -->
+      <div class="my-2 w-full max-w-[200px] mx-auto flex justify-center items-center">
+        <svg viewBox="0 0 300 240" width="100%" height="170" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-md">
+          <defs>
+            <linearGradient id="purpleGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#EEF2FF" />
+              <stop offset="100%" stop-color="#E0E7FF" />
+            </linearGradient>
+          </defs>
+
+          <!-- GRAND CERCLE VIOLET CLAIR -->
+          <circle cx="150" cy="120" r="95" fill="url(#purpleGlow)" stroke="#C7D2FE" stroke-width="2" />
+
+          <!-- Ombre du livre -->
+          <ellipse cx="150" cy="175" rx="75" ry="10" fill="#818CF8" opacity="0.25" />
+
+          <!-- LIVRE OUVERT -->
+          <g transform="translate(50, 70)">
+            <path d="M5 68 C45 78 95 62 100 60 C105 62 155 78 195 68 L188 80 C148 90 102 74 100 74 C98 74 52 90 12 80 Z" fill="#3730A3" />
+            <path d="M12 62 C50 70 95 54 98 52 L98 12 C95 14 50 30 12 22 Z" fill="#E2E8F0" />
+            <path d="M10 60 C50 68 95 52 98 50 L98 10 C95 12 50 28 10 20 Z" fill="#FFFFFF" />
+            <path d="M188 62 C150 70 105 54 102 52 L102 12 C105 14 150 30 188 22 Z" fill="#CBD5E1" />
+            <path d="M190 60 C150 68 105 52 102 50 L102 10 C105 12 150 28 190 20 Z" fill="#FAFAFA" />
+            <path d="M97 10 C99 25 99 38 97 52 L103 52 C101 38 101 25 103 10 Z" fill="#6366F1" />
+
+            <!-- Lignes de texte -->
+            <line x1="25" y1="28" x2="80" y2="36" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" />
+            <line x1="25" y1="36" x2="70" y2="43" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" />
+            <line x1="25" y1="44" x2="82" y2="52" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" />
+            <line x1="120" y1="36" x2="175" y2="28" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" />
+            <line x1="130" y1="43" x2="175" y2="36" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" />
+            <line x1="118" y1="52" x2="175" y2="44" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" />
+
+            <!-- Marque-page ruban jaune -->
+            <path d="M100 50 C105 58 110 65 112 78 L118 73 L124 77 C122 65 108 55 100 50 Z" fill="#FBBF24" />
+          </g>
+
+          <!-- Étoiles décoratives -->
+          <path d="M60 50 L62 56 L68 58 L62 60 L60 66 L58 60 L52 58 L58 56 Z" fill="#FBBF24" />
+          <path d="M235 70 L236 74 L240 75 L236 76 L235 80 L234 76 L230 75 L234 74 Z" fill="#818CF8" />
+        </svg>
+      </div>
+
+      <!-- Texte d'invitation -->
+      <p class="text-xs text-slate-500 leading-relaxed max-w-sm">
+        Crée ton compte pour sauvegarder tes progrès, accéder à tous les cours et t'entraîner avec l'IA.
+      </p>
+    </div>
+
+    <!-- 2. FORMULAIRE D'INSCRIPTION -->
+    <form onsubmit="gererInscriptionSurPage(event)" class="space-y-3.5">
+      
+      <!-- Champ Nom Complet -->
+      <div>
+        <label for="signup-name" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+          Nom ou Pseudo
+        </label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">👤</span>
+          <input 
+            id="signup-name"
+            type="text" 
+            required 
+            placeholder="Ton nom ou prénom" 
+            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
+          />
+        </div>
+      </div>
+
+      <!-- Champ Email -->
+      <div>
+        <label for="signup-email" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+          Adresse E-mail
+        </label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">📧</span>
+          <input 
+            id="signup-email"
+            type="email" 
+            required 
+            placeholder="eleve@exemple.com" 
+            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
+          />
+        </div>
+      </div>
+
+      <!-- Champ Mot de Passe -->
+      <div>
+        <label for="signup-pass" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+          Mot de passe
+        </label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">🔒</span>
+          <input 
+            id="signup-pass"
+            type="password" 
+            required 
+            placeholder="••••••••" 
+            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
+          />
+        </div>
+      </div>
+
+      <!-- Bouton d'Inscription -->
+      <button 
+        type="submit" 
+        class="w-full py-3 px-4 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl shadow-md shadow-brand-500/20 hover:shadow-lg transition-all transform active:scale-[0.99] mt-3"
+      >
+        Créer mon compte
+      </button>
+    </form>
+
+    <!-- Pied de page : Lien Connexion -->
+    <p class="text-center text-xs text-slate-500 mt-6">
+      Déjà inscrit ? 
+      <a href="login.html" class="text-brand-500 font-semibold hover:underline">Connecte-toi ici</a>
+    </p>
+
+  </div>
+
+  <!-- Script JS lié -->
+  <script src="script.js"></script>
+  <script>
+    async function gererInscriptionSurPage(e) {
+      e.preventDefault();
+      if (typeof signup === "function") {
+        await signup();
+        if (localStorage.getItem('user')) {
+          window.location.href = "index.html";
+        }
+      }
+    }
+  </script>
+</body>
+</html>
