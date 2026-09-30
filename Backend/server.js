@@ -82,8 +82,13 @@ app.post('/ask-ai', async (req, res) => {
     }
 });
 // ============= SIGN UP =============
-app.post('/signup', async (req, res) => {
+app.post('/api/signup', async (req, res) => {
     const { username, email, password, niveau } = req.body;
+
+    // Validation rapide
+    if (!username || !email || !password || !niveau) {
+        return res.status(400).json({ success: false, message: "Tous les champs sont obligatoires." });
+    }
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -91,84 +96,71 @@ app.post('/signup', async (req, res) => {
         const sql = "INSERT INTO users (username, email, password, niveau) VALUES (?, ?, ?, ?)";
         db.query(sql, [username, email, hashedPassword, niveau], (err, result) => {
             if (err) {
-                console.error(err);
-                return res.json({ success: false, message: "Pseudo ou Email déjà utilisé." });
+                console.error("Erreur BDD :", err);
+                return res.status(400).json({ success: false, message: "Pseudo ou Email déjà utilisé." });
             }
 
-            // Envoi de l'email de bienvenue
+            // Configuration du mail de bienvenue
+            const mailOptions = {
+                from: '"Maths Collège" <ritakngu13@gmail.com>',
+                to: email,
+                subject: 'Bienvenue sur APP-MATHS ! 🎓',
+                html: `
+                <div style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f4f8; padding: 40px 10px;">
+                    <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+                        
+                        <div style="background-color: #6366f1; padding: 30px; text-align: center;">
+                            <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: bold; letter-spacing: 1px;">MathsCollege</h1>
+                        </div>
 
-const mailHTML = `
-<div style="font-family: Arial, sans-serif; background-color: #f4f7f6; padding: 20px;">
-    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0;">
-        <div style="background-color: #5b6cff; padding: 20px; text-align: center; color: white;">
-            <h1 style="margin: 0; font-size: 24px;">Bienvenue sur APP-MATHS !</h1>
-        </div>
-        
-        <div style="padding: 30px; line-height: 1.6; color: #333333;">
-            <p style="font-size: 18px;">Bonjour <strong>${username}</strong>,</p>
-            <p>Nous sommes ravis de t'accueillir ! Ton compte a été créé avec succès. Tu peux maintenant accéder à tous tes cours de mathématiques et discuter avec <strong>Rita</strong>, ton IA coach.</p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="http://localhost:3000" style="background-color: #5b6cff; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">Commencer à réviser</a>
-            </div>
-            
-            <p style="font-size: 14px; color: #777777;">Si tu as des questions, Rita est là pour t'aider directement sur la plateforme.</p>
-        </div>
-        
-        <div style="background-color: #f9f9f9; padding: 15px; text-align: center; font-size: 12px; color: #aaaaaa;">
-            &copy; 2026 APP-MATHS - Le soutien scolaire nouvelle génération.
-        </div>
-    </div>
-</div>
-`;
+                        <div style="padding: 40px; text-align: center;">
+                            <h2 style="color: #1a202c; margin-bottom: 20px;">Bienvenue <span style="color: #6366f1;">${username}</span> ! ✨</h2>
+                            
+                            <p style="color: #4a5568; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
+                                Ton compte pour la classe de <strong>${niveau}</strong> est prêt ! Viens découvrir tes cours et réviser avec ton assistant IA.
+                            </p>
 
-        
-        const mailOptions = {
-    from: '"Maths Collège" <ritakngu13@gmail.com>',
-    to: email,
-    subject: 'Bienvenue sur APP-MATHS ! ',
-    html: `
-    <div style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f4f8; padding: 40px 10px;">
-        <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
-            
-            <div style="background-color: #007bff; padding: 30px; text-align: center;">
-                <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: bold; letter-spacing: 1px;">APP-MATHS</h1>
-            </div>
+                            <a href="http://localhost:3000" style="background-color: #6366f1; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block;">
+                                Accéder à mes cours
+                            </a>
 
-            <div style="padding: 40px; text-align: center;">
-                <h2 style="color: #1a202c; margin-bottom: 20px;">Bienvenue <span style="color: #007bff;">${username}</span> ! </h2>
-                
-                <p style="color: #4a5568; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
-                    Ton compte est prêt ! Viens découvrir tes cours et discuter avec <strong>Sylvie</strong>, ton IA coach personnelle.
-                </p>
+                            <p style="color: #a0aec0; font-size: 14px; margin-top: 40px;">
+                                En route vers la réussite en mathématiques !
+                            </p>
+                        </div>
 
-                
-                <p style="color: #a0aec0; font-size: 14px; margin-top: 40px;">
-                    Ravi de t'accompagner vers la réussite en mathématiques !
-                </p>
-            </div>
+                        <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #edf2f7;">
+                            <p style="color: #cbd5e0; font-size: 12px; margin: 0;">© 2026 Plateforme MathsCollege</p>
+                        </div>
+                    </div>
+                </div>
+                `
+            };
 
-            <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #edf2f7;">
-                <p style="color: #cbd5e0; font-size: 12px; margin: 0;">© 2026 Plateforme APP-MATHS</p>
-            </div>
-        </div>
-    </div>
-    `
-};
-  
-
+            // Envoi asynchrone du mail sans bloquer la réponse de l'API
             transporter.sendMail(mailOptions, (error, info) => {
                 if (error) {
-                    console.log("Erreur mail:", error);
+                    console.error("Erreur mail :", error);
                 } else {
-                    console.log("Email envoyé avec succès !");
+                    console.log("Email envoyé avec succès ! ID :", info.messageId);
                 }
             });
 
-            res.json({ success: true, message: "Inscription réussie !" });
+            // Réponse transmise au client avec l'objet user
+            return res.status(201).json({ 
+                success: true, 
+                message: "Inscription réussie !",
+                user: {
+                    id: result.insertId,
+                    username: username,
+                    email: email,
+                    niveau: niveau
+                }
+            });
         });
     } catch (e) {
-        res.status(500).json({ success: false, message: "Erreur serveur." });
+        console.error("Erreur serveur :", e);
+        return res.status(500).json({ success: false, message: "Erreur serveur." });
     }
 });
 

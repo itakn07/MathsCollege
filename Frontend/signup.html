@@ -33,7 +33,7 @@
       <span>←</span> Retour à l'accueil
     </a>
 
-    <!-- 1. EN-TÊTE ET ILLUSTRATION (Livre ouvert sur cercle violet) -->
+    <!-- 1. EN-TÊTE ET ILLUSTRATION -->
     <div class="text-center mb-6 flex flex-col items-center">
       
       <!-- Titre de la Marque -->
@@ -46,7 +46,7 @@
         Rejoins l'aventure des mathématiques ! ✨
       </p>
 
-      <!-- Illustration SVG : Livre ouvert sur cercle violet clair -->
+      <!-- Illustration SVG -->
       <div class="my-2 w-full max-w-[200px] mx-auto flex justify-center items-center">
         <svg viewBox="0 0 300 240" width="100%" height="170" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-md">
           <defs>
@@ -149,6 +149,26 @@
         </div>
       </div>
 
+      <!-- CHAMP NIVEAU / CLASSE (Ajouté pour correspondre à MySQL) -->
+      <div>
+        <label for="signup-level" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+          Classe / Niveau
+        </label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">🎓</span>
+          <select 
+            id="signup-level"
+            required
+            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
+          >
+            <option value="6ème">Classe de 6ème</option>
+            <option value="5ème">Classe de 5ème</option>
+            <option value="4ème">Classe de 4ème</option>
+            <option value="3ème">Classe de 3ème</option>
+          </select>
+        </div>
+      </div>
+
       <!-- Bouton d'Inscription -->
       <button 
         type="submit" 
@@ -171,11 +191,31 @@
   <script>
     async function gererInscriptionSurPage(e) {
       e.preventDefault();
-      if (typeof signup === "function") {
-        await signup();
-        if (localStorage.getItem('user')) {
+      
+      const username = document.getElementById('signup-name').value;
+      const email = document.getElementById('signup-email').value;
+      const password = document.getElementById('signup-pass').value;
+      const niveau = document.getElementById('signup-level').value;
+
+      try {
+        const response = await fetch('http://localhost:3000/api/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password, niveau })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          localStorage.setItem('user', JSON.stringify(data.user || { username, email, niveau }));
+          localStorage.setItem('niveauSelectionne', niveau);
           window.location.href = "index.html";
+        } else {
+          alert(data.message || "Erreur lors de l'inscription.");
         }
+      } catch (err) {
+        console.error("Erreur serveur :", err);
+        alert("Impossible de contacter le serveur.");
       }
     }
   </script>
