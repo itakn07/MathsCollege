@@ -47,11 +47,12 @@ const db = mysql.createConnection({
     password:process.env.DB_PASSWORD,
     port:process.env.DB_PORT,
     database: process.env.DB_NAME,
-    ssl: {
-        minVersion:'TLSv1.2',
+    ssl: process.env.DB_SSL === 'true' ? {
+        minVersion: 'TLSv1.2',
         rejectUnauthorized: true
-    }
+    } : undefined
 });
+
 
 db.connect(err => {
     if (err) {
