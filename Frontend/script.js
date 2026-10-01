@@ -883,9 +883,16 @@ let currentNiveau = null;
 
 function selectionnerNiveau(niveau) {
   currentNiveau = niveau;
+  
+  // 1. Sauvegarder la clé attendue par cours.js
+  localStorage.setItem('niveauSelectionne', niveau);
+
+  // 2. Mettre à jour le badge d'affichage du niveau dans le Dashboard
   if (document.getElementById('current-niveau-display')) {
       document.getElementById('current-niveau-display').textContent = niveau;
   }
+
+  // 3. Masquer la page des niveaux et afficher le Dashboard
   document.getElementById('levels-page')?.classList.add('hidden');
   
   const db = document.getElementById('dashboard');
