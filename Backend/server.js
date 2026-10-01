@@ -26,6 +26,8 @@ if (!fs.existsSync(uploadDir)) {
 // Rendre le dossier 'uploads' accessible au navigateur
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+app.use(express.static(path.join(__dirname, '../Frontend')));
+
 app.use(cors());
 app.use(express.json());
 
