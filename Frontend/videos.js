@@ -72,7 +72,7 @@ async function chargerVideos() {
     `;
 
     try {
-        const response = await fetch(`http://localhost:3000/api/videos/${niveauSelectionne}/${domaineActuel}`);
+        const response = await fetch(`/api/videos/${niveauSelectionne}/${domaineActuel}`);
         if (!response.ok) throw new Error(`Erreur HTTP : ${response.status}`);
 
         const videos = await response.json();

@@ -56,7 +56,7 @@ async function reprendreLectureDirecte(dernierCours) {
     
     // On charge la liste du domaine en arrière-plan
     try {
-        const response = await fetch(`http://localhost:3000/api/cours/${niveauChoisi}/${domaineActuel}`);
+        const response = await fetch(`/api/cours/${niveauChoisi}/${domaineActuel}`);
         if (response.ok) {
             listeCoursCharges = await response.json();
             // On ouvre directement la leçon
@@ -136,7 +136,7 @@ async function selectionnerDomaine(domaine) {
     `;
 
     try {
-        const response = await fetch(`http://localhost:3000/api/cours/${niveauChoisi}/${domaineActuel}`);
+        const response = await fetch(`/api/cours/${niveauChoisi}/${domaineActuel}`);
         
         if (!response.ok) {
             throw new Error(`Erreur HTTP : ${response.status}`);
@@ -218,7 +218,7 @@ function lireLecon(idCours) {
 
     if (chapitre.pdf_path) {
         const cheminPropre = chapitre.pdf_path.startsWith('/') ? chapitre.pdf_path : '/' + chapitre.pdf_path;
-        const pdfUrl = `http://localhost:3000${cheminPropre}`;
+        const pdfUrl = `${cheminPropre}`;
 
         htmlContenu += `
             <div class="mt-8 p-5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between shadow-sm">

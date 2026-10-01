@@ -51,7 +51,7 @@ async function signup() {
     if (!username || !email || !password) { alert("Remplis tous les champs !"); return; }
 
     try {
-        const response = await fetch('http://localhost:3000/signup', {
+        const response = await fetch('/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, email, password, niveau })
@@ -72,7 +72,7 @@ async function login() {
     if (!email || !password) { alert("Veuillez saisir votre email et votre mot de passe."); return; }
 
     try {
-        const response = await fetch('http://localhost:3000/login', {
+        const response = await fetch('/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
@@ -153,7 +153,7 @@ function showContent(blockId, title) {
     container.style.display = "";
     container.innerHTML = "<h3 class='text-slate-500 font-semibold p-4'>Chargement...</h3>";
 
-    fetch(`http://localhost:3000/api/${blockId}/${currentNiveauId}`)
+    fetch(`/api/${blockId}/${currentNiveauId}`)
         .then(res => res.json())
         .then(data => {
             container.innerHTML = `<h3 class="text-lg font-bold text-slate-800 mb-4">${title}</h3>`;
@@ -753,7 +753,7 @@ async function envoyerQuestionIA() {
     reponseZone.scrollTop = reponseZone.scrollHeight;
 
     try {
-        const response = await fetch('http://localhost:3000/ask-ai', {
+        const response = await fetch('/ask-ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt: question })
@@ -859,7 +859,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 4. Chargement des niveaux depuis le Backend
     if (levelsContainer) {
-        fetch("http://localhost:3000/niveaux")
+        fetch("/niveaux")
             .then(res => res.json())
             .then(data => {
                 levelsContainer.innerHTML = ""; 

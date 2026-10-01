@@ -29,7 +29,7 @@ async function chargerExercices() {
     if (!conteneur) return;
 
     try {
-        const response = await fetch(`http://localhost:3000/api/exercices/${niveauChoisiExo}/${domaineActuelExo}`);
+        const response = await fetch(`/api/exercices/${niveauChoisiExo}/${domaineActuelExo}`);
         
         if (!response.ok) throw new Error(`Erreur HTTP : ${response.status}`);
 
@@ -91,7 +91,7 @@ function afficherExercice(idExo) {
                     <p class="font-bold text-slate-800 text-sm">Fiche d'exercice (PDF)</p>
                     <p class="text-xs text-slate-500">Télécharge la fiche imprimable.</p>
                 </div>
-                <a href="http://localhost:3000${pdfUrl}" target="_blank" download class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl transition">
+                <a href="${pdfUrl}" target="_blank" download class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl transition">
                     📄 Télécharger le sujet
                 </a>
             </div>
