@@ -47,35 +47,38 @@
 
   <div>
     <!-- Header / Navbar -->
-    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 py-3">
-      <div class="max-w-4xl mx-auto flex justify-between items-center">
+    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-3 sm:px-4 py-2.5 sm:py-3">
+  <div class="max-w-4xl mx-auto flex justify-between items-center min-w-0 gap-2">
 
-      <div class="flex items-center gap-2.5 cursor-pointer" onclick="revenirAccueil()">
-  <!-- Icône du logo -->
-  <img src="logo.png" alt="Logo MC" class="h-9 w-auto object-contain mix-blend-multiply">
-  
-  <!-- Texte du titre -->
-  <h1 class="text-xl font-extrabold bg-gradient-to-r from-brand-500 to-purple-600 bg-clip-text text-transparent">
-    MathsCollege
-  </h1>
-</div>
-       
-        <div class="flex items-center gap-2">
-          <!-- Zone invités (si non connecté) -->
-          <div id="guest-zone" class="flex gap-2">
-            <a href="login.html" class="nav-btn bg-brand-500 text-white px-4 py-2 rounded-xl text-sm font-semibold">Connexion</a>
-
-            <a href="signup.html" class="nav-btn bg-brand-500 text-white px-4 py-2 rounded-xl text-sm font-semibold">S'inscrire</a>
-            
-          </div>
-          <!-- Zone utilisateur connecté -->
-          <div id="user-zone" class="hidden flex items-center gap-3">
-            <span id="user-badge" class="bg-brand-50 text-brand-600 text-xs font-bold px-3 py-1 rounded-full border border-brand-100"></span>
-            <button onclick="deconnexion()" class="text-xs text-rose-500 hover:underline font-semibold">Déconnexion</button>
-          </div>
-        </div>
+    <!-- Logo + Titre -->
+    <div class="flex items-center gap-1.5 sm:gap-2.5 cursor-pointer min-w-0 shrink" onclick="revenirAccueil()">
+      <img src="logo.png" alt="Logo MC" class="h-7 sm:h-9 w-auto object-contain mix-blend-multiply shrink-0">
+      <h1 class="text-base sm:text-xl font-extrabold bg-gradient-to-r from-brand-500 to-purple-600 bg-clip-text text-transparent truncate">
+        MathsCollege
+      </h1>
+    </div>
+   
+    <!-- Zone Boutons / Profil -->
+    <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+      <!-- Zone invités (si non connecté) -->
+      <div id="guest-zone" class="flex gap-1.5 sm:gap-2">
+        <a href="login.html" class="nav-btn bg-brand-500 text-white px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap">
+          Connexion
+        </a>
+        <a href="signup.html" class="nav-btn bg-brand-500 text-white px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap">
+          S'inscrire
+        </a>
       </div>
-    </header>
+
+      <!-- Zone utilisateur connecté -->
+      <div id="user-zone" class="hidden flex items-center gap-2 sm:gap-3">
+        <span id="user-badge" class="bg-brand-50 text-brand-600 text-xs font-bold px-2.5 sm:px-3 py-1 rounded-full border border-brand-100 truncate max-w-[100px] sm:max-w-none"></span>
+        <button onclick="deconnexion()" class="text-xs text-rose-500 hover:underline font-semibold whitespace-nowrap">Déconnexion</button>
+      </div>
+    </div>
+
+  </div>
+</header>
 
     <!-- Conteneur Principal -->
     <main class="max-w-4xl mx-auto px-4 py-6 space-y-8">
