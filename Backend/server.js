@@ -10,6 +10,7 @@ const bcrypt = require('bcrypt');
 const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
 
 // ============= CONFIGURATION =============
 const API_KEY = process.env.GEMINI_API_KEY;
@@ -22,6 +23,18 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
     console.log('Dossier uploads/fiches créé avec succès !');
 }
+
+// Configuration de Multer pour l'upload de fichiers dans uploads/fiches/
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
 
 // Rendre le dossier 'uploads' accessible au navigateur
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -149,7 +162,7 @@ async function callGeminiWithRetry(model, prompt, retries = 2, delay = 1000) {
     }
 }
 
-// 2. Votre route mise à jour
+// 2. Route pour poser une question à Coach Sylvie
 app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
     try {
         const { prompt } = req.body;
@@ -280,7 +293,86 @@ app.post('/login', (req, res) => {
     });
 });
 
-// ============= ROUTES API =============
+// ============= ROUTES PROFESSEUR =============
+
+// 1. Dashboard Stats (Nombre d'élèves inscrits & Top 10 des questions IA)
+app.get('/api/prof/dashboard-stats', async (req, res) => {
+    try {
+        const [elevesCount] = await db.promise().query("SELECT COUNT(*) AS total FROM users WHERE role = 'eleve'");
+        const [topQuestions] = await db.promise().query(`
+            SELECT question, COUNT(*) as frequence 
+            FROM conversations_ia 
+            GROUP BY question 
+            ORDER BY frequence DESC 
+            LIMIT 10
+        `);
+
+        res.json({
+            totalEleves: elevesCount[0].total,
+            topQuestions: topQuestions
+        });
+    } catch (err) {
+        console.error("Erreur Dashboard Stats:", err);
+        res.status(500).json({ error: "Erreur lors de la récupération des données du tableau de bord." });
+    }
+});
+
+// 2. Publier un cours (avec possibilité d'uploader un fichier PDF)
+app.post('/api/prof/cours', upload.single('pdf_file'), async (req, res) => {
+    try {
+        const { titre, contenu, niveau_id, domaine, ecole_id, professeur_id, est_public } = req.body;
+        const pdf_path = req.file ? `uploads/fiches/${req.file.filename}` : null;
+
+        const sql = `
+            INSERT INTO cours (titre, contenu, niveau_id, pdf_path, domaine, ecole_id, professeur_id, est_public) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        await db.promise().query(sql, [
+            titre, 
+            contenu || '', 
+            niveau_id, 
+            pdf_path, 
+            domaine || 'algebre', 
+            ecole_id || 1, 
+            professeur_id || null, 
+            est_public !== undefined ? est_public : 1
+        ]);
+
+        res.json({ message: "Cours publié avec succès !" });
+    } catch (err) {
+        console.error("Erreur Ajout Cours:", err);
+        res.status(500).json({ error: "Impossible de publier le cours." });
+    }
+});
+
+// 3. Publier un exercice & corrigé (avec possibilité d'uploader un fichier PDF)
+app.post('/api/prof/exercices', upload.single('pdf_file'), async (req, res) => {
+    try {
+        const { cours_id, titre, enonce, reponse_correcte } = req.body;
+        const pdf_path = req.file ? `uploads/fiches/${req.file.filename}` : null;
+
+        const sql = `
+            INSERT INTO exercices (cours_id, titre, enonce, reponse_correcte, pdf_path) 
+            VALUES (?, ?, ?, ?, ?)
+        `;
+
+        await db.promise().query(sql, [
+            cours_id, 
+            titre, 
+            enonce || '', 
+            reponse_correcte || '', 
+            pdf_path
+        ]);
+
+        res.json({ message: "Exercice publié avec succès !" });
+    } catch (err) {
+        console.error("Erreur Ajout Exercice:", err);
+        res.status(500).json({ error: "Impossible de publier l'exercice." });
+    }
+});
+
+// ============= ROUTES API ÉLÈVES & CONTENUS =============
 app.get('/niveaux', (req, res) => {
     const sql = "SELECT * FROM niveaux";
     db.query(sql, (err, results) => {
