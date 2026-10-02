@@ -334,7 +334,8 @@ function afficherVueContent(type) {
             else res.c += coef;
         }
         return res;
- }
+
+    }
 
     function divisionEuclidienne(a, b) {
         if (b === 0) return errMsg('Erreur : division par zéro impossible.');
