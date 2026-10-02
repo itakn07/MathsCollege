@@ -33,7 +33,7 @@ window.entrerDansNiveau = function(id, nom) {
     
     if (dashboard) {
         dashboard.classList.remove("hidden");
-        dashboard.style.display = ""; // Nettoie les styles inline qui gêneraient Tailwind
+        dashboard.style.display = ""; // Nettoie les styles inline
     }
     
     const titleElement = dashboard ? dashboard.querySelector(".title") : null;
@@ -43,31 +43,48 @@ window.entrerDansNiveau = function(id, nom) {
 // ================= SIGNUP / LOGIN =================
 
 async function signup() {
-    const username = document.getElementById('signup-user').value.trim();
-    const email = document.getElementById('signup-email').value.trim();
-    const password = document.getElementById('signup-pass').value.trim();
-    const niveau = document.getElementById('signup-niveau').value;
+    const usernameEl = document.getElementById('signup-name') || document.getElementById('signup-user');
+    const emailEl = document.getElementById('signup-email');
+    const passwordEl = document.getElementById('signup-pass');
+    const roleEl = document.getElementById('signup-role');
+    const niveauEl = document.getElementById('signup-level') || document.getElementById('signup-niveau');
 
-    if (!username || !email || !password) { alert("Remplis tous les champs !"); return; }
+    const username = usernameEl ? usernameEl.value.trim() : '';
+    const email = emailEl ? emailEl.value.trim() : '';
+    const password = passwordEl ? passwordEl.value.trim() : '';
+    const role = roleEl ? roleEl.value : 'eleve';
+    const niveau = (role === 'professeur') ? 'Enseignant' : (niveauEl ? niveauEl.value : '6ème');
+
+    if (!username || !email || !password) { alert("Remplis tous les champs obligatoires !"); return; }
 
     try {
         const response = await fetch('/api/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, email, password, niveau })
+            body: JSON.stringify({ username, email, password, role, niveau })
         });
         const data = await response.json();
-        if (data.success) {
+        if (response.ok && data.success) {
             localStorage.setItem('user', JSON.stringify(data.user));
-            fermerModalSignup();
-            location.reload(); 
-        } else { alert("Erreur : " + data.message); }
+            if (data.user.role === 'professeur') {
+                window.location.href = "/profs.html";
+            } else {
+                window.location.href = "index.html";
+            }
+        } else { 
+            alert("Erreur : " + (data.message || "Impossible de créer le compte.")); 
+        }
     } catch (e) { alert("Le serveur ne répond pas."); }
 }
 
 async function login() {
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-pass').value.trim();
+    const emailEl = document.getElementById('login-email');
+    const passwordEl = document.getElementById('login-pass');
+    const roleEl = document.getElementById('login-role');
+
+    const email = emailEl ? emailEl.value.trim() : '';
+    const password = passwordEl ? passwordEl.value.trim() : '';
+    const role = roleEl ? roleEl.value : 'eleve';
 
     if (!email || !password) { alert("Veuillez saisir votre email et votre mot de passe."); return; }
 
@@ -75,23 +92,29 @@ async function login() {
         const response = await fetch('/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password, role })
         });
         const data = await response.json();
-        if (data.success) {
-            // Enregistre les informations complètes de l'utilisateur (id, role, école, etc.)
+        if (response.ok && data.success) {
             localStorage.setItem('user', JSON.stringify(data.user));
-            fermerModalLogin();
-            location.reload();
-        } else { alert(data.message); }
-    } catch (e) { alert("Erreur serveur."); }
+            if (data.redirectUrl) {
+                window.location.href = data.redirectUrl;
+            } else if (data.user.role === 'professeur') {
+                window.location.href = "/profs.html";
+            } else {
+                window.location.href = "index.html";
+            }
+        } else { 
+            alert(data.message || "Erreur lors de la connexion."); 
+        }
+    } catch (e) { alert("Erreur serveur lors de la connexion."); }
 }
 
 // Déconnexion complète
 function logout() {
     localStorage.removeItem('user');
     localStorage.removeItem('user_progression');
-    location.reload();
+    window.location.href = "login.html";
 }
 
 function deconnexion() {
@@ -104,21 +127,20 @@ function mettreAJourInterface(data) {
     
     const btnNav = document.getElementById('btn-signup-main') || document.querySelector('.nav-btn');
     if (btnNav) {
-        btnNav.innerText = "Log out";
+        btnNav.innerText = "Déconnexion";
         btnNav.style.backgroundColor = "#ef4444"; 
         btnNav.onclick = logout;
     }
     const welcomeH2 = document.querySelector('.welcome h2');
     if (welcomeH2) welcomeH2.innerText = "Ravi de te revoir, " + data.username + " !";
     
-    // Application de la personnalisation de l'école (si disponible)
     if (data.ecole) {
         appliquerPersonnalisationEcole(data.ecole);
     }
 }
 
 function appliquerPersonnalisationEcole(ecole) {
-    if (!ecole || ecole.id === 1) return; // Si c'est l'école publique par défaut
+    if (!ecole || ecole.id === 1) return;
 
     const nomEcoleElement = document.getElementById('nom-ecole') || document.getElementById('header-title');
     const logoEcoleElement = document.getElementById('logo-ecole') || document.getElementById('header-logo');
@@ -139,7 +161,7 @@ function showContent(blockId, title) {
 
     if (db) {
         db.classList.add("hidden");
-        db.style.display = ""; // Réinitialise l'attribut style inline
+        db.style.display = "";
     }
     
     if (cp) {
@@ -150,13 +172,11 @@ function showContent(blockId, title) {
     const pageTitle = document.getElementById("content-title");
     if (pageTitle) pageTitle.textContent = title;
 
-    // Cacher tous les blocs de contenu secondaires
     document.querySelectorAll(".content-block").forEach(b => {
         b.classList.add("hidden");
         b.style.display = "";
     });
 
-    // Si le bloc cliqué est le calculateur
     if (blockId === "calculateur" || blockId === "calculateur-block") {
         const calcBlock = document.getElementById("calculateur-block");
         if (calcBlock) {
@@ -225,7 +245,6 @@ function showContent(blockId, title) {
                             </p>
                         </div>`;
                 } else {
-                    // Pour les exercices ou autres contenus
                     container.innerHTML += `
                         <div class="card recherche-item bg-white p-5 rounded-2xl border border-slate-100 shadow-sm mb-4">
                             <h4 class="font-bold text-slate-900 mb-2">${item.titre}</h4>
@@ -234,7 +253,6 @@ function showContent(blockId, title) {
                 }
             });
 
-            // MATHJAX POUR RENDRE LES FORMULES MATHEMATIQUES
             if (window.MathJax && window.MathJax.typesetPromise) {
                 window.MathJax.typesetPromise([container]);
             }
@@ -334,7 +352,6 @@ function afficherVueContent(type) {
             else res.c += coef;
         }
         return res;
-
     }
 
     function divisionEuclidienne(a, b) {
@@ -524,7 +541,7 @@ function afficherVueContent(type) {
                 return OPS[t] || t;
             })
             .join(' ')
-            .replace(/\( /g, '(')             .replace(/ \)/g, ')');
+            .replace(/\( /g, '(').replace(/ \)/g, ')');
     }
 
     function reduceRange(tokens, lo, hi) {
@@ -692,7 +709,7 @@ function effacerSolveur() {
     document.getElementById('resultat-solveur').innerHTML = "";
 }
 
-// ================= COACH SYLVIE IA (GÉRÉ AVEC QUOTA & USER ID) =================
+// ================= COACH SYLVIE IA =================
 
 async function envoyerQuestionIA() {
     const input = document.getElementById('monInputIA');
@@ -701,19 +718,16 @@ async function envoyerQuestionIA() {
 
     if (!question) return;
 
-    // Récupérer le profil connecté depuis le localStorage
     const userStocke = localStorage.getItem('user');
     const userData = userStocke ? JSON.parse(userStocke) : null;
     const userId = userData ? userData.id : null;
 
-    // 1. Afficher le message de l'utilisateur
     reponseZone.innerHTML += `
         <div class="user-msg bg-brand-500 text-white p-3 rounded-2xl mb-3 max-w-[85%] ml-auto text-right text-sm">
             ${question}
         </div>`;
     input.value = "";
     
-    // 2. Bulle de chargement
     const loadingId = "load-" + Date.now();
     reponseZone.innerHTML += `
         <div id="${loadingId}" class="bot-msg bg-slate-100 text-slate-600 p-3 rounded-2xl mb-3 max-w-[85%] text-sm">
@@ -728,7 +742,7 @@ async function envoyerQuestionIA() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 prompt: question,
-                userId: userId // Transmet l'ID de l'utilisateur connecté pour vérifier le quota
+                userId: userId
             })
         });
 
@@ -743,7 +757,6 @@ async function envoyerQuestionIA() {
                 window.MathJax.typesetPromise([botBubble]);
             }
         } else {
-            // Affichage des messages d'erreur ou de dépassement de quota (ex: Code HTTP 429)
             const messageErreur = data.answer || "Désolée, je n'ai pas pu traiter votre demande.";
             botBubble.innerHTML = `<span class="text-rose-600 font-medium">⚠️ ${messageErreur}</span>`;
         }
@@ -782,7 +795,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const reponseIA = document.getElementById('reponseIA');
 
     if (userStocke) {
-        // --- CAS 1 : UTILISATEUR CONNECTÉ ---
         const userData = JSON.parse(userStocke);
         mettreAJourInterface(userData);
         
@@ -791,10 +803,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('banner-guest')?.classList.add('hidden');
         document.getElementById('banner-user')?.classList.remove('hidden');
 
-        const nom = userData.username || userData.nom || "Élève";
+        const nom = userData.username || userData.nom || "Utilisateur";
         const classe = userData.niveau || userData.classe || "6ème";
 
-        if (document.getElementById('user-badge')) document.getElementById('user-badge').textContent = `Classe : ${classe}`;
+        if (document.getElementById('user-badge')) document.getElementById('user-badge').textContent = `Profil : ${userData.role || 'Élève'}`;
         if (document.getElementById('user-display-name')) document.getElementById('user-display-name').textContent = nom;
         if (document.getElementById('user-display-class')) document.getElementById('user-display-class').textContent = classe;
 
@@ -805,7 +817,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>`;
         }
     } else {
-        // --- CAS 2 : INVITÉ (NON CONNECTÉ) ---
         document.getElementById('guest-zone')?.classList.remove('hidden');
         document.getElementById('user-zone')?.classList.add('hidden');
         document.getElementById('banner-guest')?.classList.remove('hidden');
@@ -819,16 +830,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Écouteurs d'événements des boutons du Dashboard
     document.getElementById("btn-cours")?.addEventListener("click", () => showContent("cours", "Cours"));
     document.getElementById("btn-videos")?.addEventListener("click", () => showContent("videos", "Vidéos"));
 
-    // Écouteur Touche Entrée pour l'IA
     document.getElementById('monInputIA')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') envoyerQuestionIA();
     });
 
-    // Chargement des niveaux depuis le Backend
     if (levelsContainer) {
         fetch("/niveaux")
             .then(res => res.json())

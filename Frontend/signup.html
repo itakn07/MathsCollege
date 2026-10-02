@@ -98,6 +98,25 @@
     <!-- 2. FORMULAIRE D'INSCRIPTION -->
     <form onsubmit="gererInscriptionSurPage(event)" class="space-y-3.5">
       
+      <!-- Champ Rôle -->
+      <div>
+        <label for="signup-role" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+          Je suis
+        </label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">🏫</span>
+          <select 
+            id="signup-role"
+            required
+            onchange="basculerAffichageNiveau()"
+            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all cursor-pointer"
+          >
+            <option value="eleve">Élève</option>
+            <option value="professeur">Professeur / Enseignant</option>
+          </select>
+        </div>
+      </div>
+
       <!-- Champ Nom Complet -->
       <div>
         <label for="signup-name" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
@@ -126,7 +145,7 @@
             id="signup-email"
             type="email" 
             required 
-            placeholder="eleve@exemple.com" 
+            placeholder="utilisateur@exemple.com" 
             class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
           />
         </div>
@@ -149,8 +168,8 @@
         </div>
       </div>
 
-      <!-- CHAMP NIVEAU / CLASSE (Ajouté pour correspondre à MySQL) -->
-      <div>
+      <!-- CHAMP NIVEAU / CLASSE (Caché si Professeur) -->
+      <div id="container-niveau">
         <label for="signup-level" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
           Classe / Niveau
         </label>
@@ -158,7 +177,6 @@
           <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">🎓</span>
           <select 
             id="signup-level"
-            required
             class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
           >
             <option value="6ème">Classe de 6ème</option>
@@ -189,34 +207,19 @@
   <!-- Script JS lié -->
   <script src="script.js"></script>
   <script>
+    function basculerAffichageNiveau() {
+      const role = document.getElementById('signup-role').value;
+      const containerNiveau = document.getElementById('container-niveau');
+      if (role === 'professeur') {
+        containerNiveau.classList.add('hidden');
+      } else {
+        containerNiveau.classList.remove('hidden');
+      }
+    }
+
     async function gererInscriptionSurPage(e) {
       e.preventDefault();
-      
-      const username = document.getElementById('signup-name').value;
-      const email = document.getElementById('signup-email').value;
-      const password = document.getElementById('signup-pass').value;
-      const niveau = document.getElementById('signup-level').value;
-
-      try {
-        const response = await fetch('/api/signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, email, password, niveau })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          localStorage.setItem('user', JSON.stringify(data.user || { username, email, niveau }));
-          localStorage.setItem('niveauSelectionne', niveau);
-          window.location.href = "index.html";
-        } else {
-          alert(data.message || "Erreur lors de l'inscription.");
-        }
-      } catch (err) {
-        console.error("Erreur serveur :", err);
-        alert("Impossible de contacter le serveur.");
-      }
+      await signup();
     }
   </script>
 </body>

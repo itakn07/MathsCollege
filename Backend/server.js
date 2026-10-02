@@ -1,5 +1,5 @@
 // ============= IMPORTS =============
-require('dotenv').config(); // Charge les variables du fichier .env
+require('dotenv').config();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const express = require('express');
 const mysql = require('mysql2');
@@ -17,14 +17,12 @@ const API_KEY = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
 const app = express();
 
-// Création automatique du dossier 'uploads/fiches'
 const uploadDir = path.join(__dirname, 'uploads', 'fiches');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
     console.log('Dossier uploads/fiches créé avec succès !');
 }
 
-// Configuration de Multer pour l'upload de fichiers dans uploads/fiches/
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadDir);
@@ -36,11 +34,8 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// Rendre le dossier 'uploads' accessible au navigateur
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
 app.use(express.static(path.join(__dirname, '../Frontend')));
-
 app.use(cors());
 app.use(express.json());
 
@@ -83,7 +78,6 @@ db.getConnection((err, connection) => {
 async function verifierQuotaIA(req, res, next) {
     const { userId } = req.body; 
 
-    // Si aucun utilisateur n'est connecté, on applique la restriction d'invité
     if (!userId) {
         return res.status(403).json({ 
             answer: "Vous devez être connecté pour poser des questions à Coach Sylvie. Les comptes publics ont droit à 3 questions par jour !" 
@@ -103,33 +97,28 @@ async function verifierQuotaIA(req, res, next) {
             }
 
             const user = results[0];
-            const ecoleId = user.ecole_id || 1; // 1 = MathsCollege Officiel (Public)
+            const ecoleId = user.ecole_id || 1;
 
-            // 1. Si l'utilisateur appartient à une école partenaire (ecole_id != 1), l'accès est illimité
             if (ecoleId !== 1) {
                 req.userContext = { userId: user.id, ecoleId: ecoleId };
                 return next();
             }
 
-            // 2. Gestion du quota pour les utilisateurs de la formule publique (ecole_id = 1)
             const aujourdhui = new Date().toISOString().split('T')[0];
             const dateDerniere = user.date_derniere_question ? new Date(user.date_derniere_question).toISOString().split('T')[0] : null;
 
             let questionsAujourdhui = user.questions_posees_aujourdhui || 0;
 
-            // Réinitialisation si changement de jour
             if (dateDerniere !== aujourdhui) {
                 questionsAujourdhui = 0;
             }
 
-            // Vérification de la limite de 3 questions
             if (questionsAujourdhui >= 3) {
                 return res.status(429).json({ 
                     answer: "Limite atteinte ! Vous avez posé vos 3 questions gratuites aujourd'hui. Demandez à votre établissement de rejoindre MathsCollege pour débloquer l'accès illimité !" 
                 });
             }
 
-            // Mettre à jour le compteur
             const updateSql = "UPDATE users SET questions_posees_aujourdhui = ?, date_derniere_question = ? WHERE id = ?";
             db.query(updateSql, [questionsAujourdhui + 1, aujourdhui, user.id], (updateErr) => {
                 if (updateErr) console.error("Erreur mise à jour quota :", updateErr);
@@ -144,7 +133,6 @@ async function verifierQuotaIA(req, res, next) {
 }
 
 // ============= ROUTE IA =============
-// 1. Fonction de retry pour gérer la surcharge (503) de Google
 async function callGeminiWithRetry(model, prompt, retries = 2, delay = 1000) {
     for (let i = 0; i < retries; i++) {
         try {
@@ -162,7 +150,6 @@ async function callGeminiWithRetry(model, prompt, retries = 2, delay = 1000) {
     }
 }
 
-// 2. Route pour poser une question à Coach Sylvie
 app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
     try {
         const { prompt } = req.body;
@@ -172,17 +159,14 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
             return res.status(400).json({ answer: "Le serveur n'a pas reçu de texte." });
         }
 
-        // Configuration du modèle via le SDK officiel
         const model = genAI.getGenerativeModel({
             model: "gemini-1.5-flash",
             systemInstruction: "Tu es Sylvie, une coach de mathématiques super sympa. Tu adores le groupe de K-pop BTS (ton membre préféré est Jimin) et tu es fan de Michael Jackson. Tu es aussi très encourageante et gentille."
         });
 
-        // Génération de la réponse avec la fonction de Retry
         const result = await callGeminiWithRetry(model, prompt);
         const text = result.response.text();
 
-        // Sauvegarde de la conversation en BDD
         const saveSql = "INSERT INTO conversations_ia (user_id, ecole_id, question, reponse) VALUES (?, ?, ?, ?)";
         db.query(saveSql, [userId, ecoleId, prompt, text], (err) => {
             if (err) console.error("Erreur lors du stockage de la conversation IA :", err);
@@ -193,14 +177,12 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
     } catch (error) {
         console.error("Erreur technique IA:", error);
 
-        // Si la surcharge persiste même après les tentatives
         if (error.status === 503 || (error.message && error.message.includes('503'))) {
             return res.status(503).json({ 
                 answer: "Coach Sylvie est très sollicitée par d'autres élèves en ce moment ! 😅 Réessaye dans quelques secondes." 
             });
         }
 
-        // Message propre pour les autres erreurs
         res.status(500).json({ 
             answer: "Désolé, une erreur technique est survenue. Réessaye plus tard !" 
         });
@@ -209,19 +191,20 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
 
 // ============= SIGN UP =============
 app.post('/api/signup', async (req, res) => {
-    const { username, email, password, niveau, ecole_id } = req.body;
+    const { username, email, password, role, niveau, ecole_id } = req.body;
 
-    if (!username || !email || !password || !niveau) {
-        return res.status(400).json({ success: false, message: "Tous les champs sont obligatoires." });
+    if (!username || !email || !password) {
+        return res.status(400).json({ success: false, message: "Tous les champs requis ne sont pas remplis." });
     }
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const targetEcoleId = ecole_id || 1; // 1 = MathsCollege Officiel par défaut
-        const defaultRole = 'eleve';
+        const targetEcoleId = ecole_id || 1;
+        const userRole = role || 'eleve';
+        const userNiveau = userRole === 'professeur' ? 'Enseignant' : (niveau || '6ème');
 
-        const sql = "INSERT INTO users (username, email, password, niveau, ecole_id, role) VALUES (?, ?, ?, ?, ?, ?)";
-        db.query(sql, [username, email, hashedPassword, niveau, targetEcoleId, defaultRole], (err, result) => {
+        const sql = "INSERT INTO users (username, email, password, role, niveau, ecole_id) VALUES (?, ?, ?, ?, ?, ?)";
+        db.query(sql, [username, email, hashedPassword, userRole, userNiveau, targetEcoleId], (err, result) => {
             if (err) {
                 console.error("Erreur BDD :", err);
                 return res.status(400).json({ success: false, message: "Pseudo ou Email déjà utilisé." });
@@ -234,8 +217,8 @@ app.post('/api/signup', async (req, res) => {
                     id: result.insertId,
                     username: username,
                     email: email,
-                    niveau: niveau,
-                    role: defaultRole,
+                    role: userRole,
+                    niveau: userNiveau,
                     ecole_id: targetEcoleId
                 }
             });
@@ -248,36 +231,47 @@ app.post('/api/signup', async (req, res) => {
 
 // ============= LOG IN =============
 app.post('/login', (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
-    // Jointure avec la table ecoles pour récupérer la charte graphique et le logo
-    const sql = `
+    let sql = `
         SELECT u.*, e.nom AS ecole_nom, e.logo_url, e.couleur_primaire, e.statut_abonnement
         FROM users u
         LEFT JOIN ecoles e ON u.ecole_id = e.id
         WHERE u.email = ?
     `;
+    const params = [email];
 
-    db.query(sql, [email], async (err, result) => {
+    if (role) {
+        sql += " AND u.role = ?";
+        params.push(role);
+    }
+
+    db.query(sql, params, async (err, result) => {
         if (err) return res.status(500).json({ success: false, message: "Erreur serveur" });
 
         if (result.length === 0) {
-            return res.status(401).json({ success: false, message: "Email ou mot de passe incorrect" });
+            return res.status(401).json({ success: false, message: "Email, mot de passe ou rôle incorrect" });
         }
 
         const user = result[0];
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (isMatch) {
+            let redirectUrl = "index.html";
+            if (user.role === 'professeur' || user.role === 'admin_ecole' || user.role === 'super_admin') {
+                redirectUrl = "/profs.html";
+            }
+
             res.json({ 
                 success: true, 
                 message: "Connexion réussie !",
+                redirectUrl: redirectUrl,
                 user: {
                     id: user.id,
                     username: user.username,
                     email: user.email,
                     niveau: user.niveau,
-                    role: user.role, // 'super_admin', 'admin_ecole', 'professeur', ou 'eleve'
+                    role: user.role,
                     ecole: {
                         id: user.ecole_id,
                         nom: user.ecole_nom || 'MathsCollege Officiel',
@@ -295,7 +289,6 @@ app.post('/login', (req, res) => {
 
 // ============= ROUTES PROFESSEUR =============
 
-// 1. Dashboard Stats (Nombre d'élèves inscrits & Top 10 des questions IA)
 app.get('/api/prof/dashboard-stats', async (req, res) => {
     try {
         const [elevesCount] = await db.promise().query("SELECT COUNT(*) AS total FROM users WHERE role = 'eleve'");
@@ -317,7 +310,6 @@ app.get('/api/prof/dashboard-stats', async (req, res) => {
     }
 });
 
-// 2. Publier un cours (avec possibilité d'uploader un fichier PDF)
 app.post('/api/prof/cours', upload.single('pdf_file'), async (req, res) => {
     try {
         const { titre, contenu, niveau_id, domaine, ecole_id, professeur_id, est_public } = req.body;
@@ -346,10 +338,9 @@ app.post('/api/prof/cours', upload.single('pdf_file'), async (req, res) => {
     }
 });
 
-// Route pour récupérer la liste des cours (pour le menu déroulant)
 app.get('/api/prof/liste-cours', async (req, res) => {
     try {
-        const [cours] = await db.query('SELECT id, titre FROM cours ORDER BY titre ASC');
+        const [cours] = await db.promise().query('SELECT id, titre FROM cours ORDER BY titre ASC');
         res.json(cours);
     } catch (err) {
         console.error("Erreur lors de la récupération des cours:", err);
@@ -357,7 +348,6 @@ app.get('/api/prof/liste-cours', async (req, res) => {
     }
 });
 
-// 3. Publier un exercice & corrigé (avec possibilité d'uploader un fichier PDF)
 app.post('/api/prof/exercices', upload.single('pdf_file'), async (req, res) => {
     try {
         const { cours_id, titre, enonce, reponse_correcte } = req.body;
@@ -394,7 +384,7 @@ app.get('/niveaux', (req, res) => {
 
 app.get('/api/cours/:niveau/:domaine', (req, res) => {
     const { niveau, domaine } = req.params;
-    const ecoleId = req.query.ecole_id || 1; // Filtre optionnel par école
+    const ecoleId = req.query.ecole_id || 1;
 
     const sql = `
         SELECT c.* 
@@ -441,7 +431,6 @@ app.get('/api/exercices/:niveau/:domaine', (req, res) => {
     });
 });
 
-// Route 1 : Quand le domaine est précisé
 app.get('/api/videos/:idDuNiveau/:domaine', (req, res) => {
     const niveauId = req.params.idDuNiveau;
     const domaine = req.params.domaine;
@@ -463,7 +452,6 @@ app.get('/api/videos/:idDuNiveau/:domaine', (req, res) => {
     });
 });
 
-// Route 2 : Quand aucun domaine n'est précisé
 app.get('/api/videos/:idDuNiveau', (req, res) => {
     const niveauId = req.params.idDuNiveau;
 
@@ -498,7 +486,6 @@ app.get('/api/jeux/:niveauId', (req, res) => {
 app.post('/api/solveur', (req, res) => {
     let { expression } = req.body;
     try {
-        // INÉQUATIONS
         if (expression.includes('<') || expression.includes('>')) {
             const symbole = expression.includes('<') ? '<' : '>';
             return res.json({ 
@@ -508,7 +495,6 @@ app.post('/api/solveur', (req, res) => {
             });
         }
 
-        // ÉQUATIONS COMPLEXES
         if (expression.includes('=') && expression.includes('x')) {
             const parties = expression.split('=');
             const gauche = parties[0].trim();
@@ -533,7 +519,6 @@ app.post('/api/solveur', (req, res) => {
             }
         }
 
-        // CALCULS DE BASE
         const resultat = evaluate(expression);
         res.json({ 
             success: true, 
