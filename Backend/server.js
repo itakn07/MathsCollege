@@ -131,6 +131,25 @@ async function verifierQuotaIA(req, res, next) {
 }
 
 // ============= ROUTE IA =============
+// 1. Fonction de retry pour gérer la surcharge (503) de Google
+async function callGeminiWithRetry(model, prompt, retries = 2, delay = 1000) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const result = await model.generateContent(prompt);
+            return result;
+        } catch (error) {
+            const is503 = error.status === 503 || (error.message && error.message.includes('503'));
+            if (is503 && i < retries - 1) {
+                console.warn(`[IA] Surcharge 503 détectée. Nouvelle tentative (${i + 1}/${retries})...`);
+                await new Promise(res => setTimeout(res, delay));
+                continue;
+            }
+            throw error;
+        }
+    }
+}
+
+// 2. Votre route mise à jour
 app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
     try {
         const { prompt } = req.body;
@@ -142,12 +161,12 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
 
         // Configuration du modèle via le SDK officiel
         const model = genAI.getGenerativeModel({
-            model: "gemini-3.6-flash",
+            model: "gemini-1.5-flash",
             systemInstruction: "Tu es Sylvie, une coach de mathématiques super sympa. Tu adores le groupe de K-pop BTS (ton membre préféré est Jimin) et tu es fan de Michael Jackson. Tu es aussi très encourageante et gentille."
         });
 
-        // Génération de la réponse
-        const result = await model.generateContent(prompt);
+        // Génération de la réponse avec la fonction de Retry
+        const result = await callGeminiWithRetry(model, prompt);
         const text = result.response.text();
 
         // Sauvegarde de la conversation en BDD
@@ -159,8 +178,19 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
         res.json({ answer: text });
 
     } catch (error) {
-        console.error("Erreur technique:", error);
-        res.status(500).json({ answer: "Erreur IA: " + error.message });
+        console.error("Erreur technique IA:", error);
+
+        // Si la surcharge persiste même après les tentatives
+        if (error.status === 503 || (error.message && error.message.includes('503'))) {
+            return res.status(503).json({ 
+                answer: "Coach Sylvie est très sollicitée par d'autres élèves en ce moment ! 😅 Réessaye dans quelques secondes." 
+            });
+        }
+
+        // Message propre pour les autres erreurs
+        res.status(500).json({ 
+            answer: "Désolé, une erreur technique est survenue. Réessaye plus tard !" 
+        });
     }
 });
 
