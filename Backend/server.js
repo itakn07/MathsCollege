@@ -346,6 +346,17 @@ app.post('/api/prof/cours', upload.single('pdf_file'), async (req, res) => {
     }
 });
 
+// Route pour récupérer la liste des cours (pour le menu déroulant)
+app.get('/api/prof/liste-cours', async (req, res) => {
+    try {
+        const [cours] = await db.query('SELECT id, titre FROM cours ORDER BY titre ASC');
+        res.json(cours);
+    } catch (err) {
+        console.error("Erreur lors de la récupération des cours:", err);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
 // 3. Publier un exercice & corrigé (avec possibilité d'uploader un fichier PDF)
 app.post('/api/prof/exercices', upload.single('pdf_file'), async (req, res) => {
     try {
