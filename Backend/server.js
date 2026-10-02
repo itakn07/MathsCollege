@@ -66,10 +66,75 @@ db.getConnection((err, connection) => {
     }
 });
 
+// ============= MIDDLEWARE : VÉRIFICATION QUOTA IA (3 QST / JOUR) =============
+async function verifierQuotaIA(req, res, next) {
+    const { userId } = req.body; 
+
+    // Si aucun utilisateur n'est connecté, on applique la restriction d'invité
+    if (!userId) {
+        return res.status(403).json({ 
+            answer: "Vous devez être connecté pour poser des questions à Coach Sylvie. Les comptes publics ont droit à 3 questions par jour !" 
+        });
+    }
+
+    try {
+        const sql = "SELECT id, ecole_id, questions_posees_aujourdhui, date_derniere_question FROM users WHERE id = ?";
+        db.query(sql, [userId], (err, results) => {
+            if (err) {
+                console.error("Erreur vérification quota :", err);
+                return res.status(500).json({ answer: "Erreur serveur lors de la vérification de vos quotas." });
+            }
+
+            if (results.length === 0) {
+                return res.status(404).json({ answer: "Utilisateur non trouvé." });
+            }
+
+            const user = results[0];
+            const ecoleId = user.ecole_id || 1; // 1 = MathsCollege Officiel (Public)
+
+            // 1. Si l'utilisateur appartient à une école partenaire (ecole_id != 1), l'accès est illimité
+            if (ecoleId !== 1) {
+                req.userContext = { userId: user.id, ecoleId: ecoleId };
+                return next();
+            }
+
+            // 2. Gestion du quota pour les utilisateurs de la formule publique (ecole_id = 1)
+            const aujourdhui = new Date().toISOString().split('T')[0];
+            const dateDerniere = user.date_derniere_question ? new Date(user.date_derniere_question).toISOString().split('T')[0] : null;
+
+            let questionsAujourdhui = user.questions_posees_aujourdhui || 0;
+
+            // Réinitialisation si changement de jour
+            if (dateDerniere !== aujourdhui) {
+                questionsAujourdhui = 0;
+            }
+
+            // Vérification de la limite de 3 questions
+            if (questionsAujourdhui >= 3) {
+                return res.status(429).json({ 
+                    answer: "Limite atteinte ! Vous avez posé vos 3 questions gratuites aujourd'hui. Demandez à votre établissement de rejoindre MathsCollege pour débloquer l'accès illimité !" 
+                });
+            }
+
+            // Mettre à jour le compteur
+            const updateSql = "UPDATE users SET questions_posees_aujourdhui = ?, date_derniere_question = ? WHERE id = ?";
+            db.query(updateSql, [questionsAujourdhui + 1, aujourdhui, user.id], (updateErr) => {
+                if (updateErr) console.error("Erreur mise à jour quota :", updateErr);
+                req.userContext = { userId: user.id, ecoleId: ecoleId };
+                next();
+            });
+        });
+    } catch (error) {
+        console.error("Erreur serveur :", error);
+        res.status(500).json({ answer: "Erreur lors du traitement des quotas." });
+    }
+}
+
 // ============= ROUTE IA =============
-app.post('/ask-ai', async (req, res) => {
+app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
     try {
         const { prompt } = req.body;
+        const { userId, ecoleId } = req.userContext || { userId: null, ecoleId: 1 };
 
         if (!prompt) {
             return res.status(400).json({ answer: "Le serveur n'a pas reçu de texte." });
@@ -85,6 +150,12 @@ app.post('/ask-ai', async (req, res) => {
         const result = await model.generateContent(prompt);
         const text = result.response.text();
 
+        // Sauvegarde de la conversation en BDD
+        const saveSql = "INSERT INTO conversations_ia (user_id, ecole_id, question, reponse) VALUES (?, ?, ?, ?)";
+        db.query(saveSql, [userId, ecoleId, prompt, text], (err) => {
+            if (err) console.error("Erreur lors du stockage de la conversation IA :", err);
+        });
+
         res.json({ answer: text });
 
     } catch (error) {
@@ -92,9 +163,10 @@ app.post('/ask-ai', async (req, res) => {
         res.status(500).json({ answer: "Erreur IA: " + error.message });
     }
 });
+
 // ============= SIGN UP =============
 app.post('/api/signup', async (req, res) => {
-    const { username, email, password, niveau } = req.body;
+    const { username, email, password, niveau, ecole_id } = req.body;
 
     if (!username || !email || !password || !niveau) {
         return res.status(400).json({ success: false, message: "Tous les champs sont obligatoires." });
@@ -102,15 +174,16 @@ app.post('/api/signup', async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
+        const targetEcoleId = ecole_id || 1; // 1 = MathsCollege Officiel par défaut
+        const defaultRole = 'eleve';
 
-        const sql = "INSERT INTO users (username, email, password, niveau) VALUES (?, ?, ?, ?)";
-        db.query(sql, [username, email, hashedPassword, niveau], (err, result) => {
+        const sql = "INSERT INTO users (username, email, password, niveau, ecole_id, role) VALUES (?, ?, ?, ?, ?, ?)";
+        db.query(sql, [username, email, hashedPassword, niveau, targetEcoleId, defaultRole], (err, result) => {
             if (err) {
                 console.error("Erreur BDD :", err);
                 return res.status(400).json({ success: false, message: "Pseudo ou Email déjà utilisé." });
             }
 
-            // Inscription réussie en BDD (sans envoi de mail)
             return res.status(201).json({ 
                 success: true, 
                 message: "Inscription réussie !",
@@ -118,7 +191,9 @@ app.post('/api/signup', async (req, res) => {
                     id: result.insertId,
                     username: username,
                     email: email,
-                    niveau: niveau
+                    niveau: niveau,
+                    role: defaultRole,
+                    ecole_id: targetEcoleId
                 }
             });
         });
@@ -132,7 +207,14 @@ app.post('/api/signup', async (req, res) => {
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
 
-    const sql = "SELECT * FROM users WHERE email = ?";
+    // Jointure avec la table ecoles pour récupérer la charte graphique et le logo
+    const sql = `
+        SELECT u.*, e.nom AS ecole_nom, e.logo_url, e.couleur_primaire, e.statut_abonnement
+        FROM users u
+        LEFT JOIN ecoles e ON u.ecole_id = e.id
+        WHERE u.email = ?
+    `;
+
     db.query(sql, [email], async (err, result) => {
         if (err) return res.status(500).json({ success: false, message: "Erreur serveur" });
 
@@ -147,8 +229,20 @@ app.post('/login', (req, res) => {
             res.json({ 
                 success: true, 
                 message: "Connexion réussie !",
-                username: user.username,
-                niveau: user.niveau
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    niveau: user.niveau,
+                    role: user.role, // 'super_admin', 'admin_ecole', 'professeur', ou 'eleve'
+                    ecole: {
+                        id: user.ecole_id,
+                        nom: user.ecole_nom || 'MathsCollege Officiel',
+                        logo: user.logo_url,
+                        couleur: user.couleur_primaire || '#4F46E5',
+                        statut: user.statut_abonnement || 'actif'
+                    }
+                }
             });
         } else {
             res.status(401).json({ success: false, message: "Email ou mot de passe incorrect" });
@@ -167,17 +261,18 @@ app.get('/niveaux', (req, res) => {
 
 app.get('/api/cours/:niveau/:domaine', (req, res) => {
     const { niveau, domaine } = req.params;
+    const ecoleId = req.query.ecole_id || 1; // Filtre optionnel par école
 
-    // Requête qui cherche par ID de niveau OU par nom (ex: "1" ou "6e")
     const sql = `
         SELECT c.* 
         FROM cours c
         JOIN niveaux n ON c.niveau_id = n.id
         WHERE (c.niveau_id = ? OR LOWER(n.nom) = LOWER(?))
           AND LOWER(c.domaine) = LOWER(?)
+          AND (c.est_public = TRUE OR c.ecole_id = ?)
     `;
 
-    db.query(sql, [niveau, niveau, domaine], (err, results) => {
+    db.query(sql, [niveau, niveau, domaine, ecoleId], (err, results) => {
         if (err) {
             console.error("Erreur SQL :", err);
             return res.status(500).send("Erreur serveur");
@@ -213,7 +308,7 @@ app.get('/api/exercices/:niveau/:domaine', (req, res) => {
     });
 });
 
-// Route 1 : Quand le domaine est précisé (ex: /api/videos/6e/algebre)
+// Route 1 : Quand le domaine est précisé
 app.get('/api/videos/:idDuNiveau/:domaine', (req, res) => {
     const niveauId = req.params.idDuNiveau;
     const domaine = req.params.domaine;
@@ -235,7 +330,7 @@ app.get('/api/videos/:idDuNiveau/:domaine', (req, res) => {
     });
 });
 
-// Route 2 : Quand aucun domaine n'est précisé (ex: /api/videos/6e)
+// Route 2 : Quand aucun domaine n'est précisé
 app.get('/api/videos/:idDuNiveau', (req, res) => {
     const niveauId = req.params.idDuNiveau;
 
@@ -317,8 +412,6 @@ app.post('/api/solveur', (req, res) => {
         res.json({ success: false, message: "Erreur : vérifie l'écriture (ex: 2x + 2 = 4)" });
     }
 });
-
-
 
 // ============= LANCEMENT DU SERVEUR =============
 const PORT = process.env.PORT || 3000;

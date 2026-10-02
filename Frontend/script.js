@@ -40,7 +40,7 @@ window.entrerDansNiveau = function(id, nom) {
     if (titleElement) titleElement.textContent = "Niveau : " + nom;
 };
 
-// SIGNUP / LOGIN
+// ================= SIGNUP / LOGIN =================
 
 async function signup() {
     const username = document.getElementById('signup-user').value.trim();
@@ -51,14 +51,14 @@ async function signup() {
     if (!username || !email || !password) { alert("Remplis tous les champs !"); return; }
 
     try {
-        const response = await fetch('/signup', {
+        const response = await fetch('/api/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, email, password, niveau })
         });
         const data = await response.json();
         if (data.success) {
-            localStorage.setItem('user', JSON.stringify({ username, niveau }));
+            localStorage.setItem('user', JSON.stringify(data.user));
             fermerModalSignup();
             location.reload(); 
         } else { alert("Erreur : " + data.message); }
@@ -79,7 +79,8 @@ async function login() {
         });
         const data = await response.json();
         if (data.success) {
-            localStorage.setItem('user', JSON.stringify(data));
+            // Enregistre les informations complètes de l'utilisateur (id, role, école, etc.)
+            localStorage.setItem('user', JSON.stringify(data.user));
             fermerModalLogin();
             location.reload();
         } else { alert(data.message); }
@@ -92,7 +93,7 @@ function logout() {
     localStorage.removeItem('user_progression');
     location.reload();
 }
-// Alias si appelé via deconnexion()
+
 function deconnexion() {
     logout();
 }
@@ -109,9 +110,28 @@ function mettreAJourInterface(data) {
     }
     const welcomeH2 = document.querySelector('.welcome h2');
     if (welcomeH2) welcomeH2.innerText = "Ravi de te revoir, " + data.username + " !";
+    
+    // Application de la personnalisation de l'école (si disponible)
+    if (data.ecole) {
+        appliquerPersonnalisationEcole(data.ecole);
+    }
 }
 
-// AFFICHER COURS / VIDEOS / EXERCICES / CALCULATEUR
+function appliquerPersonnalisationEcole(ecole) {
+    if (!ecole || ecole.id === 1) return; // Si c'est l'école publique par défaut
+
+    const nomEcoleElement = document.getElementById('nom-ecole') || document.getElementById('header-title');
+    const logoEcoleElement = document.getElementById('logo-ecole') || document.getElementById('header-logo');
+
+    if (nomEcoleElement && ecole.nom) {
+        nomEcoleElement.innerText = `MathsCollege - ${ecole.nom}`;
+    }
+    if (logoEcoleElement && ecole.logo) {
+        logoEcoleElement.src = ecole.logo;
+    }
+}
+
+// ================= AFFICHER COURS / VIDEOS / EXERCICES / CALCULATEUR =================
 
 function showContent(blockId, title) {
     const db = document.getElementById("dashboard");
@@ -164,7 +184,7 @@ function showContent(blockId, title) {
                     if (item.contenu.includes("<div") || item.contenu.includes("<h")) {
                         renduFinal = item.contenu;
                     } else {
-                        renduFinal = marked.parse(item.contenu);
+                        renduFinal = typeof marked !== 'undefined' ? marked.parse(item.contenu) : item.contenu;
                     }
 
                     container.innerHTML += `
@@ -225,7 +245,6 @@ function showContent(blockId, title) {
         });
 }
 
-// Fonction wrapper pour compatibilité HTML
 function afficherVueContent(type) {
     let titre = "Contenu";
     if (type === 'cours') titre = "Les Cours";
@@ -236,9 +255,7 @@ function afficherVueContent(type) {
     showContent(type, titre);
 }
 
-// SOLVEUR UNIVERSEL COMPLET (6ème à 3ème) — version corrigée
-// Appel depuis le HTML : onclick="resoudre()"
-// Éléments requis : #equation-input (champ) et #resultat-solveur (zone d'affichage)
+// ================= SOLVEUR UNIVERSEL =================
 
 (function () {
     'use strict';
@@ -246,11 +263,6 @@ function afficherVueContent(type) {
     const EPS = 1e-9;
     const REL_HTML = { '=': '=', '<': '&lt;', '>': '&gt;', '<=': '≤', '>=': '≥' };
 
-    // ---------------------------------------------------------------
-    // Utilitaires
-    // ---------------------------------------------------------------
-
-    // Arrondi à 4 décimales max, sans zéros inutiles ni "-0"
     function fmt(n) {
         if (!isFinite(n)) return String(n);
         const r = Math.round(n * 1e4) / 1e4;
@@ -259,11 +271,8 @@ function afficherVueContent(type) {
 
     const isExact = (n) => Math.abs(n - Math.round(n * 1e4) / 1e4) < EPS;
     const esc = (s) => String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-    // Coefficient devant une variable : 1 -> "", -1 -> "-", 3 -> "3"
     const cx = (c) => (c === 1 ? '' : c === -1 ? '-' : fmt(c));
 
-    // Construit "2x² - 5x + 6" à partir de [[coef, symbole], ...]
     function poly(terms) {
         let s = '';
         for (const [c, sym] of terms) {
@@ -291,10 +300,6 @@ function afficherVueContent(type) {
             </div>`;
     }
 
-    // ---------------------------------------------------------------
-    // Normalisation et analyse d'un membre (ax² + bx + cy + d)
-    // ---------------------------------------------------------------
-
     function normalize(raw) {
         return raw
             .toLowerCase()
@@ -306,10 +311,9 @@ function afficherVueContent(type) {
             .replace(/×/g, '*')
             .replace(/÷/g, ':')
             .replace(/−/g, '-')
-            .replace(/\*(?=[xy])/g, ''); // 2*x -> 2x
+            .replace(/\*(?=[xy])/g, '');
     }
 
-    // Retourne {a (x²), b (x), y, c (constante)} ou null si format invalide
     function parseSide(str) {
         if (!str) return null;
         const tokens = str.match(/[+-]?[^+-]+/g) || [];
@@ -330,11 +334,7 @@ function afficherVueContent(type) {
             else res.c += coef;
         }
         return res;
-    }
-
-    // ---------------------------------------------------------------
-    // 1. Division euclidienne
-    // ---------------------------------------------------------------
+ }
 
     function divisionEuclidienne(a, b) {
         if (b === 0) return errMsg('Erreur : division par zéro impossible.');
@@ -356,10 +356,6 @@ function afficherVueContent(type) {
             </div>`;
     }
 
-    // ---------------------------------------------------------------
-    // 2. Équation à deux inconnues : A x² + B x + Y y + C = 0
-    // ---------------------------------------------------------------
-
     function solveTwoVars(A, B, Y, C) {
         const fa = -A / Y, fb = -B / Y, fc = -C / Y;
         const type = Math.abs(A) > EPS ? 'Parabole' : Math.abs(B) > EPS ? 'Droite' : 'Droite horizontale';
@@ -375,10 +371,6 @@ function afficherVueContent(type) {
             result: `y = ${poly([[fa, 'x²'], [fb, 'x'], [fc, '']])}`
         });
     }
-
-    // ---------------------------------------------------------------
-    // 3. Premier degré : B x + C  (rel)  0
-    // ---------------------------------------------------------------
 
     function solveLinear(B, C, rel) {
         const sym = REL_HTML[rel];
@@ -407,10 +399,6 @@ function afficherVueContent(type) {
                 : `Solution : x ${fsym} ${fmt(val)}${approx}`
         });
     }
-
-    // ---------------------------------------------------------------
-    // 4. Second degré : A x² + B x + C  (rel)  0
-    // ---------------------------------------------------------------
 
     function inequalitySet(pos, strict, delta, roots) {
         if (delta > 0) {
@@ -461,7 +449,6 @@ function afficherVueContent(type) {
             steps.push('Δ &lt; 0 : pas de racine réelle.');
         }
 
-        // ----- Équation -----
         if (rel === '=') {
             const result = delta > 0
                 ? `S = { ${fmt(roots[0])} ; ${fmt(roots[1])} }`
@@ -471,8 +458,6 @@ function afficherVueContent(type) {
             return card({ title: 'Second degré (équation)', steps, result });
         }
 
-        // ----- Inéquation -----
-        // P(x) < 0  équivaut à  -P(x) > 0 : on se ramène toujours à "signe positif"
         const wantPositive = rel === '>' || rel === '>=';
         const pos = (wantPositive ? A : -A) > 0;
         const strict = rel === '<' || rel === '>';
@@ -487,10 +472,6 @@ function afficherVueContent(type) {
             result: `Solution : ${esc(cond)}<br><span class="text-sm">S = ${esc(set)}</span>`
         });
     }
-
-    // ---------------------------------------------------------------
-    // 5. Calcul arithmétique détaillé (sans eval)
-    // ---------------------------------------------------------------
 
     const OPS = { '*': '×', '/': '÷', '^': '^', '+': '+', '-': '−' };
     const formatError = () => new Error('format');
@@ -509,11 +490,10 @@ function afficherVueContent(type) {
                 if (prevIsValue) throw formatError();
                 out.push(parseFloat(t));
             } else if ((t === '-' || t === '+') && !prevIsValue) {
-                // signe unaire
                 const next = raw[i + 1];
                 if (next !== undefined && /^[\d.]/.test(next)) {
                     if (t === '-' && raw[i + 2] === '^') {
-                        out.push(-1, '*', parseFloat(next)); // -2^2 = -(2^2)
+                        out.push(-1, '*', parseFloat(next));
                     } else {
                         out.push(t === '-' ? -parseFloat(next) : parseFloat(next));
                     }
@@ -524,7 +504,7 @@ function afficherVueContent(type) {
                     throw formatError();
                 }
             } else if (t === '(') {
-                if (prevIsValue) out.push('*'); // 2(3+4) -> 2*(3+4)
+                if (prevIsValue) out.push('*');
                 out.push('(');
             } else {
                 out.push(t);
@@ -543,11 +523,9 @@ function afficherVueContent(type) {
                 return OPS[t] || t;
             })
             .join(' ')
-            .replace(/\( /g, '(')
-            .replace(/ \)/g, ')');
+            .replace(/\( /g, '(')             .replace(/ \)/g, ')');
     }
 
-    // Effectue UNE opération dans tokens[lo:hi] en respectant les priorités
     function reduceRange(tokens, lo, hi) {
         let idx = -1;
         for (let i = hi - 1; i > lo; i--) if (tokens[i] === '^') { idx = i; break; }
@@ -581,7 +559,6 @@ function afficherVueContent(type) {
         const steps = [];
 
         for (let guard = 0; guard < 200; guard++) {
-            // Retire les parenthèses autour d'un simple nombre : (7) -> 7
             let changed = true;
             while (changed) {
                 changed = false;
@@ -643,10 +620,6 @@ function afficherVueContent(type) {
         }
     }
 
-    // ---------------------------------------------------------------
-    // Fonction principale
-    // ---------------------------------------------------------------
-
     function resoudre() {
         const display = document.getElementById('resultat-solveur');
         const raw = document.getElementById('equation-input').value;
@@ -662,14 +635,11 @@ function afficherVueContent(type) {
 
         const input = normalize(raw);
 
-        // 1. Division euclidienne : 47/5 ou 47:5
         const div = input.match(/^(\d+)[\/:](\d+)$/);
         if (div) return render(divisionEuclidienne(parseInt(div[1], 10), parseInt(div[2], 10)));
 
-        // Découpage autour de l'opérateur de comparaison
         const parts = input.split(/(<=|>=|=|<|>)/);
 
-        // 2. Pas de comparaison -> calcul arithmétique
         if (parts.length === 1) {
             if (/[xy]/.test(input)) {
                 return render(errMsg('Ajoutez un signe <b>=</b>, <b>&lt;</b> ou <b>&gt;</b> (ex : 2x+4=0).'));
@@ -686,25 +656,19 @@ function afficherVueContent(type) {
             return render(errMsg('Format non reconnu. Exemples : 2x+4=0, x^2-5x+6&gt;0, 2x+y=6.'));
         }
 
-        // Tout ramener à gauche : A x² + B x + Y y + C  (rel)  0
         const A = L.a - R.a;
         const B = L.b - R.b;
         const Y = L.y - R.y;
         const C = L.c - R.c;
 
-        // Deux inconnues
         if (Math.abs(Y) > EPS) {
             if (rel !== '=') return render(errMsg('Les inéquations à deux inconnues ne sont pas gérées.'));
             return render(solveTwoVars(A, B, Y, C));
         }
 
-        // Second degré
         if (Math.abs(A) > EPS) return render(solveQuadratic(A, B, C, rel));
-
-        // Premier degré
         if (Math.abs(B) > EPS) return render(solveLinear(B, C, rel));
 
-        // Plus aucune inconnue après simplification (ex : x = x, ou 3 = 5)
         const truth = {
             '=': Math.abs(C) < EPS,
             '<': C < -EPS,
@@ -727,7 +691,7 @@ function effacerSolveur() {
     document.getElementById('resultat-solveur').innerHTML = "";
 }
 
-// COACH SYLVIE IA
+// ================= COACH SYLVIE IA (GÉRÉ AVEC QUOTA & USER ID) =================
 
 async function envoyerQuestionIA() {
     const input = document.getElementById('monInputIA');
@@ -736,14 +700,19 @@ async function envoyerQuestionIA() {
 
     if (!question) return;
 
-    // 1. Afficher le message utilisateur
+    // Récupérer le profil connecté depuis le localStorage
+    const userStocke = localStorage.getItem('user');
+    const userData = userStocke ? JSON.parse(userStocke) : null;
+    const userId = userData ? userData.id : null;
+
+    // 1. Afficher le message de l'utilisateur
     reponseZone.innerHTML += `
         <div class="user-msg bg-brand-500 text-white p-3 rounded-2xl mb-3 max-w-[85%] ml-auto text-right text-sm">
             ${question}
         </div>`;
     input.value = "";
     
-    // 2. Création de la bulle d'attente
+    // 2. Bulle de chargement
     const loadingId = "load-" + Date.now();
     reponseZone.innerHTML += `
         <div id="${loadingId}" class="bot-msg bg-slate-100 text-slate-600 p-3 rounded-2xl mb-3 max-w-[85%] text-sm">
@@ -756,27 +725,32 @@ async function envoyerQuestionIA() {
         const response = await fetch('/ask-ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: question })
+            body: JSON.stringify({ 
+                prompt: question,
+                userId: userId // Transmet l'ID de l'utilisateur connecté pour vérifier le quota
+            })
         });
 
         const data = await response.json();
-
         const botBubble = document.getElementById(loadingId);
-        if (data.answer) {
-            const htmlContent = marked.parse(data.answer);
+
+        if (response.ok && data.answer) {
+            const htmlContent = typeof marked !== 'undefined' ? marked.parse(data.answer) : data.answer;
             botBubble.innerHTML = `<strong class="text-brand-500">Sylvie :</strong> ${htmlContent}`;
 
             if (window.MathJax && window.MathJax.typesetPromise) {
                 window.MathJax.typesetPromise([botBubble]);
             }
         } else {
-            botBubble.innerHTML = "Désolée, je n'ai pas pu obtenir de réponse.";
+            // Affichage des messages d'erreur ou de dépassement de quota (ex: Code HTTP 429)
+            const messageErreur = data.answer || "Désolée, je n'ai pas pu traiter votre demande.";
+            botBubble.innerHTML = `<span class="text-rose-600 font-medium">⚠️ ${messageErreur}</span>`;
         }
 
     } catch (error) {
         console.error("Erreur IA:", error);
         const errBubble = document.getElementById(loadingId);
-        if (errBubble) errBubble.innerHTML = "⚠️ Connexion perdue avec le serveur.";
+        if (errBubble) errBubble.innerHTML = "<span class='text-rose-500'>⚠️ Connexion perdue avec le serveur.</span>";
     }
 
     reponseZone.scrollTop = reponseZone.scrollHeight;
@@ -800,7 +774,7 @@ function declencherEntrainement() {
     }
 }
 
-// INITIALISATION ET GESTION DE LA SESSION AU CHARGEMENT DE LA PAGE
+// ================= INITIALISATION ET CHARGEMENT DE LA PAGE =================
 
 document.addEventListener('DOMContentLoaded', () => {
     const userStocke = localStorage.getItem('user');
@@ -811,7 +785,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const userData = JSON.parse(userStocke);
         mettreAJourInterface(userData);
         
-        // Bannières & Profils
         document.getElementById('guest-zone')?.classList.add('hidden');
         document.getElementById('user-zone')?.classList.remove('hidden');
         document.getElementById('banner-guest')?.classList.add('hidden');
@@ -824,7 +797,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (document.getElementById('user-display-name')) document.getElementById('user-display-name').textContent = nom;
         if (document.getElementById('user-display-class')) document.getElementById('user-display-class').textContent = classe;
 
-        // Message de bienvenue du Coach Sylvie pour l'élève connecté
         if (reponseIA) {
             reponseIA.innerHTML = `
                 <div class="bot-msg bg-brand-50/80 p-3 rounded-2xl border-l-4 border-brand-500 text-sm text-slate-700">
@@ -838,26 +810,24 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('banner-guest')?.classList.remove('hidden');
         document.getElementById('banner-user')?.classList.add('hidden');
 
-        // Message de bienvenue générique pour l'invité (sans prénom)
         if (reponseIA) {
             reponseIA.innerHTML = `
                 <div class="bot-msg bg-brand-50/80 p-3 rounded-2xl border-l-4 border-brand-500 text-sm text-slate-700">
-                    <strong>Sylvie :</strong> Bonjour ! Je suis ta coach de maths. Pose-moi tes questions sur les cours ou un exercice !
+                    <strong>Sylvie :</strong> Bonjour ! Je suis ta coach de maths. Pose-moi tes questions sur les cours ou un exercice ! (Connecte-toi pour profiter de Coach Sylvie).
                 </div>`;
         }
     }
 
-    // 2. Écouteurs d'événements des boutons du Dashboard
+    // Écouteurs d'événements des boutons du Dashboard
     document.getElementById("btn-cours")?.addEventListener("click", () => showContent("cours", "Cours"));
     document.getElementById("btn-videos")?.addEventListener("click", () => showContent("videos", "Vidéos"));
-   
 
-    // 3. Écouteur Touche Entrée pour l'IA
+    // Écouteur Touche Entrée pour l'IA
     document.getElementById('monInputIA')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') envoyerQuestionIA();
     });
 
-    // 4. Chargement des niveaux depuis le Backend
+    // Chargement des niveaux depuis le Backend
     if (levelsContainer) {
         fetch("/niveaux")
             .then(res => res.json())
@@ -877,22 +847,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// NAVIGATION ET SECTIONS
-
-let currentNiveau = null;
+// ================= NAVIGATION =================
 
 function selectionnerNiveau(niveau) {
   currentNiveau = niveau;
-  
-  // 1. Sauvegarder la clé attendue par cours.js
   localStorage.setItem('niveauSelectionne', niveau);
 
-  // 2. Mettre à jour le badge d'affichage du niveau dans le Dashboard
   if (document.getElementById('current-niveau-display')) {
       document.getElementById('current-niveau-display').textContent = niveau;
   }
 
-  // 3. Masquer la page des niveaux et afficher le Dashboard
   document.getElementById('levels-page')?.classList.add('hidden');
   
   const db = document.getElementById('dashboard');
@@ -925,26 +889,6 @@ function revenirDashboard() {
       db.style.display = "";
   }
 }
-
-//function enregistrerProgression(titreChapitre, leconsTerminees, totalLecons) {
-  //const pourcentage = Math.round((leconsTerminees / totalLecons) * 100);
-  //const progression = {
-    //chapitre: titreChapitre,
-    //termes: leconsTerminees,
-    //total: totalLecons,
-    //pourcentage: pourcentage
-  //};
-  //localStorage.setItem('user_progression', JSON.stringify(progression));
-//}
-
-//function reprendreLecture() {
-  //afficherVueContent('cours');
-//}
-
-
-
-// Exécuter au chargement de la page
-document.addEventListener('DOMContentLoaded', chargerDerniereLectureAccueil);
 
 function scrollToSolveur() {
   const box = document.getElementById('solveur-box') || document.getElementById('calculateur-block');
