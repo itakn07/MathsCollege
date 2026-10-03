@@ -1,4 +1,4 @@
-// Les variables globales et la navigation
+// ================= VARIABLES GLOBALES ET NAVIGATION =================
 let currentNiveauId = null;
 
 const levelsContainer = document.getElementById("levels-container");
@@ -40,7 +40,7 @@ window.entrerDansNiveau = function(id, nom) {
     if (titleElement) titleElement.textContent = "Niveau : " + nom;
 };
 
-// ================= SIGNUP / LOGIN =================
+// ================= SIGNUP / LOGIN / DECONNEXION =================
 
 async function signup() {
     const usernameEl = document.getElementById('signup-name') || document.getElementById('signup-user');
@@ -863,47 +863,46 @@ document.addEventListener('DOMContentLoaded', () => {
 // ================= NAVIGATION =================
 
 function selectionnerNiveau(niveau) {
-  currentNiveau = niveau;
-  localStorage.setItem('niveauSelectionne', niveau);
+    localStorage.setItem('niveauSelectionne', niveau);
 
-  if (document.getElementById('current-niveau-display')) {
-      document.getElementById('current-niveau-display').textContent = niveau;
-  }
+    if (document.getElementById('current-niveau-display')) {
+        document.getElementById('current-niveau-display').textContent = niveau;
+    }
 
-  document.getElementById('levels-page')?.classList.add('hidden');
+    document.getElementById('levels-page')?.classList.add('hidden');
   
-  const db = document.getElementById('dashboard');
-  if (db) {
-      db.classList.remove('hidden');
-      db.style.display = "";
-  }
+    const db = document.getElementById('dashboard');
+    if (db) {
+        db.classList.remove('hidden');
+        db.style.display = "";
+    }
 }
 
 function revenirAccueil() {
-  const db = document.getElementById('dashboard');
-  const cp = document.getElementById('content-page') || document.getElementById('content');
-  const lp = document.getElementById('levels-page');
+    const db = document.getElementById('dashboard');
+    const cp = document.getElementById('content-page') || document.getElementById('content');
+    const lp = document.getElementById('levels-page');
 
-  if (db) { db.classList.add('hidden'); db.style.display = ""; }
-  if (cp) { cp.classList.add('hidden'); cp.style.display = ""; }
-  if (lp) { lp.classList.remove('hidden'); lp.style.display = ""; }
+    if (db) { db.classList.add('hidden'); db.style.display = ""; }
+    if (cp) { cp.classList.add('hidden'); cp.style.display = ""; }
+    if (lp) { lp.classList.remove('hidden'); lp.style.display = ""; }
 }
 
 function revenirDashboard() {
-  const cp = document.getElementById('content-page') || document.getElementById('content');
-  const db = document.getElementById('dashboard');
+    const cp = document.getElementById('content-page') || document.getElementById('content');
+    const db = document.getElementById('dashboard');
 
-  if (cp) {
-      cp.classList.add('hidden');
-      cp.style.display = "";
-  }
-  if (db) {
-      db.classList.remove('hidden');
-      db.style.display = "";
-  }
+    if (cp) {
+        cp.classList.add('hidden');
+        cp.style.display = "";
+    }
+    if (db) {
+        db.classList.remove('hidden');
+        db.style.display = "";
+    }
 }
 
 function scrollToSolveur() {
-  const box = document.getElementById('solveur-box') || document.getElementById('calculateur-block');
-  box?.scrollIntoView({ behavior: 'smooth' });
+    const box = document.getElementById('solveur-box') || document.getElementById('calculateur-block');
+    box?.scrollIntoView({ behavior: 'smooth' });
 }

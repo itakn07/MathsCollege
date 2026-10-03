@@ -112,9 +112,7 @@
             class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all cursor-pointer"
           >
             <option value="eleve">🎓 Élève</option>
-            <option value="professeur">👨‍🏫 Professeur / Enseignant</option>
-            <option value="admin_ecole">🏫 Administrateur École</option>
-            <option value="sudo_admin">🔑 Super Administrateur</option>
+            
           </select>
         </div>
       </div>
@@ -170,24 +168,24 @@
         </div>
       </div>
 
-      <!-- CHAMP NIVEAU / CLASSE (Affiché uniquement si Élève) -->
-      <div id="container-niveau">
-        <label for="signup-level" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-          Classe / Niveau
-        </label>
-        <div class="relative">
-          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">🎓</span>
-          <select 
-            id="signup-level"
-            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
-          >
-            <option value="6ème">Classe de 6ème</option>
-            <option value="5ème">Classe de 5ème</option>
-            <option value="4ème">Classe de 4ème</option>
-            <option value="3ème">Classe de 3ème</option>
-          </select>
-        </div>
-      </div>
+      <!-- CHAMP CLASSE / NIVEAU (Chargé dynamiquement) -->
+<div id="container-niveau">
+  <label for="signup-level" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+    Ma Classe / Section
+  </label>
+  <div class="relative">
+    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+      🏫
+    </span>
+    <select
+      id="signup-level"
+      required
+      class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white"
+    >
+      <option value="">Chargement des classes...</option>
+    </select>
+  </div>
+</div>
 
       <!-- Bouton d'Inscription -->
       <button 
