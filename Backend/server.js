@@ -74,6 +74,16 @@ db.getConnection((err, connection) => {
     }
 });
 
+// ============= FONCTIONS UTILITAIRES =============
+function genererMotDePasseTemp() {
+    const caracteres = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    let pass = 'Prof-';
+    for (let i = 0; i < 6; i++) {
+        pass += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+    }
+    return pass;
+}
+
 // ============= MIDDLEWARE : VÉRIFICATION QUOTA IA (3 QST / JOUR) =============
 async function verifierQuotaIA(req, res, next) {
     const { userId } = req.body; 
@@ -189,7 +199,7 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
     }
 });
 
-// ============= SIGN UP =============
+// ============= AUTHENTIFICATION (SIGNUP & LOGIN) =============
 app.post('/api/signup', async (req, res) => {
     const { username, email, password, role, niveau, ecole_id } = req.body;
 
@@ -201,7 +211,6 @@ app.post('/api/signup', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const targetEcoleId = ecole_id || 1;
         
-        // Validation et normalisation des rôles
         const validRoles = ['eleve', 'professeur', 'admin_ecole', 'sudo_admin'];
         const userRole = validRoles.includes(role) ? role : 'eleve';
         
@@ -233,7 +242,6 @@ app.post('/api/signup', async (req, res) => {
     }
 });
 
-// ============= LOG IN & HARMONISATION DES REDIRECTIONS =============
 app.post('/login', (req, res) => {
     const { email, password, role } = req.body;
 
@@ -261,7 +269,6 @@ app.post('/login', (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (isMatch) {
-            // Détermination automatique du lien de redirection selon le rôle
             let redirectUrl = "index.html";
             if (user.role === 'professeur') {
                 redirectUrl = "profs.html";
@@ -381,12 +388,11 @@ app.post('/api/prof/exercices', upload.single('pdf_file'), async (req, res) => {
     }
 });
 
-// ============= ROUTE ADMIN ÉCOLE : DASHBOARD & STATISTIQUES =============
+// ============= ROUTES ADMIN ÉCOLE =============
 app.get('/api/admin-ecole/dashboard/:ecoleId', async (req, res) => {
     const { ecoleId } = req.params;
 
     try {
-        // 1. Récupérer tous les professeurs de l'école avec leurs classes
         const [teachers] = await db.promise().query(`
             SELECT 
                 u.id, 
@@ -400,21 +406,18 @@ app.get('/api/admin-ecole/dashboard/:ecoleId', async (req, res) => {
             GROUP BY u.id
         `, [ecoleId]);
 
-        // 2. Récupérer toutes les classes enregistrées dans l'école
         const [classes] = await db.promise().query(`
             SELECT id, nom AS name 
             FROM classes 
             WHERE ecole_id = ?
         `, [ecoleId]);
 
-        // 3. Récupérer les élèves de l'école
         const [eleves] = await db.promise().query(`
             SELECT id, username, niveau, class_id 
             FROM users 
             WHERE role = 'eleve' AND ecole_id = ?
         `, [ecoleId]);
 
-        // 4. Structuration simple des classes et de leurs élèves
         const classesList = classes.map(cls => {
             const classStudents = eleves
                 .filter(e => e.class_id === cls.id || e.niveau === cls.name)
@@ -439,8 +442,43 @@ app.get('/api/admin-ecole/dashboard/:ecoleId', async (req, res) => {
     }
 });
 
+app.post('/api/admin-ecole/add-teacher', async (req, res) => {
+    const { username, email, ecole_id, class_ids } = req.body;
 
-// Route optionnelle : Supprimer/Retirer un professeur
+    if (!username || !email || !ecole_id) {
+        return res.status(400).json({ error: "Le nom, l'email et l'école sont requis." });
+    }
+
+    try {
+        const tempPassword = genererMotDePasseTemp();
+        const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+        const [result] = await db.promise().query(`
+            INSERT INTO users (username, email, password, role, ecole_id)
+            VALUES (?, ?, ?, 'professeur', ?)
+        `, [username, email, hashedPassword, ecole_id]);
+
+        const teacherId = result.insertId;
+
+        if (class_ids && Array.isArray(class_ids) && class_ids.length > 0) {
+            const values = class_ids.map(classId => [teacherId, classId]);
+            await db.promise().query(`
+                INSERT INTO class_teachers (teacher_id, class_id) VALUES ?
+            `, [values]);
+        }
+
+        res.json({
+            success: true,
+            message: "Professeur créé avec succès !",
+            generatedPassword: tempPassword
+        });
+
+    } catch (err) {
+        console.error("Erreur lors de la création du professeur :", err);
+        res.status(500).json({ error: "Erreur serveur lors de la création du compte." });
+    }
+});
+
 app.delete('/api/admin-ecole/teacher/:id', async (req, res) => {
     const teacherId = req.params.id;
     try {
