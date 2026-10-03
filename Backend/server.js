@@ -382,42 +382,62 @@ app.post('/api/prof/exercices', upload.single('pdf_file'), async (req, res) => {
 });
 
 // ============= ROUTE ADMIN ÉCOLE : DASHBOARD & STATISTIQUES =============
+// ============= ROUTE ADMIN ÉCOLE : DASHBOARD & STATISTIQUES (MULTI-CLASSES) =============
 app.get('/api/admin-ecole/dashboard/:ecoleId', async (req, res) => {
     const { ecoleId } = req.params;
 
     try {
-        // 1. Récupérer les professeurs rattachés à cette école
+        // 1. Récupérer les professeurs et la liste de toutes leurs classes attribuées (séparées par une virgule)
         const [teachers] = await db.promise().query(`
-            SELECT id, username AS name, email, 'Mathématiques' AS classes
-            FROM users 
-            WHERE role = 'professeur' AND ecole_id = ?
+            SELECT 
+                u.id, 
+                u.username AS name, 
+                u.email,
+                COALESCE(GROUP_CONCAT(DISTINCT c.nom SEPARATOR ', '), 'Aucune classe') AS classes
+            FROM users u
+            LEFT JOIN class_teachers ct ON u.id = ct.teacher_id
+            LEFT JOIN classes c ON ct.class_id = c.id
+            WHERE u.role = 'professeur' AND u.ecole_id = ?
+            GROUP BY u.id
         `, [ecoleId]);
 
-        // 2. Récupérer la liste des élèves regroupés par classe / niveau
-        const [eleves] = await db.promise().query(`
-            SELECT id, username, niveau 
-            FROM users 
-            WHERE role = 'eleve' AND ecole_id = ?
-        `, [ecoleId]);
+        // 2. Récupérer les classes, le professeur principal associé et la liste des élèves inscrits
+        const [classesRows] = await db.promise().query(`
+            SELECT 
+                c.id AS class_id,
+                c.nom AS class_name,
+                u_prof.username AS teacher_name,
+                u_eleve.username AS student_name
+            FROM classes c
+            LEFT JOIN class_teachers ct ON c.id = ct.class_id
+            LEFT JOIN users u_prof ON ct.teacher_id = u_prof.id AND u_prof.role = 'professeur'
+            LEFT JOIN users u_eleve ON (u_eleve.class_id = c.id OR (u_eleve.class_id IS NULL AND u_eleve.niveau = c.niveau_nom)) 
+                                    AND u_eleve.role = 'eleve' AND u_eleve.ecole_id = ?
+            WHERE c.ecole_id = ?
+            ORDER BY c.id ASC
+        `, [ecoleId, ecoleId]);
 
-        // 3. Structurer les classes à partir des élèves réels
+        // 3. Structurer les classes pour le frontend (avec le tableau d'élèves et le nom du prof)
         const classesMap = {};
-        eleves.forEach(eleve => {
-            const nomClasse = eleve.niveau || 'Classe non assignée';
-            if (!classesMap[nomClasse]) {
-                classesMap[nomClasse] = {
-                    id: Object.keys(classesMap).length + 1,
-                    name: nomClasse,
-                    teacher: 'Professeur attribué',
+
+        classesRows.forEach(row => {
+            if (!classesMap[row.class_id]) {
+                classesMap[row.class_id] = {
+                    id: row.class_id,
+                    name: row.class_name,
+                    teacher: row.teacher_name || 'Non attribué',
                     students: []
                 };
             }
-            classesMap[nomClasse].students.push(eleve.username);
+            // Ajouter l'élève s'il existe et qu'il n'a pas déjà été ajouté
+            if (row.student_name && !classesMap[row.class_id].students.includes(row.student_name)) {
+                classesMap[row.class_id].students.push(row.student_name);
+            }
         });
 
         const classesList = Object.values(classesMap);
 
-        // Renvoi des données réelles formatées au frontend
+        // Renvoi des données réelles au frontend
         res.json({
             classes: classesList,
             teachers: teachers
