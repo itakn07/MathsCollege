@@ -134,7 +134,6 @@ function remplirOptionsClassesModal() {
   const selectClasses = document.getElementById("teacher-classes");
   if (!selectClasses) return;
 
-  // Si l'élément est un select multiple ou un conteneur
   if (selectClasses.tagName === 'SELECT') {
     selectClasses.innerHTML = "";
     schoolData.classes.forEach(c => {
@@ -149,6 +148,15 @@ function remplirOptionsClassesModal() {
 function setupEventListeners() {
   const modalStudents = document.getElementById("modal-students");
   const modalAddTeacher = document.getElementById("modal-add-teacher");
+
+  // Déconnexion
+  const btnLogout = document.getElementById("btn-logout");
+  if (btnLogout) {
+    btnLogout.addEventListener("click", () => {
+      localStorage.removeItem('user');
+      window.location.href = 'login.html';
+    });
+  }
 
   // Cliquer sur "Voir la liste des élèves"
   const classesList = document.getElementById("classes-list");
@@ -205,7 +213,7 @@ function setupEventListeners() {
     });
   }
 
-  // Soumission du formulaire d'ajout d'un Professeur avec Génération Automatique
+  // Soumission du formulaire d'ajout d'un Professeur
   const formAddTeacher = document.getElementById("form-add-teacher");
   if (formAddTeacher) {
     formAddTeacher.addEventListener("submit", async (e) => {
@@ -214,7 +222,6 @@ function setupEventListeners() {
       const username = document.getElementById("teacher-name").value.trim();
       const email = document.getElementById("teacher-email").value.trim();
       
-      // Récupération des IDs des classes sélectionnées
       const selectClasses = document.getElementById("teacher-classes");
       let classIds = [];
       
@@ -223,16 +230,12 @@ function setupEventListeners() {
           classIds = Array.from(selectClasses.selectedOptions).map(opt => parseInt(opt.value));
         } else if (selectClasses.tagName === 'SELECT') {
           if (selectClasses.value) classIds.push(parseInt(selectClasses.value));
-        } else {
-          // Si cases à cocher
-          classIds = Array.from(document.querySelectorAll('.classe-checkbox:checked')).map(cb => parseInt(cb.value));
         }
       }
 
       const ecoleId = currentUser.ecole ? currentUser.ecole.id : 1;
 
       try {
-        // Envoi à la nouvelle route backend dédiée aux profs
         const response = await fetch('/api/admin-ecole/add-teacher', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -247,13 +250,11 @@ function setupEventListeners() {
         const data = await response.json();
 
         if (response.ok && data.success) {
-          // Affichage direct du mot de passe généré
           alert(`✅ Professeur créé avec succès !\n\nEmail : ${email}\nMot de passe temporaire : ${data.generatedPassword}\n\nVeuillez noter et transmettre ces identifiants au professeur.`);
           
           formAddTeacher.reset();
           if (modalAddTeacher) modalAddTeacher.classList.add("hidden");
           
-          // Recharger les données pour mettre à jour la liste complète des profs et leurs classes
           await chargerDonneesEcole();
         } else {
           alert("Erreur : " + (data.error || data.message || "Impossible d'ajouter le professeur."));
