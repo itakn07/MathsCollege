@@ -66,8 +66,14 @@ async function signup() {
         const data = await response.json();
         if (response.ok && data.success) {
             localStorage.setItem('user', JSON.stringify(data.user));
+            
+            // Redirection selon rôle
             if (data.user.role === 'professeur') {
-                window.location.href = "/profs.html";
+                window.location.href = "profs.html";
+            } else if (data.user.role === 'admin_ecole') {
+                window.location.href = "admin_ecole.html";
+            } else if (data.user.role === 'sudo_admin') {
+                window.location.href = "super_admin.html";
             } else {
                 window.location.href = "index.html";
             }
@@ -99,8 +105,6 @@ async function login() {
             localStorage.setItem('user', JSON.stringify(data.user));
             if (data.redirectUrl) {
                 window.location.href = data.redirectUrl;
-            } else if (data.user.role === 'professeur') {
-                window.location.href = "/profs.html";
             } else {
                 window.location.href = "index.html";
             }

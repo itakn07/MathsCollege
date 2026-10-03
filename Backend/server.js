@@ -200,7 +200,11 @@ app.post('/api/signup', async (req, res) => {
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         const targetEcoleId = ecole_id || 1;
-        const userRole = role || 'eleve';
+        
+        // Validation et normalisation des rôles
+        const validRoles = ['eleve', 'professeur', 'admin_ecole', 'sudo_admin'];
+        const userRole = validRoles.includes(role) ? role : 'eleve';
+        
         const userNiveau = userRole === 'professeur' ? 'Enseignant' : (niveau || '6ème');
 
         const sql = "INSERT INTO users (username, email, password, role, niveau, ecole_id) VALUES (?, ?, ?, ?, ?, ?)";
@@ -229,7 +233,7 @@ app.post('/api/signup', async (req, res) => {
     }
 });
 
-// ============= LOG IN =============
+// ============= LOG IN & HARMONISATION DES REDIRECTIONS =============
 app.post('/login', (req, res) => {
     const { email, password, role } = req.body;
 
@@ -257,9 +261,14 @@ app.post('/login', (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (isMatch) {
+            // Détermination automatique du lien de redirection selon le rôle
             let redirectUrl = "index.html";
-            if (user.role === 'professeur' || user.role === 'admin_ecole' || user.role === 'super_admin') {
-                redirectUrl = "/profs.html";
+            if (user.role === 'professeur') {
+                redirectUrl = "profs.html";
+            } else if (user.role === 'admin_ecole') {
+                redirectUrl = "admin_ecole.html";
+            } else if (user.role === 'sudo_admin') {
+                redirectUrl = "super_admin.html";
             }
 
             res.json({ 
@@ -288,7 +297,6 @@ app.post('/login', (req, res) => {
 });
 
 // ============= ROUTES PROFESSEUR =============
-
 app.get('/api/prof/dashboard-stats', async (req, res) => {
     try {
         const [elevesCount] = await db.promise().query("SELECT COUNT(*) AS total FROM users WHERE role = 'eleve'");
@@ -491,7 +499,7 @@ app.post('/api/solveur', (req, res) => {
             return res.json({ 
                 success: true, 
                 reponse: expression, 
-                explication:` C'est une inéquation. Attention : si tu multiplies ou divises par un nombre négatif, le signe ${symbole} doit être inversé !`
+                explication: `C'est une inéquation. Attention : si tu multiplies ou divises par un nombre négatif, le signe ${symbole} doit être inversé !`
             });
         }
 
@@ -513,7 +521,7 @@ app.post('/api/solveur', (req, res) => {
 
                 return res.json({ 
                     success: true, 
-                    reponse:` x = ${solution}`, 
+                    reponse: `x = ${solution}`, 
                     explication: `On déplace le terme sans x : ${droite} - (${b}) = ${droite - b}. Puis on divise par le coefficient de x (${a}).`
                 });
             }

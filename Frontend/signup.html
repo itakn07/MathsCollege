@@ -104,15 +104,17 @@
           Je suis
         </label>
         <div class="relative">
-          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">🏫</span>
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">👤</span>
           <select 
             id="signup-role"
             required
             onchange="basculerAffichageNiveau()"
             class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all cursor-pointer"
           >
-            <option value="eleve">Élève</option>
-            <option value="professeur">Professeur / Enseignant</option>
+            <option value="eleve">🎓 Élève</option>
+            <option value="professeur">👨‍🏫 Professeur / Enseignant</option>
+            <option value="admin_ecole">🏫 Administrateur École</option>
+            <option value="sudo_admin">🔑 Super Administrateur</option>
           </select>
         </div>
       </div>
@@ -168,7 +170,7 @@
         </div>
       </div>
 
-      <!-- CHAMP NIVEAU / CLASSE (Caché si Professeur) -->
+      <!-- CHAMP NIVEAU / CLASSE (Affiché uniquement si Élève) -->
       <div id="container-niveau">
         <label for="signup-level" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
           Classe / Niveau
@@ -210,10 +212,12 @@
     function basculerAffichageNiveau() {
       const role = document.getElementById('signup-role').value;
       const containerNiveau = document.getElementById('container-niveau');
-      if (role === 'professeur') {
-        containerNiveau.classList.add('hidden');
-      } else {
+      
+      // Le sélecteur de niveau s'affiche uniquement pour les élèves
+      if (role === 'eleve') {
         containerNiveau.classList.remove('hidden');
+      } else {
+        containerNiveau.classList.add('hidden');
       }
     }
 
