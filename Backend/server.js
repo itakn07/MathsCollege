@@ -382,12 +382,11 @@ app.post('/api/prof/exercices', upload.single('pdf_file'), async (req, res) => {
 });
 
 // ============= ROUTE ADMIN ÉCOLE : DASHBOARD & STATISTIQUES =============
-// ============= ROUTE ADMIN ÉCOLE : DASHBOARD & STATISTIQUES (MULTI-CLASSES) =============
 app.get('/api/admin-ecole/dashboard/:ecoleId', async (req, res) => {
     const { ecoleId } = req.params;
 
     try {
-        // 1. Récupérer les professeurs et la liste de toutes leurs classes attribuées (séparées par une virgule)
+        // 1. Récupérer tous les professeurs de l'école avec leurs classes
         const [teachers] = await db.promise().query(`
             SELECT 
                 u.id, 
@@ -401,43 +400,34 @@ app.get('/api/admin-ecole/dashboard/:ecoleId', async (req, res) => {
             GROUP BY u.id
         `, [ecoleId]);
 
-        // 2. Récupérer les classes, le professeur principal associé et la liste des élèves inscrits
-        const [classesRows] = await db.promise().query(`
-            SELECT 
-                c.id AS class_id,
-                c.nom AS class_name,
-                u_prof.username AS teacher_name,
-                u_eleve.username AS student_name
-            FROM classes c
-            LEFT JOIN class_teachers ct ON c.id = ct.class_id
-            LEFT JOIN users u_prof ON ct.teacher_id = u_prof.id AND u_prof.role = 'professeur'
-            LEFT JOIN users u_eleve ON (u_eleve.class_id = c.id OR (u_eleve.class_id IS NULL AND u_eleve.niveau = c.niveau_nom)) 
-                                    AND u_eleve.role = 'eleve' AND u_eleve.ecole_id = ?
-            WHERE c.ecole_id = ?
-            ORDER BY c.id ASC
-        `, [ecoleId, ecoleId]);
+        // 2. Récupérer toutes les classes enregistrées dans l'école
+        const [classes] = await db.promise().query(`
+            SELECT id, nom AS name 
+            FROM classes 
+            WHERE ecole_id = ?
+        `, [ecoleId]);
 
-        // 3. Structurer les classes pour le frontend (avec le tableau d'élèves et le nom du prof)
-        const classesMap = {};
+        // 3. Récupérer les élèves de l'école
+        const [eleves] = await db.promise().query(`
+            SELECT id, username, niveau, class_id 
+            FROM users 
+            WHERE role = 'eleve' AND ecole_id = ?
+        `, [ecoleId]);
 
-        classesRows.forEach(row => {
-            if (!classesMap[row.class_id]) {
-                classesMap[row.class_id] = {
-                    id: row.class_id,
-                    name: row.class_name,
-                    teacher: row.teacher_name || 'Non attribué',
-                    students: []
-                };
-            }
-            // Ajouter l'élève s'il existe et qu'il n'a pas déjà été ajouté
-            if (row.student_name && !classesMap[row.class_id].students.includes(row.student_name)) {
-                classesMap[row.class_id].students.push(row.student_name);
-            }
+        // 4. Structuration simple des classes et de leurs élèves
+        const classesList = classes.map(cls => {
+            const classStudents = eleves
+                .filter(e => e.class_id === cls.id || e.niveau === cls.name)
+                .map(e => e.username);
+
+            return {
+                id: cls.id,
+                name: cls.name,
+                teacher: 'Professeur attribué',
+                students: classStudents
+            };
         });
 
-        const classesList = Object.values(classesMap);
-
-        // Renvoi des données réelles au frontend
         res.json({
             classes: classesList,
             teachers: teachers
@@ -445,9 +435,10 @@ app.get('/api/admin-ecole/dashboard/:ecoleId', async (req, res) => {
 
     } catch (err) {
         console.error("Erreur BDD Admin École Dashboard :", err);
-        res.status(500).json({ error: "Erreur lors du chargement des données de l'établissement." });
+        res.status(500).json({ error: "Erreur lors du chargement des données." });
     }
 });
+
 
 // Route optionnelle : Supprimer/Retirer un professeur
 app.delete('/api/admin-ecole/teacher/:id', async (req, res) => {
