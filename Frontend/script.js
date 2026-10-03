@@ -17,7 +17,11 @@ function fermerModalLogin() {
 }
 function ouvrirModalSignup() { 
     const modal = document.getElementById('signup-modal');
-    if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+    if (modal) { 
+        modal.classList.remove('hidden'); 
+        modal.classList.add('flex'); 
+        chargerClassesSignup(); // Recharge la liste des classes à l'ouverture
+    }
 }
 function fermerModalSignup() { 
     const modal = document.getElementById('signup-modal');
@@ -42,20 +46,52 @@ window.entrerDansNiveau = function(id, nom) {
 
 // ================= SIGNUP / LOGIN / DECONNEXION =================
 
+// Fonction pour charger les classes dynamiquement via la route /api/classes
+function chargerClassesSignup() {
+    const niveauEl = document.getElementById('signup-level') || document.getElementById('signup-niveau') || document.getElementById('classe-select');
+    if (!niveauEl) return;
+
+    fetch('/api/classes')
+        .then(res => {
+            if (!res.ok) throw new Error("Erreur lors de la récupération des classes");
+            return res.json();
+        })
+        .then(classes => {
+            niveauEl.innerHTML = '<option value="">-- Sélectionne ta classe --</option>';
+            classes.forEach(cls => {
+                const option = document.createElement("option");
+                option.value = cls.nom; // ou cls.id selon ton besoin côté backend
+                option.textContent = cls.nom; // ex: "6ème A", "6ème B"
+                niveauEl.appendChild(option);
+            });
+        })
+        .catch(err => {
+            console.error("Erreur chargement classes signup :", err);
+        });
+}
+
 async function signup() {
     const usernameEl = document.getElementById('signup-name') || document.getElementById('signup-user');
     const emailEl = document.getElementById('signup-email');
     const passwordEl = document.getElementById('signup-pass');
     const roleEl = document.getElementById('signup-role');
-    const niveauEl = document.getElementById('signup-level') || document.getElementById('signup-niveau');
+    const niveauEl = document.getElementById('signup-level') || document.getElementById('signup-niveau') || document.getElementById('classe-select');
 
     const username = usernameEl ? usernameEl.value.trim() : '';
     const email = emailEl ? emailEl.value.trim() : '';
     const password = passwordEl ? passwordEl.value.trim() : '';
     const role = roleEl ? roleEl.value : 'eleve';
-    const niveau = (role === 'professeur') ? 'Enseignant' : (niveauEl ? niveauEl.value : '6ème');
+    const niveau = (role === 'professeur') ? 'Enseignant' : (niveauEl ? niveauEl.value : '');
 
-    if (!username || !email || !password) { alert("Remplis tous les champs obligatoires !"); return; }
+    if (!username || !email || !password) { 
+        alert("Remplis tous les champs obligatoires !"); 
+        return; 
+    }
+
+    if (role === 'eleve' && !niveau) {
+        alert("Veuillez sélectionner votre classe !");
+        return;
+    }
 
     try {
         const response = await fetch('/api/signup', {
@@ -795,6 +831,25 @@ function declencherEntrainement() {
 // ================= INITIALISATION ET CHARGEMENT DE LA PAGE =================
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Charger la liste des classes au démarrage pour le Signup
+    chargerClassesSignup();
+
+    // Gestion de l'affichage du champ classe selon le rôle sélectionné
+    const roleEl = document.getElementById('signup-role');
+    if (roleEl) {
+        roleEl.addEventListener('change', (e) => {
+            const niveauEl = document.getElementById('signup-level') || document.getElementById('signup-niveau') || document.getElementById('classe-select');
+            if (niveauEl) {
+                if (e.target.value === 'professeur') {
+                    niveauEl.style.display = 'none';
+                } else {
+                    niveauEl.style.display = '';
+                    chargerClassesSignup();
+                }
+            }
+        });
+    }
+
     const userStocke = localStorage.getItem('user');
     const reponseIA = document.getElementById('reponseIA');
 

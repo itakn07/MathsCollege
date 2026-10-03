@@ -648,6 +648,18 @@ app.post('/api/solveur', (req, res) => {
     }
 });
 
+// Route pour récupérer la liste de toutes les classes (6ème A, 6ème B, etc.)
+app.get('/api/classes', (req, res) => {
+    const sql = "SELECT id, nom, niveau_nom FROM classes ORDER BY nom ASC";
+    db.query(sql, (err, results) => {
+        if (err) {
+            console.error("Erreur SQL lors de la récupération des classes :", err);
+            return res.status(500).json({ error: "Erreur lors de la récupération des classes" });
+        }
+        res.json(results);
+    });
+});
+
 // ============= LANCEMENT DU SERVEUR =============
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
