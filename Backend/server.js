@@ -381,6 +381,66 @@ app.post('/api/prof/exercices', upload.single('pdf_file'), async (req, res) => {
     }
 });
 
+// ============= ROUTE ADMIN ÉCOLE : DASHBOARD & STATISTIQUES =============
+app.get('/api/admin-ecole/dashboard/:ecoleId', async (req, res) => {
+    const { ecoleId } = req.params;
+
+    try {
+        // 1. Récupérer les professeurs rattachés à cette école
+        const [teachers] = await db.promise().query(`
+            SELECT id, username AS name, email, 'Mathématiques' AS classes
+            FROM users 
+            WHERE role = 'professeur' AND ecole_id = ?
+        `, [ecoleId]);
+
+        // 2. Récupérer la liste des élèves regroupés par classe / niveau
+        const [eleves] = await db.promise().query(`
+            SELECT id, username, niveau 
+            FROM users 
+            WHERE role = 'eleve' AND ecole_id = ?
+        `, [ecoleId]);
+
+        // 3. Structurer les classes à partir des élèves réels
+        const classesMap = {};
+        eleves.forEach(eleve => {
+            const nomClasse = eleve.niveau || 'Classe non assignée';
+            if (!classesMap[nomClasse]) {
+                classesMap[nomClasse] = {
+                    id: Object.keys(classesMap).length + 1,
+                    name: nomClasse,
+                    teacher: 'Professeur attribué',
+                    students: []
+                };
+            }
+            classesMap[nomClasse].students.push(eleve.username);
+        });
+
+        const classesList = Object.values(classesMap);
+
+        // Renvoi des données réelles formatées au frontend
+        res.json({
+            classes: classesList,
+            teachers: teachers
+        });
+
+    } catch (err) {
+        console.error("Erreur BDD Admin École Dashboard :", err);
+        res.status(500).json({ error: "Erreur lors du chargement des données de l'établissement." });
+    }
+});
+
+// Route optionnelle : Supprimer/Retirer un professeur
+app.delete('/api/admin-ecole/teacher/:id', async (req, res) => {
+    const teacherId = req.params.id;
+    try {
+        await db.promise().query("DELETE FROM users WHERE id = ? AND role = 'professeur'", [teacherId]);
+        res.json({ success: true, message: "Professeur retiré avec succès." });
+    } catch (err) {
+        console.error("Erreur suppression professeur :", err);
+        res.status(500).json({ error: "Erreur lors de la suppression." });
+    }
+});
+
 // ============= ROUTES API ÉLÈVES & CONTENUS =============
 app.get('/niveaux', (req, res) => {
     const sql = "SELECT * FROM niveaux";
