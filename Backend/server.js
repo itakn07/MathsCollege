@@ -709,9 +709,12 @@ app.get('/api/admin/ecoles', (req, res) => {
     });
 });
 
-// ROUTE D'AJOUT D'UNE ÉCOLE AVEC UPLOAD DU LOGO (IMAGE)
+// ROUTE D'AJOUT D'UNE ÉCOLE AVEC UPLOAD DU LOGO (IMAGE) & GESTION DES ABONNEMENTS
 app.post('/api/admin/ecoles', uploadLogo.single('logo'), (req, res) => {
-    const { nom, ville, quartier, arrondissement, couleur_primaire, telephone, email_contact } = req.body;
+    const { 
+        nom, ville, quartier, arrondissement, couleur_primaire, 
+        telephone, email_contact, formule_abonnement, statut_abonnement, date_fin_abonnement 
+    } = req.body;
 
     // Chemin du logo s'il a été téléchargé
     const logo_url = req.file ? `/uploads/logos/${req.file.filename}` : null;
@@ -723,10 +726,16 @@ app.post('/api/admin/ecoles', uploadLogo.single('logo'), (req, res) => {
                     .replace(/[\s_-]+/g, '-')
                     .replace(/^-+|-+$/g, '');
 
+    // Formatage de la date de fin au format MySQL (YYYY-MM-DD HH:MM:SS)
+    let dateFinFormatted = null;
+    if (date_fin_abonnement) {
+        dateFinFormatted = new Date(date_fin_abonnement).toISOString().slice(0, 19).replace('T', ' ');
+    }
+
     const sql = `
         INSERT INTO ecoles 
-        (nom, ville, quartier, arrondissement, slug, logo_url, couleur_primaire, telephone, email_contact, formule_abonnement, statut_abonnement, created_at) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'annuel', 'actif', NOW())
+        (nom, ville, quartier, arrondissement, slug, logo_url, couleur_primaire, telephone, email_contact, formule_abonnement, statut_abonnement, date_fin_abonnement, created_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `;
 
     const params = [
@@ -738,7 +747,10 @@ app.post('/api/admin/ecoles', uploadLogo.single('logo'), (req, res) => {
         logo_url, 
         couleur_primaire || '#4F46E5', 
         telephone || null, 
-        email_contact || null
+        email_contact || null,
+        formule_abonnement || 'annuel',
+        statut_abonnement || 'actif',
+        dateFinFormatted
     ];
 
     db.query(sql, params, (err, result) => {
@@ -747,6 +759,51 @@ app.post('/api/admin/ecoles', uploadLogo.single('logo'), (req, res) => {
             return res.status(500).json({ error: err.message });
         }
         res.json({ success: true, id: result.insertId });
+    });
+});
+
+// ROUTE DE RENOUVELLEMENT DE L'ABONNEMENT D'UNE ÉCOLE
+app.post('/api/admin/ecoles/:id/renouveler', (req, res) => {
+    const ecoleId = req.params.id;
+    const { formule } = req.body; // 'mensuel' ou 'annuel'
+
+    db.query("SELECT date_fin_abonnement FROM ecoles WHERE id = ?", [ecoleId], (err, results) => {
+        if (err) {
+            console.error("Erreur récupération école :", err);
+            return res.status(500).json({ error: err.message });
+        }
+
+        if (!results || results.length === 0) {
+            return res.status(404).json({ error: "Établissement introuvable." });
+        }
+
+        const ancienneDate = results[0].date_fin_abonnement ? new Date(results[0].date_fin_abonnement) : new Date();
+        const maintenant = new Date();
+
+        // Si l'abonnement est encore valide, on cumule à partir de l'ancienne date. Sinon, on repart d'aujourd'hui.
+        let nouvelleDateFin = (ancienneDate > maintenant) ? ancienneDate : maintenant;
+
+        if (formule === "annuel") {
+            nouvelleDateFin.setFullYear(nouvelleDateFin.getFullYear() + 1);
+        } else {
+            nouvelleDateFin.setMonth(nouvelleDateFin.getMonth() + 1);
+        }
+
+        const dateSql = nouvelleDateFin.toISOString().slice(0, 19).replace('T', ' ');
+
+        const updateSql = "UPDATE ecoles SET formule_abonnement = ?, date_fin_abonnement = ?, statut_abonnement = 'actif' WHERE id = ?";
+        
+        db.query(updateSql, [formule || 'annuel', dateSql, ecoleId], (updateErr) => {
+            if (updateErr) {
+                console.error("Erreur renouvellement :", updateErr);
+                return res.status(500).json({ error: updateErr.message });
+            }
+
+            res.json({ 
+                success: true, 
+                message: "Abonnement prolongé avec succès jusqu'au " + nouvelleDateFin.toLocaleDateString('fr-FR') 
+            });
+        });
     });
 });
 
