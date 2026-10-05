@@ -95,6 +95,28 @@ db.getConnection((err, connection) => {
     }
 });
 
+// ============= TÂCHE AUTOMATIQUE : VÉRIFICATION ABONNEMENTS ÉPIRÉS =============
+function verifierAbonnementsExpires() {
+    const updateExpiredSql = `
+        UPDATE ecoles 
+        SET statut_abonnement = 'inactif' 
+        WHERE date_fin_abonnement IS NOT NULL 
+          AND date_fin_abonnement < NOW() 
+          AND statut_abonnement = 'actif'
+    `;
+    db.query(updateExpiredSql, (err, result) => {
+        if (err) {
+            console.error("[CRON Abonnements] Erreur mise à jour statut :", err);
+        } else if (result.affectedRows > 0) {
+            console.log(`[CRON Abonnements] ${result.affectedRows} école(s) passée(s) en statut inactif/expiré.`);
+        }
+    });
+}
+
+// Lancement de la vérification au démarrage puis toutes les heures
+verifierAbonnementsExpires();
+setInterval(verifierAbonnementsExpires, 1000 * 60 * 60);
+
 // ============= FONCTIONS UTILITAIRES =============
 function genererMotDePasseTemp() {
     const caracteres = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
@@ -267,7 +289,7 @@ app.post('/login', (req, res) => {
     const { email, password } = req.body; 
 
     const sql = `
-        SELECT u.*, e.nom AS ecole_nom, e.logo_url, e.couleur_primaire, e.statut_abonnement
+        SELECT u.*, e.nom AS ecole_nom, e.logo_url, e.couleur_primaire, e.statut_abonnement, e.date_fin_abonnement
         FROM users u
         LEFT JOIN ecoles e ON u.ecole_id = e.id
         WHERE u.email = ?
@@ -284,6 +306,19 @@ app.post('/login', (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (isMatch) {
+            // Vérification du statut de l'abonnement de l'école
+            if (user.role !== 'super_admin' && user.ecole_id && user.ecole_id !== 1) {
+                const estInactif = user.statut_abonnement === 'inactif';
+                const estExpire = user.date_fin_abonnement && new Date(user.date_fin_abonnement) < new Date();
+
+                if (estInactif || estExpire) {
+                    return res.status(403).json({ 
+                        success: false, 
+                        message: "L'abonnement de votre établissement a expiré. Veuillez contacter la direction de votre école." 
+                    });
+                }
+            }
+
             let redirectUrl = "index.html";
             if (user.role === 'professeur') {
                 redirectUrl = "profs.html";
