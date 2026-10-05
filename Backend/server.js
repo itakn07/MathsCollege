@@ -274,7 +274,7 @@ app.post('/login', (req, res) => {
                 redirectUrl = "profs.html";
             } else if (user.role === 'admin_ecole') {
                 redirectUrl = "admin_ecole.html";
-            } else if (user.role === 'sudo_admin') {
+            } else if (user.role === 'super_admin') {
                 redirectUrl = "super_admin.html";
             }
 
