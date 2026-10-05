@@ -661,7 +661,7 @@ app.get('/api/classes', (req, res) => {
 });
 
 // ==========================================
-// ROUTES API - SUDO ADMIN
+// ROUTES API - SUPER ADMIN
 // ==========================================
 
 // 1. Statistiques globales

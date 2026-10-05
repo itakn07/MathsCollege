@@ -1,7 +1,7 @@
 // Adresse de ton API Backend
 const API_URL = "http://localhost:3000/api/admin";
 
-// Execution au chargement de la page
+// Exécution au chargement de la page
 document.addEventListener("DOMContentLoaded", () => {
     verifierAccesAdmin();
     chargerStatistiques();
@@ -14,9 +14,9 @@ document.addEventListener("DOMContentLoaded", () => {
 function verifierAccesAdmin() {
     const user = JSON.parse(localStorage.getItem("user"));
     
-    // Vérifie si l'utilisateur est connecté et possède le rôle sudo_admin
-    if (!user || user.role !== "sudo_admin") {
-        alert("Accès refusé. Vous devez être connecté en tant que Sudo Admin.");
+    // Vérifie si l'utilisateur est connecté et possède le rôle super_admin
+    if (!user || user.role !== "super_admin") {
+        alert("Accès refusé. Vous devez être connecté en tant que Super Admin.");
         window.location.href = "login.html";
         return;
     }
@@ -60,7 +60,7 @@ function switchTab(tab) {
         users: "Gestion des Utilisateurs",
         validations: "Validations des Enseignants"
     };
-    if (pageTitle) pageTitle.textContent = titles[tab] || "Sudo Admin";
+    if (pageTitle) pageTitle.textContent = titles[tab] || "Super Admin";
 
     // Charger les données de la section
     if (tab === 'stats') chargerStatistiques();
