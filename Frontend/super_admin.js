@@ -1,5 +1,5 @@
 // Adresse de ton API Backend
-const API_URL = "http://localhost:3000/api/admin";
+const API_URL = "/api/admin";
 
 // Exécution au chargement de la page
 document.addEventListener("DOMContentLoaded", () => {
