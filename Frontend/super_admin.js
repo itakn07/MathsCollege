@@ -121,28 +121,25 @@ async function chargerEcoles() {
     }
 }
 
-async function creerEcole() {
-    const payload = {
-        nom: document.getElementById("ecole-nom").value.trim(),
-        ville: document.getElementById("ecole-ville").value.trim(),
-        quartier: document.getElementById("ecole-quartier").value.trim(),
-        arrondissement: document.getElementById("ecole-arrondissement").value.trim(),
-        couleur_primaire: document.getElementById("ecole-couleur").value,
-        telephone: document.getElementById("ecole-telephone").value.trim(),
-        email_contact: document.getElementById("ecole-email").value.trim(),
-        logo_url: document.getElementById("ecole-logo").value.trim()
-    };
+async function creerEcole(event) {
+    if (event) event.preventDefault();
 
-    if (!payload.nom) {
+    const form = document.getElementById("formAddEcole");
+    const nom = document.getElementById("ecole-nom").value.trim();
+
+    if (!nom) {
         alert("Veuillez saisir le nom de l'établissement.");
         return;
     }
 
+    // Capture automatiquement l'ensemble des champs du formulaire et l'image du logo
+    const formData = new FormData(form);
+
     try {
         const res = await fetch(`${API_URL}/ecoles`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+            // Ne pas définir manuellement le Content-Type lors de l'envoi d'un FormData
+            body: formData
         });
 
         if (res.ok) {
@@ -150,7 +147,8 @@ async function creerEcole() {
             chargerEcoles();
             chargerStatistiques();
         } else {
-            alert("Erreur lors de la création de l'école.");
+            const errorData = await res.json();
+            alert("Erreur lors de la création de l'école : " + (errorData.error || "Erreur serveur"));
         }
     } catch (err) {
         console.error("Erreur création école:", err);
@@ -263,14 +261,9 @@ async function traiterValidationProf(id, approuve) {
 // ==========================================
 
 function ouvrirModalEcole() {
-    document.getElementById("ecole-nom").value = "";
-    document.getElementById("ecole-ville").value = "";
-    document.getElementById("ecole-quartier").value = "";
-    document.getElementById("ecole-arrondissement").value = "";
+    const form = document.getElementById("formAddEcole");
+    if (form) form.reset();
     document.getElementById("ecole-couleur").value = "#4F46E5";
-    document.getElementById("ecole-telephone").value = "";
-    document.getElementById("ecole-email").value = "";
-    document.getElementById("ecole-logo").value = "";
 
     const modal = document.getElementById("modal-ecole");
     modal.classList.remove("hidden");
@@ -278,6 +271,9 @@ function ouvrirModalEcole() {
 }
 
 function fermerModalEcole() {
+    const form = document.getElementById("formAddEcole");
+    if (form) form.reset();
+
     const modal = document.getElementById("modal-ecole");
     modal.classList.add("hidden");
     modal.classList.remove("flex");

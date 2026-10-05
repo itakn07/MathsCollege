@@ -17,27 +17,48 @@ const API_KEY = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
 const app = express();
 
-const uploadDir = path.join(__dirname, 'uploads', 'fiches');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
+// --- Configuration Multer pour les Fiches (PDFs cours/exercices) ---
+const uploadDirFiches = path.join(__dirname, 'uploads', 'fiches');
+if (!fs.existsSync(uploadDirFiches)) {
+    fs.mkdirSync(uploadDirFiches, { recursive: true });
     console.log('Dossier uploads/fiches créé avec succès !');
 }
 
-const storage = multer.diskStorage({
+const storageFiches = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, uploadDir);
+        cb(null, uploadDirFiches);
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
     }
 });
-const upload = multer({ storage: storage });
+const upload = multer({ storage: storageFiches });
 
+// --- Configuration Multer pour les Logos d'Écoles (Images) ---
+const uploadDirLogos = path.join(__dirname, 'uploads', 'logos');
+if (!fs.existsSync(uploadDirLogos)) {
+    fs.mkdirSync(uploadDirLogos, { recursive: true });
+    console.log('Dossier uploads/logos créé avec succès !');
+}
+
+const storageLogos = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadDirLogos);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'logo-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+const uploadLogo = multer({ storage: storageLogos });
+
+// Middleware fichiers statiques & body parsers
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, '../Frontend')));
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // ============= CONFIGURATION EMAIL =============
 const transporter = nodemailer.createTransport({
@@ -243,7 +264,6 @@ app.post('/api/signup', async (req, res) => {
 });
 
 app.post('/login', (req, res) => {
-    // On ne filtre plus par "role" dans la requête SQL
     const { email, password } = req.body; 
 
     const sql = `
@@ -264,7 +284,6 @@ app.post('/login', (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (isMatch) {
-            // Détermination dynamique de la redirection selon le rôle RÉEL stocké en BDD
             let redirectUrl = "index.html";
             if (user.role === 'professeur') {
                 redirectUrl = "profs.html";
@@ -283,7 +302,7 @@ app.post('/login', (req, res) => {
                     username: user.username,
                     email: user.email,
                     niveau: user.niveau,
-                    role: user.role, // Renvoie le vrai rôle 'super_admin'
+                    role: user.role,
                     ecole: {
                         id: user.ecole_id,
                         nom: user.ecole_nom || 'MathsCollege Officiel',
@@ -657,7 +676,7 @@ app.get('/api/classes', (req, res) => {
 });
 
 // ==========================================
-// ROUTES API - SUPER ADMIN (CORRIGÉES)
+// ROUTES API - SUPER ADMIN
 // ==========================================
 
 // 1. Statistiques globales
@@ -690,11 +709,15 @@ app.get('/api/admin/ecoles', (req, res) => {
     });
 });
 
-app.post('/api/admin/ecoles', (req, res) => {
-    const { nom, ville, quartier, arrondissement, logo_url, couleur_primaire, telephone, email_contact } = req.body;
+// ROUTE D'AJOUT D'UNE ÉCOLE AVEC UPLOAD DU LOGO (IMAGE)
+app.post('/api/admin/ecoles', uploadLogo.single('logo'), (req, res) => {
+    const { nom, ville, quartier, arrondissement, couleur_primaire, telephone, email_contact } = req.body;
+
+    // Chemin du logo s'il a été téléchargé
+    const logo_url = req.file ? `/uploads/logos/${req.file.filename}` : null;
 
     // Génération automatique du slug
-    const slug = nom.toLowerCase()
+    const slug = (nom || '').toLowerCase()
                     .trim()
                     .replace(/[^\w\s-]/g, '')
                     .replace(/[\s_-]+/g, '-')
@@ -712,7 +735,7 @@ app.post('/api/admin/ecoles', (req, res) => {
         quartier || null, 
         arrondissement || null, 
         slug, 
-        logo_url || null, 
+        logo_url, 
         couleur_primaire || '#4F46E5', 
         telephone || null, 
         email_contact || null
