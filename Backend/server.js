@@ -285,6 +285,18 @@ app.post('/api/signup', async (req, res) => {
     }
 });
 
+// Route pour charger la liste des écoles dans le formulaire d'inscription
+app.get('/api/ecoles/liste', (req, res) => {
+    const sql = "SELECT id, nom FROM ecoles WHERE statut_abonnement = 'actif' ORDER BY nom ASC";
+    db.query(sql, (err, results) => {
+        if (err) {
+            console.error("Erreur chargement écoles :", err);
+            return res.status(500).json({ success: false, message: "Impossible de charger la liste des écoles." });
+        }
+        res.json({ success: true, ecoles: results });
+    });
+});
+
 app.post('/login', (req, res) => {
     const { email, password } = req.body; 
 

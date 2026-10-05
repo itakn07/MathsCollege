@@ -56,7 +56,7 @@
             </linearGradient>
           </defs>
 
-          <!-- GRAND CERCLE VIOLET CLAIR -->
+          <!-- CERCLE VIOLET CLAIR -->
           <circle cx="150" cy="120" r="95" fill="url(#purpleGlow)" stroke="#C7D2FE" stroke-width="2" />
 
           <!-- Ombre du livre -->
@@ -79,7 +79,7 @@
             <line x1="130" y1="43" x2="175" y2="36" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" />
             <line x1="118" y1="52" x2="175" y2="44" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" />
 
-            <!-- Marque-page ruban jaune -->
+            <!-- Marque-page -->
             <path d="M100 50 C105 58 110 65 112 78 L118 73 L124 77 C122 65 108 55 100 50 Z" fill="#FBBF24" />
           </g>
 
@@ -112,7 +112,6 @@
             class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all cursor-pointer"
           >
             <option value="eleve">🎓 Élève</option>
-            
           </select>
         </div>
       </div>
@@ -168,24 +167,42 @@
         </div>
       </div>
 
-      <!-- CHAMP CLASSE / NIVEAU (Chargé dynamiquement) -->
-<div id="container-niveau">
-  <label for="signup-level" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-    Ma Classe / Section
-  </label>
-  <div class="relative">
-    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-      🏫
-    </span>
-    <select
-      id="signup-level"
-      required
-      class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white"
-    >
-      <option value="">Chargement des classes...</option>
-    </select>
-  </div>
-</div>
+      <!-- CHAMP ÉTABLISSEMENT / ÉCOLE (Chargé dynamiquement) -->
+      <div>
+        <label for="signup-ecole" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+          Mon Établissement
+        </label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">🏢</span>
+          <select
+            id="signup-ecole"
+            required
+            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all cursor-pointer"
+          >
+            <option value="">Chargement des écoles...</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- CHAMP CLASSE / NIVEAU -->
+      <div id="container-niveau">
+        <label for="signup-level" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+          Ma Classe / Section
+        </label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">🏫</span>
+          <select
+            id="signup-level"
+            required
+            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all cursor-pointer"
+          >
+            <option value="6ème">6ème</option>
+            <option value="5ème">5ème</option>
+            <option value="4ème">4ème</option>
+            <option value="3ème">3ème</option>
+          </select>
+        </div>
+      </div>
 
       <!-- Bouton d'Inscription -->
       <button 
@@ -207,11 +224,34 @@
   <!-- Script JS lié -->
   <script src="script.js"></script>
   <script>
+    // Charger la liste des écoles dès l'affichage de la page
+    document.addEventListener('DOMContentLoaded', async () => {
+      const selectEcole = document.getElementById('signup-ecole');
+      try {
+        const response = await fetch('/api/ecoles/liste');
+        const data = await response.json();
+
+        if (data.success && data.ecoles && data.ecoles.length > 0) {
+          selectEcole.innerHTML = '<option value="">-- Choisis ton école --</option>';
+          data.ecoles.forEach(ecole => {
+            const option = document.createElement('option');
+            option.value = ecole.id;
+            option.textContent = ecole.nom;
+            selectEcole.appendChild(option);
+          });
+        } else {
+          selectEcole.innerHTML = '<option value="1">École Générale / Publique</option>';
+        }
+      } catch (err) {
+        console.error("Erreur lors de la récupération des écoles :", err);
+        selectEcole.innerHTML = '<option value="1">École Générale / Publique</option>';
+      }
+    });
+
     function basculerAffichageNiveau() {
       const role = document.getElementById('signup-role').value;
       const containerNiveau = document.getElementById('container-niveau');
       
-      // Le sélecteur de niveau s'affiche uniquement pour les élèves
       if (role === 'eleve') {
         containerNiveau.classList.remove('hidden');
       } else {

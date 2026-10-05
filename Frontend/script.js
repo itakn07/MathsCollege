@@ -76,12 +76,14 @@ async function signup() {
     const passwordEl = document.getElementById('signup-pass');
     const roleEl = document.getElementById('signup-role');
     const niveauEl = document.getElementById('signup-level') || document.getElementById('signup-niveau') || document.getElementById('classe-select');
+    const ecoleEl = document.getElementById('signup-ecole');
 
     const username = usernameEl ? usernameEl.value.trim() : '';
     const email = emailEl ? emailEl.value.trim() : '';
     const password = passwordEl ? passwordEl.value.trim() : '';
     const role = roleEl ? roleEl.value : 'eleve';
     const niveau = (role === 'professeur') ? 'Enseignant' : (niveauEl ? niveauEl.value : '');
+    const ecole_id = ecoleEl && ecoleEl.value ? ecoleEl.value : 1;
 
     if (!username || !email || !password) { 
         alert("Remplis tous les champs obligatoires !"); 
@@ -97,13 +99,13 @@ async function signup() {
         const response = await fetch('/api/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, email, password, role, niveau })
+            body: JSON.stringify({ username, email, password, role, niveau, ecole_id })
         });
         const data = await response.json();
         if (response.ok && data.success) {
             localStorage.setItem('user', JSON.stringify(data.user));
             
-            // Redirection selon rôle
+            // Redirection selon le rôle
             if (data.user.role === 'professeur') {
                 window.location.href = "profs.html";
             } else if (data.user.role === 'admin_ecole') {
@@ -116,7 +118,9 @@ async function signup() {
         } else { 
             alert("Erreur : " + (data.message || "Impossible de créer le compte.")); 
         }
-    } catch (e) { alert("Le serveur ne répond pas."); }
+    } catch (e) { 
+        alert("Le serveur ne répond pas."); 
+    }
 }
 
 async function login() {

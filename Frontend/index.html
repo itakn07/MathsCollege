@@ -6,7 +6,7 @@
     <title>MathsCollege</title>
 
     <!-- Favicon (icône dans l'onglet du navigateur) -->
-<link rel="icon" type="image/png" href="logo.png">
+    <link rel="icon" type="image/png" href="logo.png">
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -47,39 +47,38 @@
 
   <div>
     <!-- Header / Navbar -->
-     <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-3 sm:px-4 py-2.5 sm:py-3">
-  <div class="max-w-4xl mx-auto flex justify-between items-center min-w-0 gap-2">
+    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-3 sm:px-4 py-2.5 sm:py-3">
+      <div class="max-w-4xl mx-auto flex justify-between items-center min-w-0 gap-2">
 
-    <!-- Logo + Titre -->
-    <div class="flex items-center gap-1.5 sm:gap-2.5 cursor-pointer min-w-0 shrink" onclick="revenirAccueil()">
-      <img src="logo.png" alt="Logo MC" class="h-7 sm:h-9 w-auto object-contain mix-blend-multiply shrink-0">
-      <h1 class="text-base sm:text-xl font-extrabold bg-gradient-to-r from-brand-500 to-purple-600 bg-clip-text text-transparent truncate">
-        MathsCollege
-      </h1>
-    </div>
-   
-    <!-- Zone Boutons / Profil -->
-    <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-      <!-- Zone invités (si non connecté) -->
-      <div id="guest-zone" class="flex gap-1.5 sm:gap-2">
-        <a href="login.html" class="nav-btn bg-brand-500 text-white px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap">
-          Connexion
-        </a>
-        <a href="signup.html" class="nav-btn bg-brand-500 text-white px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap">
-          S'inscrire
-        </a>
+        <!-- Logo + Titre (Mis à jour dynamiquement selon l'école) -->
+        <div class="flex items-center gap-1.5 sm:gap-2.5 cursor-pointer min-w-0 shrink" onclick="revenirAccueil()">
+          <img id="header-logo" src="logo.png" alt="Logo MC" class="h-7 sm:h-9 w-auto object-contain mix-blend-multiply shrink-0">
+          <h1 id="header-title" class="text-base sm:text-xl font-extrabold bg-gradient-to-r from-brand-500 to-purple-600 bg-clip-text text-transparent truncate">
+            MathsCollege
+          </h1>
+        </div>
+       
+        <!-- Zone Boutons / Profil -->
+        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <!-- Zone invités (si non connecté) -->
+          <div id="guest-zone" class="flex gap-1.5 sm:gap-2">
+            <a href="login.html" class="nav-btn bg-brand-500 text-white px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap">
+              Connexion
+            </a>
+            <a href="signup.html" class="nav-btn bg-brand-500 text-white px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap">
+              S'inscrire
+            </a>
+          </div>
+
+          <!-- Zone utilisateur connecté -->
+          <div id="user-zone" class="hidden flex items-center gap-2 sm:gap-3">
+            <span id="user-badge" class="bg-brand-50 text-brand-600 text-xs font-bold px-2.5 sm:px-3 py-1 rounded-full border border-brand-100 truncate max-w-[100px] sm:max-w-none"></span>
+            <button onclick="deconnexion()" class="text-xs text-rose-500 hover:underline font-semibold whitespace-nowrap">Déconnexion</button>
+          </div>
+        </div>
+
       </div>
-
-      <!-- Zone utilisateur connecté -->
-      <div id="user-zone" class="hidden flex items-center gap-2 sm:gap-3">
-        <span id="user-badge" class="bg-brand-50 text-brand-600 text-xs font-bold px-2.5 sm:px-3 py-1 rounded-full border border-brand-100 truncate max-w-[100px] sm:max-w-none"></span>
-        <button onclick="deconnexion()" class="text-xs text-rose-500 hover:underline font-semibold whitespace-nowrap">Déconnexion</button>
-      </div>
-    </div>
-
-  </div>
-</header>
-
+    </header>
 
     <!-- Conteneur Principal -->
     <main class="max-w-4xl mx-auto px-4 py-6 space-y-8">
@@ -89,7 +88,7 @@
         <span class="inline-block bg-white text-brand-500 text-xs font-bold px-3 py-1 rounded-full shadow-sm mb-3">
           Tu peux le faire ! 💜
         </span>
-        <h2 class="text-2xl font-bold text-slate-900">Bienvenue sur MathsCollege ! 👋</h2>
+        <h2 id="welcome-guest-title" class="text-2xl font-bold text-slate-900">Bienvenue sur MathsCollege ! 👋</h2>
         <p class="text-slate-600 text-sm mt-1">Apprendre les maths devient facile ! Prêt(e) à progresser à ton rythme ?</p>
       </section>
 
@@ -102,9 +101,6 @@
           <h2 class="text-2xl font-bold text-slate-900">Bonjour <span id="user-display-name">Élève</span> ! 👋</h2>
           <p class="text-xs text-slate-500 font-medium">Élève en classe de <span id="user-display-class" class="font-bold text-brand-600">6ème</span></p>
         </div>
-
-      
-
       </section>
 
       <!-- PAGE D'ACCUEIL : Choix des Niveaux -->
@@ -144,7 +140,7 @@
         <!-- Grille de 4 cartes -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           
-          <!-- Carte 1 : Cours (Redirige vers cours.html) -->
+          <!-- Carte 1 : Cours -->
           <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
             <div>
               <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-lg mb-3">📘</div>
@@ -164,15 +160,15 @@
             <button onclick="ouvrirPageVideos()" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Regarder</button>
           </div>
 
-         <!-- Carte 3 : Exercices -->
-<div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
-  <div>
-    <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-lg mb-3">✏️</div>
-    <h3 class="font-bold text-slate-900 mb-1">Exercices</h3>
-    <p class="text-xs text-slate-500 mb-4">Entraînements pratiques et QCM.</p>
-  </div>
-  <button onclick="ouvrirPageExercices()" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">S'entraîner</button>
-</div>
+          <!-- Carte 3 : Exercices -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-lg mb-3">✏️</div>
+              <h3 class="font-bold text-slate-900 mb-1">Exercices</h3>
+              <p class="text-xs text-slate-500 mb-4">Entraînements pratiques et QCM.</p>
+            </div>
+            <button onclick="ouvrirPageExercices()" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">S'entraîner</button>
+          </div>
 
           <!-- Carte 4 : Mon Calculateur -->
           <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
@@ -187,16 +183,13 @@
         </div>
       </section>
 
-      <!-- PAGE DE CONTENU (Affichage des Vidéos, Exercices OU Calculateur) -->
+      <!-- PAGE DE CONTENU (Calculateur / Solveur) -->
       <section id="content-page" class="hidden space-y-6">
         <button onclick="revenirDashboard()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold rounded-xl transition">
           ← Retour à l'Espace Travail
         </button>
         
         <h2 id="content-title" class="text-xl font-bold text-slate-900"></h2>
-
- 
-      
 
         <!-- Bloc Calculateur -->
         <div id="calculateur-block" class="content-block hidden">
@@ -242,7 +235,7 @@
     </main>
   </div>
 
-  <!-- Modales Login & Signup -->
+  <!-- Modale Login -->
   <div id="login-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div class="bg-white p-6 rounded-3xl w-full max-w-sm relative shadow-xl space-y-4">
           <span onclick="fermerModalLogin()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl cursor-pointer">&times;</span>
@@ -253,6 +246,7 @@
       </div>
   </div>
 
+  <!-- Modale Signup (Avec sélection de l'école) -->
   <div id="signup-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div class="bg-white p-6 rounded-3xl w-full max-w-sm relative shadow-xl space-y-4">
           <span onclick="fermerModalSignup()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl cursor-pointer">&times;</span>
@@ -260,6 +254,13 @@
           <input type="text" id="signup-user" placeholder="Nom d'utilisateur" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500">
           <input type="email" id="signup-email" placeholder="Email" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500">
           <input type="password" id="signup-pass" placeholder="Mot de passe" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500">
+          
+          <!-- Sélection Établissement/École -->
+          <select id="signup-ecole" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500 bg-white">
+              <option value="1">École Par Défaut / Démo</option>
+          </select>
+
+          <!-- Sélection Niveau -->
           <select id="signup-niveau" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500 bg-white">
               <option value="6e">6ème</option>
               <option value="5e">5ème</option>
@@ -277,17 +278,12 @@
     <!-- Colonne 1: À propos -->
     <div class="space-y-3">
       <div class="flex items-center space-x-2">
-
         <div class="flex items-center gap-2.5 cursor-pointer" onclick="revenirAccueil()">
-  <!-- Icône du logo -->
-  <img src="logo.png" alt="Logo MC" class="h-9 w-auto object-contain mix-blend-multiply">
-  
-  <!-- Texte du titre -->
-  <h1 class="text-xl font-extrabold bg-gradient-to-r from-brand-500 to-purple-600 bg-clip-text text-transparent">
-    MathsCollege
-  </h1>
-</div>
-
+          <img id="footer-logo" src="logo.png" alt="Logo MC" class="h-9 w-auto object-contain mix-blend-multiply">
+          <h1 id="footer-title" class="text-xl font-extrabold bg-gradient-to-r from-brand-500 to-purple-600 bg-clip-text text-transparent">
+            MathsCollege
+          </h1>
+        </div>
       </div>
       <p class="text-sm text-slate-500 leading-relaxed">
         Plateforme d'apprentissage des mathématiques pour le collège. Exercices, cours et assistance IA en un seul endroit.
@@ -329,34 +325,76 @@
 
   <!-- Ligne de séparation et copyright -->
   <div class="max-w-6xl mx-auto px-6 mt-8 pt-4 border-t border-slate-100 text-center text-xs text-slate-400">
-    <p>© 2026 MathsCollege. Tous droits réservés.</p>
+    <p>©️ 2026 MathsCollege. Tous droits réservés.</p>
   </div>
 </footer>
 
-
-
   <script src="script.js"></script>
   
- <script>
-  // Helper JS pour les redirections
-  function ouvrirPageCours() {
-    const niveau = localStorage.getItem('niveauSelectionne') || '6e';
-    localStorage.setItem('niveauSelectionne', niveau);
-    window.location.href = 'cours.html';
-  }
+  <script>
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Redirection basée sur le rôle
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      if (user) {
+        if (user.role === 'professeur') {
+          window.location.href = 'profs.html';
+          return;
+        } else if (user.role === 'admin_ecole') {
+          window.location.href = 'admin_ecole.html';
+          return;
+        } else if (user.role === 'sudo_admin') {
+          window.location.href = 'super_admin.html';
+          return;
+        }
+      }
 
-  function ouvrirPageExercices() {
-    const niveau = localStorage.getItem('niveauSelectionne') || '6e';
-    localStorage.setItem('niveauSelectionne', niveau);
-    window.location.href = 'exercices.html';
-  }
+      // 2. Chargement dynamique du thème de l'école (Logo + Nom)
+      chargerThemeEcole(user);
+    });
 
-  function ouvrirPageVideos() {
-  const niveau = localStorage.getItem('niveauSelectionne') || '6e';
-  localStorage.setItem('niveauSelectionne', niveau);
-  window.location.href = 'videos.html';
-}
-</script>
+    function chargerThemeEcole(user) {
+      const ecoleData = (user && user.ecole) ? user.ecole : JSON.parse(localStorage.getItem('ecole') || '{}');
+      if (ecoleData && ecoleData.nom) {
+        // En-tête et pied de page
+        const headerLogo = document.getElementById('header-logo');
+        const footerLogo = document.getElementById('footer-logo');
+        const headerTitle = document.getElementById('header-title');
+        const footerTitle = document.getElementById('footer-title');
+        const welcomeTitle = document.getElementById('welcome-guest-title');
+
+        if (ecoleData.logo_url) {
+          if (headerLogo) headerLogo.src = ecoleData.logo_url;
+          if (footerLogo) footerLogo.src = ecoleData.logo_url;
+        }
+
+        if (ecoleData.nom) {
+          if (headerTitle) headerTitle.textContent = ecoleData.nom;
+          if (footerTitle) footerTitle.textContent = ecoleData.nom;
+          if (welcomeTitle) welcomeTitle.textContent = `Bienvenue sur ${ecoleData.nom} ! 👋`;
+        }
+      }
+    }
+
+    // Helper JS pour les redirections
+    function ouvrirPageCours() {
+      const niveau = localStorage.getItem('niveauSelectionne') || '6e';
+      localStorage.setItem('niveauSelectionne', niveau);
+      window.location.href = 'cours.html';
+    }
+
+    function ouvrirPageExercices() {
+      const niveau = localStorage.getItem('niveauSelectionne') || '6e';
+      localStorage.setItem('niveauSelectionne', niveau);
+      window.location.href = 'exercices.html';
+    }
+
+    function ouvrirPageVideos() {
+      const niveau = localStorage.getItem('niveauSelectionne') || '6e';
+      localStorage.setItem('niveauSelectionne', niveau);
+      window.location.href = 'videos.html';
+    }
+  </script>
 
 </body>
 </html>
