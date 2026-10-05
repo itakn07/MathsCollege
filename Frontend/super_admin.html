@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathsCollege - Sudo Admin</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#f0f9ff', 500: '#0284c7', 600: '#0369a1', 700: '#075985' }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome pour les icônes -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 antialiased min-h-screen flex">
+
+    <!-- Barre latérale / Navigation -->
+    <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col justify-between hidden md:flex min-h-screen p-4">
+        <div>
+            <!-- En-tête Sidebar -->
+            <div class="flex items-center space-x-3 px-2 py-4 border-b border-slate-800 mb-6">
+                <i class="fa-solid fa-shield-halved text-2xl text-brand-500"></i>
+                <span class="font-extrabold text-white text-lg tracking-wide">SUDO ADMIN</span>
+            </div>
+            
+            <!-- Menu de navigation -->
+            <nav class="space-y-2">
+                <button onclick="switchTab('stats')" id="tab-btn-stats" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-white font-medium bg-slate-800">
+                    <i class="fa-solid fa-chart-pie w-5"></i><span>Vue d'ensemble</span>
+                </button>
+                <button onclick="switchTab('ecoles')" id="tab-btn-ecoles" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 font-medium">
+                    <i class="fa-solid fa-school w-5"></i><span>Établissements</span>
+                </button>
+                <button onclick="switchTab('users')" id="tab-btn-users" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 font-medium">
+                    <i class="fa-solid fa-users w-5"></i><span>Utilisateurs</span>
+                </button>
+                <button onclick="switchTab('validations')" id="tab-btn-validations" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 font-medium">
+                    <i class="fa-solid fa-user-check w-5"></i><span>Validations Profs</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Pied de Sidebar -->
+        <div class="border-t border-slate-800 pt-4">
+            <div class="px-2 mb-3">
+                <p id="admin-name" class="font-bold text-white text-sm">Super Admin</p>
+                <p class="text-xs text-slate-500">Accès Administration Globale</p>
+            </div>
+            <button onclick="logout()" class="w-full flex items-center space-x-2 text-rose-400 hover:text-rose-300 px-2 py-2 text-sm font-semibold">
+                <i class="fa-solid fa-right-from-bracket"></i><span>Déconnexion</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Zone de contenu principal -->
+    <main class="flex-1 p-6 md:p-10 overflow-y-auto">
+        <!-- En-tête de la page -->
+        <header class="flex justify-between items-center mb-8 border-b pb-4 border-slate-200">
+            <div>
+                <h1 class="text-2xl font-black text-slate-900" id="page-title">Tableau de bord Global</h1>
+                <p class="text-sm text-slate-500">Gestion globale de la plateforme MathsCollege</p>
+            </div>
+            <button onclick="logout()" class="md:hidden bg-rose-50 text-rose-600 px-4 py-2 rounded-xl text-sm font-semibold">
+                Déconnexion
+            </button>
+        </header>
+
+        <!-- Dynamic Content Sections -->
+        
+        <!-- SECTION 1: STATISTIQUES GLOBALES -->
+        <section id="section-stats" class="space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <p class="text-xs font-bold uppercase text-slate-400 mb-1">Écoles Partenaires</p>
+                    <h3 class="text-3xl font-extrabold text-slate-900" id="stat-ecoles">0</h3>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <p class="text-xs font-bold uppercase text-slate-400 mb-1">Total Élèves</p>
+                    <h3 class="text-3xl font-extrabold text-brand-600" id="stat-eleves">0</h3>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <p class="text-xs font-bold uppercase text-slate-400 mb-1">Enseignants Validés</p>
+                    <h3 class="text-3xl font-extrabold text-indigo-600" id="stat-profs">0</h3>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <p class="text-xs font-bold uppercase text-slate-400 mb-1">Profs en Attente</p>
+                    <h3 class="text-3xl font-extrabold text-amber-500" id="stat-pending">0</h3>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: GESTION DES ÉTABLISSEMENTS -->
+        <section id="section-ecoles" class="hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-bold text-slate-800">Établissements Scolaires</h2>
+                <button onclick="ouvrirModalEcole()" class="bg-brand-500 hover:bg-brand-600 text-white font-semibold px-4 py-2 rounded-xl text-sm transition">
+                    + Ajouter une école
+                </button>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50 text-slate-500 text-xs font-semibold uppercase">
+                        <tr>
+                            <th class="p-4 border-b">ID</th>
+                            <th class="p-4 border-b">Nom de l'Établissement</th>
+                            <th class="p-4 border-b">Ville / Emplacement</th>
+                            <th class="p-4 border-b text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbl-ecoles" class="divide-y divide-slate-100 text-sm">
+                        <!-- Rempli dynamiquement en JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECTION 3: COMPTES UTILISATEURS -->
+        <section id="section-users" class="hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-bold text-slate-800">Tous les Utilisateurs</h2>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50 text-slate-500 text-xs font-semibold uppercase">
+                        <tr>
+                            <th class="p-4 border-b">Nom d'utilisateur</th>
+                            <th class="p-4 border-b">Adresse Email</th>
+                            <th class="p-4 border-b">Rôle</th>
+                            <th class="p-4 border-b">Établissement</th>
+                            <th class="p-4 border-b text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbl-users" class="divide-y divide-slate-100 text-sm">
+                        <!-- Rempli dynamiquement en JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECTION 4: VALIDATION DES ENSEIGNANTS -->
+        <section id="section-validations" class="hidden space-y-6">
+            <h2 class="text-lg font-bold text-slate-800">Demandes de validation des Enseignants</h2>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50 text-slate-500 text-xs font-semibold uppercase">
+                        <tr>
+                            <th class="p-4 border-b">Enseignant</th>
+                            <th class="p-4 border-b">Email</th>
+                            <th class="p-4 border-b">École associée</th>
+                            <th class="p-4 border-b text-right">Décision</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbl-validations" class="divide-y divide-slate-100 text-sm">
+                        <!-- Rempli dynamiquement en JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL : AJOUT D'UNE ÉCOLE -->
+    <div id="modal-ecole" class="fixed inset-0 bg-slate-900/50 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md space-y-4">
+            <h3 class="text-lg font-bold text-slate-900">Nouveau Établissement</h3>
+            <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Nom de l'école</label>
+                <input type="text" id="ecole-nom" placeholder="Ex: Collège Chaminade" class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-500">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Ville</label>
+                <input type="text" id="ecole-ville" placeholder="Ex: Brazzaville" class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-500">
+            </div>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button onclick="fermerModalEcole()" class="px-4 py-2 text-slate-500 hover:text-slate-700 text-sm font-semibold">Annuler</button>
+                <button onclick="creerEcole()" class="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-sm font-semibold">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fichier JS associé -->
+    <script src="super_admin.js"></script>
+</body>
+</html>

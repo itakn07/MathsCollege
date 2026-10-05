@@ -660,6 +660,101 @@ app.get('/api/classes', (req, res) => {
     });
 });
 
+// ==========================================
+// ROUTES API - SUDO ADMIN
+// ==========================================
+
+// 1. Statistiques globales
+app.get('/api/admin/stats', async (req, res) => {
+    try {
+        const [ecoles] = await db.promise().query("SELECT COUNT(*) AS total FROM ecoles");
+        const [eleves] = await db.promise().query("SELECT COUNT(*) AS total FROM users WHERE role = 'eleve'");
+        const [profs] = await db.promise().query("SELECT COUNT(*) AS total FROM users WHERE role = 'professeur'");
+        const [pending] = await db.promise().query("SELECT COUNT(*) AS total FROM users WHERE role = 'prof_en_attente'");
+
+        res.json({
+            totalEcoles: ecoles[0].total,
+            totalEleves: eleves[0].total,
+            totalProfs: profs[0].total,
+            pendingProfs: pending[0].total
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 2. Gestion des écoles (Récupérer, Créer, Supprimer)
+app.get('/api/admin/ecoles', (req, res) => {
+    db.query("SELECT * FROM ecoles ORDER BY id DESC", (err, results) => {
+        if (err) return res.status(500).send(err);
+        res.json(results);
+    });
+});
+
+app.post('/api/admin/ecoles', (req, res) => {
+    const { nom, ville } = req.body;
+    db.query("INSERT INTO ecoles (nom, ville) VALUES (?, ?)", [nom, ville], (err, result) => {
+        if (err) return res.status(500).send(err);
+        res.json({ success: true, id: result.insertId });
+    });
+});
+
+app.delete('/api/admin/ecoles/:id', (req, res) => {
+    db.query("DELETE FROM ecoles WHERE id = ?", [req.params.id], (err) => {
+        if (err) return res.status(500).send(err);
+        res.json({ success: true });
+    });
+});
+
+// 3. Gestion des utilisateurs (Récupérer tous, Supprimer)
+app.get('/api/admin/users', (req, res) => {
+    const sql = `
+        SELECT u.id, u.username, u.email, u.role, e.nom as ecole_nom 
+        FROM users u 
+        LEFT JOIN ecoles e ON u.ecole_id = e.id
+        ORDER BY u.id DESC
+    `;
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).send(err);
+        res.json(results);
+    });
+});
+
+app.delete('/api/admin/users/:id', (req, res) => {
+    db.query("DELETE FROM users WHERE id = ?", [req.params.id], (err) => {
+        if (err) return res.status(500).send(err);
+        res.json({ success: true });
+    });
+});
+
+// 4. Validation des professeurs
+app.get('/api/admin/pending-profs', (req, res) => {
+    const sql = `
+        SELECT u.id, u.username, u.email, e.nom as ecole_nom 
+        FROM users u 
+        LEFT JOIN ecoles e ON u.ecole_id = e.id 
+        WHERE u.role = 'prof_en_attente'
+    `;
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).send(err);
+        res.json(results);
+    });
+});
+
+app.post('/api/admin/validate-prof/:id', (req, res) => {
+    const { id } = req.params;
+    const { approuve } = req.body;
+
+    const sql = approuve 
+        ? "UPDATE users SET role = 'professeur' WHERE id = ?" 
+        : "DELETE FROM users WHERE id = ?";
+
+    db.query(sql, [id], (err) => {
+        if (err) return res.status(500).send(err);
+        res.json({ success: true });
+    });
+});
+
 // ============= LANCEMENT DU SERVEUR =============
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
