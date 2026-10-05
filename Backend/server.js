@@ -243,32 +243,28 @@ app.post('/api/signup', async (req, res) => {
 });
 
 app.post('/login', (req, res) => {
-    const { email, password, role } = req.body;
+    // On ne filtre plus par "role" dans la requête SQL
+    const { email, password } = req.body; 
 
-    let sql = `
+    const sql = `
         SELECT u.*, e.nom AS ecole_nom, e.logo_url, e.couleur_primaire, e.statut_abonnement
         FROM users u
         LEFT JOIN ecoles e ON u.ecole_id = e.id
         WHERE u.email = ?
     `;
-    const params = [email];
 
-    if (role) {
-        sql += " AND u.role = ?";
-        params.push(role);
-    }
-
-    db.query(sql, params, async (err, result) => {
+    db.query(sql, [email], async (err, result) => {
         if (err) return res.status(500).json({ success: false, message: "Erreur serveur" });
 
         if (result.length === 0) {
-            return res.status(401).json({ success: false, message: "Email, mot de passe ou rôle incorrect" });
+            return res.status(401).json({ success: false, message: "Email ou mot de passe incorrect" });
         }
 
         const user = result[0];
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (isMatch) {
+            // Détermination dynamique de la redirection selon le rôle RÉEL stocké en BDD
             let redirectUrl = "index.html";
             if (user.role === 'professeur') {
                 redirectUrl = "profs.html";
@@ -287,7 +283,7 @@ app.post('/login', (req, res) => {
                     username: user.username,
                     email: user.email,
                     niveau: user.niveau,
-                    role: user.role,
+                    role: user.role, // Renvoie le vrai rôle 'super_admin'
                     ecole: {
                         id: user.ecole_id,
                         nom: user.ecole_nom || 'MathsCollege Officiel',
