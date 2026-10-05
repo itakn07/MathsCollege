@@ -691,9 +691,38 @@ app.get('/api/admin/ecoles', (req, res) => {
 });
 
 app.post('/api/admin/ecoles', (req, res) => {
-    const { nom, ville } = req.body;
-    db.query("INSERT INTO ecoles (nom, ville) VALUES (?, ?)", [nom, ville], (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
+    const { nom, ville, quartier, arrondissement, logo_url, couleur_primaire, telephone, email_contact } = req.body;
+
+    // Génération automatique du slug
+    const slug = nom.toLowerCase()
+                    .trim()
+                    .replace(/[^\w\s-]/g, '')
+                    .replace(/[\s_-]+/g, '-')
+                    .replace(/^-+|-+$/g, '');
+
+    const sql = `
+        INSERT INTO ecoles 
+        (nom, ville, quartier, arrondissement, slug, logo_url, couleur_primaire, telephone, email_contact, formule_abonnement, statut_abonnement, created_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'annuel', 'actif', NOW())
+    `;
+
+    const params = [
+        nom, 
+        ville || null, 
+        quartier || null, 
+        arrondissement || null, 
+        slug, 
+        logo_url || null, 
+        couleur_primaire || '#4F46E5', 
+        telephone || null, 
+        email_contact || null
+    ];
+
+    db.query(sql, params, (err, result) => {
+        if (err) {
+            console.error("Erreur insertion école:", err);
+            return res.status(500).json({ error: err.message });
+        }
         res.json({ success: true, id: result.insertId });
     });
 });

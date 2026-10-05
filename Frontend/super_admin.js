@@ -27,10 +27,8 @@ function verifierAccesAdmin() {
 }
 
 function switchTab(tab) {
-    // Liste des sections et boutons
     const sections = ['stats', 'ecoles', 'users', 'validations'];
 
-    // Cacher toutes les sections et réinitialiser le style des boutons
     sections.forEach(s => {
         const sectionEl = document.getElementById(`section-${s}`);
         const btnEl = document.getElementById(`tab-btn-${s}`);
@@ -42,7 +40,6 @@ function switchTab(tab) {
         }
     });
 
-    // Afficher la section active et appliquer le style au bouton
     const activeSection = document.getElementById(`section-${tab}`);
     const activeBtn = document.getElementById(`tab-btn-${tab}`);
 
@@ -52,7 +49,6 @@ function switchTab(tab) {
         activeBtn.classList.remove("text-slate-400");
     }
 
-    // Mettre à jour le titre de la page
     const pageTitle = document.getElementById("page-title");
     const titles = {
         stats: "Tableau de bord Global",
@@ -62,7 +58,6 @@ function switchTab(tab) {
     };
     if (pageTitle) pageTitle.textContent = titles[tab] || "Super Admin";
 
-    // Charger les données de la section
     if (tab === 'stats') chargerStatistiques();
     if (tab === 'ecoles') chargerEcoles();
     if (tab === 'users') chargerUtilisateurs();
@@ -100,31 +95,45 @@ async function chargerEcoles() {
         const ecoles = await res.json();
         const tbody = document.getElementById("tbl-ecoles");
 
-        if (ecoles.length === 0) {
+        if (!Array.isArray(ecoles) || ecoles.length === 0) {
             tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">Aucun établissement enregistré.</td></tr>`;
             return;
         }
 
-        tbody.innerHTML = ecoles.map(e => `
-            <tr class="hover:bg-slate-50">
-                <td class="p-4 font-bold text-slate-600">#${e.id}</td>
-                <td class="p-4 font-semibold text-slate-800">${e.nom}</td>
-                <td class="p-4 text-slate-500">${e.ville || 'Non précisée'}</td>
-                <td class="p-4 text-right">
-                    <button onclick="supprimerEcole(${e.id})" class="text-rose-500 hover:text-rose-700 font-semibold text-xs">Supprimer</button>
-                </td>
-            </tr>
-        `).join("");
+        tbody.innerHTML = ecoles.map(e => {
+            const localisation = [e.quartier, e.arrondissement, e.ville].filter(Boolean).join(", ") || 'Non précisée';
+            return `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-4 font-bold text-slate-600">#${e.id}</td>
+                    <td class="p-4 font-semibold text-slate-800 flex items-center gap-2">
+                        ${e.logo_url ? `<img src="${e.logo_url}" class="w-6 h-6 object-contain rounded">` : ''}
+                        <span>${e.nom}</span>
+                    </td>
+                    <td class="p-4 text-slate-500">${localisation}</td>
+                    <td class="p-4 text-right">
+                        <button onclick="supprimerEcole(${e.id})" class="text-rose-500 hover:text-rose-700 font-semibold text-xs">Supprimer</button>
+                    </td>
+                </tr>
+            `;
+        }).join("");
     } catch (err) {
         console.error("Erreur lors du chargement des écoles:", err);
     }
 }
 
 async function creerEcole() {
-    const nom = document.getElementById("ecole-nom").value.trim();
-    const ville = document.getElementById("ecole-ville").value.trim();
+    const payload = {
+        nom: document.getElementById("ecole-nom").value.trim(),
+        ville: document.getElementById("ecole-ville").value.trim(),
+        quartier: document.getElementById("ecole-quartier").value.trim(),
+        arrondissement: document.getElementById("ecole-arrondissement").value.trim(),
+        couleur_primaire: document.getElementById("ecole-couleur").value,
+        telephone: document.getElementById("ecole-telephone").value.trim(),
+        email_contact: document.getElementById("ecole-email").value.trim(),
+        logo_url: document.getElementById("ecole-logo").value.trim()
+    };
 
-    if (!nom) {
+    if (!payload.nom) {
         alert("Veuillez saisir le nom de l'établissement.");
         return;
     }
@@ -133,7 +142,7 @@ async function creerEcole() {
         const res = await fetch(`${API_URL}/ecoles`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ nom, ville })
+            body: JSON.stringify(payload)
         });
 
         if (res.ok) {
@@ -169,7 +178,7 @@ async function chargerUtilisateurs() {
         const users = await res.json();
         const tbody = document.getElementById("tbl-users");
 
-        if (users.length === 0) {
+        if (!Array.isArray(users) || users.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Aucun utilisateur trouvé.</td></tr>`;
             return;
         }
@@ -211,7 +220,7 @@ async function chargerProfesseursEnAttente() {
         const profs = await res.json();
         const tbody = document.getElementById("tbl-validations");
 
-        if (profs.length === 0) {
+        if (!Array.isArray(profs) || profs.length === 0) {
             tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">Aucune demande en attente.</td></tr>`;
             return;
         }
@@ -256,6 +265,13 @@ async function traiterValidationProf(id, approuve) {
 function ouvrirModalEcole() {
     document.getElementById("ecole-nom").value = "";
     document.getElementById("ecole-ville").value = "";
+    document.getElementById("ecole-quartier").value = "";
+    document.getElementById("ecole-arrondissement").value = "";
+    document.getElementById("ecole-couleur").value = "#4F46E5";
+    document.getElementById("ecole-telephone").value = "";
+    document.getElementById("ecole-email").value = "";
+    document.getElementById("ecole-logo").value = "";
+
     const modal = document.getElementById("modal-ecole");
     modal.classList.remove("hidden");
     modal.classList.add("flex");
