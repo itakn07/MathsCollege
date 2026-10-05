@@ -657,52 +657,55 @@ app.get('/api/classes', (req, res) => {
 });
 
 // ==========================================
-// ROUTES API - SUPER ADMIN
+// ROUTES API - SUPER ADMIN (CORRIGÉES)
 // ==========================================
 
 // 1. Statistiques globales
-app.get('/api/admin/stats', async (req, res) => {
-    try {
-        const [ecoles] = await db.promise().query("SELECT COUNT(*) AS total FROM ecoles");
-        const [eleves] = await db.promise().query("SELECT COUNT(*) AS total FROM users WHERE role = 'eleve'");
-        const [profs] = await db.promise().query("SELECT COUNT(*) AS total FROM users WHERE role = 'professeur'");
-        const [pending] = await db.promise().query("SELECT COUNT(*) AS total FROM users WHERE role = 'prof_en_attente'");
-
-        res.json({
-            totalEcoles: ecoles[0].total,
-            totalEleves: eleves[0].total,
-            totalProfs: profs[0].total,
-            pendingProfs: pending[0].total
-        });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+app.get('/api/admin/stats', (req, res) => {
+    const sql = `
+        SELECT 
+            (SELECT COUNT(*) FROM ecoles) AS totalEcoles,
+            (SELECT COUNT(*) FROM users WHERE role = 'eleve') AS totalEleves,
+            (SELECT COUNT(*) FROM users WHERE role = 'professeur') AS totalProfs,
+            (SELECT COUNT(*) FROM users WHERE role = 'prof_en_attente') AS pendingProfs
+    `;
+    
+    db.query(sql, (err, results) => {
+        if (err) {
+            console.error("Erreur SQL stats:", err);
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(results[0] || { totalEcoles: 0, totalEleves: 0, totalProfs: 0, pendingProfs: 0 });
+    });
 });
 
-// 2. Gestion des écoles (Récupérer, Créer, Supprimer)
+// 2. Écoles
 app.get('/api/admin/ecoles', (req, res) => {
     db.query("SELECT * FROM ecoles ORDER BY id DESC", (err, results) => {
-        if (err) return res.status(500).send(err);
-        res.json(results);
+        if (err) {
+            console.error("Erreur SQL ecoles:", err);
+            return res.status(500).json([]);
+        }
+        res.json(Array.isArray(results) ? results : []);
     });
 });
 
 app.post('/api/admin/ecoles', (req, res) => {
     const { nom, ville } = req.body;
     db.query("INSERT INTO ecoles (nom, ville) VALUES (?, ?)", [nom, ville], (err, result) => {
-        if (err) return res.status(500).send(err);
+        if (err) return res.status(500).json({ error: err.message });
         res.json({ success: true, id: result.insertId });
     });
 });
 
 app.delete('/api/admin/ecoles/:id', (req, res) => {
     db.query("DELETE FROM ecoles WHERE id = ?", [req.params.id], (err) => {
-        if (err) return res.status(500).send(err);
+        if (err) return res.status(500).json({ error: err.message });
         res.json({ success: true });
     });
 });
 
-// 3. Gestion des utilisateurs (Récupérer tous, Supprimer)
+// 3. Utilisateurs
 app.get('/api/admin/users', (req, res) => {
     const sql = `
         SELECT u.id, u.username, u.email, u.role, e.nom as ecole_nom 
@@ -711,19 +714,22 @@ app.get('/api/admin/users', (req, res) => {
         ORDER BY u.id DESC
     `;
     db.query(sql, (err, results) => {
-        if (err) return res.status(500).send(err);
-        res.json(results);
+        if (err) {
+            console.error("Erreur SQL users:", err);
+            return res.status(500).json([]);
+        }
+        res.json(Array.isArray(results) ? results : []);
     });
 });
 
 app.delete('/api/admin/users/:id', (req, res) => {
     db.query("DELETE FROM users WHERE id = ?", [req.params.id], (err) => {
-        if (err) return res.status(500).send(err);
+        if (err) return res.status(500).json({ error: err.message });
         res.json({ success: true });
     });
 });
 
-// 4. Validation des professeurs
+// 4. Demandes professeurs en attente
 app.get('/api/admin/pending-profs', (req, res) => {
     const sql = `
         SELECT u.id, u.username, u.email, e.nom as ecole_nom 
@@ -732,8 +738,11 @@ app.get('/api/admin/pending-profs', (req, res) => {
         WHERE u.role = 'prof_en_attente'
     `;
     db.query(sql, (err, results) => {
-        if (err) return res.status(500).send(err);
-        res.json(results);
+        if (err) {
+            console.error("Erreur SQL pending-profs:", err);
+            return res.status(500).json([]);
+        }
+        res.json(Array.isArray(results) ? results : []);
     });
 });
 
@@ -746,7 +755,7 @@ app.post('/api/admin/validate-prof/:id', (req, res) => {
         : "DELETE FROM users WHERE id = ?";
 
     db.query(sql, [id], (err) => {
-        if (err) return res.status(500).send(err);
+        if (err) return res.status(500).json({ error: err.message });
         res.json({ success: true });
     });
 });
