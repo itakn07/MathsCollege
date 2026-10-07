@@ -365,22 +365,13 @@
       // 2. Chargement dynamique du thème de l'école (Logo + Nom)
       chargerThemeEcole(user);
     });
-    
+
 
  function chargerThemeEcole(user) {
-    // Récupérer les données de l'école depuis le profil utilisateur ou le localStorage
     const ecoleData = (user && user.ecole) ? user.ecole : JSON.parse(localStorage.getItem('ecole') || '{}');
 
     if (ecoleData) {
-        // --- 1. MISE À JOUR DU LOGO ET DU NOM ---
-        const logoUrl = ecoleData.logo || ecoleData.logo_url;
-        if (logoUrl) {
-            const headerLogo = document.getElementById('header-logo');
-            const footerLogo = document.getElementById('footer-logo');
-            if (headerLogo) headerLogo.src = logoUrl;
-            if (footerLogo) footerLogo.src = logoUrl;
-        }
-
+        // Nom de l'école
         const nomEcole = ecoleData.nom;
         if (nomEcole) {
             const headerTitle = document.getElementById('header-title');
@@ -392,35 +383,27 @@
             if (welcomeTitle) welcomeTitle.textContent = `Bienvenue sur ${nomEcole} ! 👋`;
         }
 
-        // --- 2. MISE À JOUR DYNAMIQUE DES COULEURS (THÈME) ---
+        // Logo (si disponible)
+        const logoUrl = ecoleData.logo || ecoleData.logo_url;
+        if (logoUrl) {
+            const headerLogo = document.getElementById('header-logo');
+            const footerLogo = document.getElementById('footer-logo');
+            if (headerLogo) headerLogo.src = logoUrl;
+            if (footerLogo) footerLogo.src = logoUrl;
+        }
+
+        // Couleur dynamique
         const couleurTheme = ecoleData.couleur || ecoleData.couleur_primaire;
         if (couleurTheme) {
-            // A. Boutons principaux et boutons de navigation (Se connecter, S'inscrire, Demander, Entrer, etc.)
-            const boutons = document.querySelectorAll('.bg-brand-500, .nav-btn, button.bg-brand-500, #ai-chat-container button');
-            boutons.forEach(btn => {
-                btn.style.backgroundImage = 'none'; // Supprime tout dégradé CSS
-                btn.style.backgroundColor = couleurTheme;
-                btn.style.borderColor = couleurTheme;
-                btn.style.color = '#ffffff';
+            // Applique la couleur à TOUS les éléments d'un coup
+            document.querySelectorAll('.bg-brand-500, .nav-btn, button.bg-brand-500, .action-btn').forEach(btn => {
+                btn.style.setProperty('background-color', couleurTheme, 'important');
+                btn.style.setProperty('border-color', couleurTheme, 'important');
+                btn.style.backgroundImage = 'none';
             });
 
-            // B. Icône du Coach IA (Le carré violet du robot 🤖)
-            const aiIcon = document.querySelector('#ai-chat-container .w-11.h-11');
-            if (aiIcon) {
-                aiIcon.style.backgroundImage = 'none';
-                aiIcon.style.backgroundColor = couleurTheme;
-            }
-
-            // C. Textes et titres de marque (comme "MathsCollege", "6ème" dans le badge, etc.)
-            const textes = document.querySelectorAll('.text-brand-500, .text-brand-600');
-            textes.forEach(el => {
-                el.style.color = couleurTheme;
-            });
-
-            // D. Bordures des conteneurs
-            const bordures = document.querySelectorAll('.border-brand-100, .border-brand-500');
-            bordures.forEach(el => {
-                el.style.borderColor = couleurTheme;
+            document.querySelectorAll('.text-brand-500, .text-brand-600').forEach(el => {
+                el.style.setProperty('color', couleurTheme, 'important');
             });
         }
     }
