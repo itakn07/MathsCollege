@@ -12,46 +12,43 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 
+// ============= IMPORTS CLOUDINARY =============
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+
 // ============= CONFIGURATION =============
 const API_KEY = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
 const app = express();
 
-// --- Configuration Multer pour les Fiches (PDFs cours/exercices) ---
-const uploadDirFiches = path.join(__dirname, 'uploads', 'fiches');
-if (!fs.existsSync(uploadDirFiches)) {
-    fs.mkdirSync(uploadDirFiches, { recursive: true });
-    console.log('Dossier uploads/fiches créé avec succès !');
-}
+// Configuration Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
-const storageFiches = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadDirFiches);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+// --- Storage Cloudinary pour les Logos d'Écoles ---
+const storageLogosCloudinary = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'mathscollege/logos',
+        allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'svg'],
+        public_id: (req, file) => 'logo-' + Date.now()
     }
 });
-const upload = multer({ storage: storageFiches });
+const uploadLogo = multer({ storage: storageLogosCloudinary });
 
-// --- Configuration Multer pour les Logos d'Écoles (Images) ---
-const uploadDirLogos = path.join(__dirname, 'uploads', 'logos');
-if (!fs.existsSync(uploadDirLogos)) {
-    fs.mkdirSync(uploadDirLogos, { recursive: true });
-    console.log('Dossier uploads/logos créé avec succès !');
-}
-
-const storageLogos = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadDirLogos);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'logo-' + uniqueSuffix + path.extname(file.originalname));
+// --- Storage Cloudinary pour les Fiches (PDFs cours/exercices) ---
+const storageFichesCloudinary = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'mathscollege/fiches',
+        resource_type: 'auto',
+        public_id: (req, file) => file.fieldname + '-' + Date.now()
     }
 });
-const uploadLogo = multer({ storage: storageLogos });
+const upload = multer({ storage: storageFichesCloudinary });
 
 // Middleware fichiers statiques & body parsers
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -418,7 +415,8 @@ app.get('/api/prof/dashboard-stats', async (req, res) => {
 app.post('/api/prof/cours', upload.single('pdf_file'), async (req, res) => {
     try {
         const { titre, contenu, niveau_id, domaine, ecole_id, professeur_id, est_public } = req.body;
-        const pdf_path = req.file ? `uploads/fiches/${req.file.filename}` : null;
+        // Cloudinary renvoie l'URL HTTPS dans req.file.path
+        const pdf_path = req.file ? req.file.path : null;
 
         const sql = `
             INSERT INTO cours (titre, contenu, niveau_id, pdf_path, domaine, ecole_id, professeur_id, est_public) 
@@ -456,7 +454,8 @@ app.get('/api/prof/liste-cours', async (req, res) => {
 app.post('/api/prof/exercices', upload.single('pdf_file'), async (req, res) => {
     try {
         const { cours_id, titre, enonce, reponse_correcte } = req.body;
-        const pdf_path = req.file ? `uploads/fiches/${req.file.filename}` : null;
+        // Cloudinary renvoie l'URL HTTPS dans req.file.path
+        const pdf_path = req.file ? req.file.path : null;
 
         const sql = `
             INSERT INTO exercices (cours_id, titre, enonce, reponse_correcte, pdf_path) 
@@ -784,15 +783,15 @@ app.get('/api/admin/ecoles', (req, res) => {
     });
 });
 
-// ROUTE D'AJOUT D'UNE ÉCOLE AVEC UPLOAD DU LOGO (IMAGE) & GESTION DES ABONNEMENTS
+// ROUTE D'AJOUT D'UNE ÉCOLE AVEC UPLOAD DU LOGO SUR CLOUDINARY
 app.post('/api/admin/ecoles', uploadLogo.single('logo'), (req, res) => {
     const { 
         nom, ville, quartier, arrondissement, couleur_primaire, 
         telephone, email_contact, formule_abonnement, statut_abonnement, date_fin_abonnement 
     } = req.body;
 
-    // Chemin du logo s'il a été téléchargé
-    const logo_url = req.file ? `/uploads/logos/${req.file.filename}` : null;
+    // Cloudinary renvoie directement l'URL HTTPS hébergée dans req.file.path
+    const logo_url = req.file ? req.file.path : null;
 
     // Génération automatique du slug
     const slug = (nom || '').toLowerCase()
