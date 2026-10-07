@@ -365,62 +365,67 @@
       // 2. Chargement dynamique du thème de l'école (Logo + Nom)
       chargerThemeEcole(user);
     });
+    
 
-   function chargerThemeEcole(user) {
-    // 1. Récupération des données d'école depuis le profil utilisateur ou le localStorage
+ function chargerThemeEcole(user) {
+    // Récupérer les données de l'école depuis le profil utilisateur ou le localStorage
     const ecoleData = (user && user.ecole) ? user.ecole : JSON.parse(localStorage.getItem('ecole') || '{}');
 
-    if (ecoleData && (ecoleData.nom || ecoleData.couleur)) {
-        // --- MISE À JOUR DU LOGO ET DU NOM ---
-        const headerLogo = document.getElementById('header-logo');
-        const footerLogo = document.getElementById('footer-logo');
-        const headerTitle = document.getElementById('header-title');
-        const footerTitle = document.getElementById('footer-title');
-        const welcomeTitle = document.getElementById('welcome-guest-title');
-
+    if (ecoleData) {
+        // --- 1. MISE À JOUR DU LOGO ET DU NOM ---
         const logoUrl = ecoleData.logo || ecoleData.logo_url;
         if (logoUrl) {
+            const headerLogo = document.getElementById('header-logo');
+            const footerLogo = document.getElementById('footer-logo');
             if (headerLogo) headerLogo.src = logoUrl;
             if (footerLogo) footerLogo.src = logoUrl;
         }
 
         const nomEcole = ecoleData.nom;
         if (nomEcole) {
+            const headerTitle = document.getElementById('header-title');
+            const footerTitle = document.getElementById('footer-title');
+            const welcomeTitle = document.getElementById('welcome-guest-title');
+
             if (headerTitle) headerTitle.textContent = nomEcole;
             if (footerTitle) footerTitle.textContent = nomEcole;
             if (welcomeTitle) welcomeTitle.textContent = `Bienvenue sur ${nomEcole} ! 👋`;
         }
 
-        // --- APPLICATION DYNAMIQUE DU THÈME DE COULEUR ---
+        // --- 2. MISE À JOUR DYNAMIQUE DES COULEURS (THÈME) ---
         const couleurTheme = ecoleData.couleur || ecoleData.couleur_primaire;
         if (couleurTheme) {
-            // A. Appliquer aux boutons de navigation et boutons principaux
-            const boutons = document.querySelectorAll('.bg-brand-500, .nav-btn, button.bg-brand-500');
+            // A. Boutons principaux et boutons de navigation (Se connecter, S'inscrire, Demander, Entrer, etc.)
+            const boutons = document.querySelectorAll('.bg-brand-500, .nav-btn, button.bg-brand-500, #ai-chat-container button');
             boutons.forEach(btn => {
+                btn.style.backgroundImage = 'none'; // Supprime tout dégradé CSS
                 btn.style.backgroundColor = couleurTheme;
                 btn.style.borderColor = couleurTheme;
+                btn.style.color = '#ffffff';
             });
 
-            // B. Appliquer aux textes de marque (titres, accents)
+            // B. Icône du Coach IA (Le carré violet du robot 🤖)
+            const aiIcon = document.querySelector('#ai-chat-container .w-11.h-11');
+            if (aiIcon) {
+                aiIcon.style.backgroundImage = 'none';
+                aiIcon.style.backgroundColor = couleurTheme;
+            }
+
+            // C. Textes et titres de marque (comme "MathsCollege", "6ème" dans le badge, etc.)
             const textes = document.querySelectorAll('.text-brand-500, .text-brand-600');
             textes.forEach(el => {
                 el.style.color = couleurTheme;
             });
 
-            // C. Appliquer aux bordures de conteneurs/cartes
+            // D. Bordures des conteneurs
             const bordures = document.querySelectorAll('.border-brand-100, .border-brand-500');
             bordures.forEach(el => {
                 el.style.borderColor = couleurTheme;
             });
-
-            // D. Appliquer aux badges d'en-tête
-            const userBadge = document.getElementById('user-badge');
-            if (userBadge) {
-                userBadge.style.color = couleurTheme;
-            }
         }
     }
 }
+
 
     // Helper JS pour les redirections
     function ouvrirPageCours() {
