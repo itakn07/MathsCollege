@@ -58,7 +58,7 @@
           </h1>
         </div>
        
-      <!-- Zone Boutons / Profil -->
+        <!-- Zone Boutons / Profil -->
         <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <!-- Zone invités (si non connecté) -->
           <div id="guest-zone" class="flex gap-1.5 sm:gap-2">
@@ -107,26 +107,43 @@
       <section id="levels-page">
         <h2 class="text-lg font-bold text-slate-900 mb-4">Choisis ton niveau</h2>
         <div id="levels-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <button onclick="selectionnerNiveau('6e')" class="p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md hover:border-brand-500 text-left transition">
-            <div class="text-2xl mb-2">📗</div>
-            <h3 class="font-bold text-slate-900">6ème</h3>
-            <p class="text-xs text-slate-400 mt-1">Bases et consolidation</p>
-          </button>
-          <button onclick="selectionnerNiveau('5e')" class="p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md hover:border-brand-500 text-left transition">
-            <div class="text-2xl mb-2">📘</div>
-            <h3 class="font-bold text-slate-900">5ème</h3>
-            <p class="text-xs text-slate-400 mt-1">Approfondissement</p>
-          </button>
-          <button onclick="selectionnerNiveau('4e')" class="p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md hover:border-brand-500 text-left transition">
-            <div class="text-2xl mb-2">📙</div>
-            <h3 class="font-bold text-slate-900">4ème</h3>
-            <p class="text-xs text-slate-400 mt-1">Passage au raisonnement</p>
-          </button>
-          <button onclick="selectionnerNiveau('3e')" class="p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md hover:border-brand-500 text-left transition">
-            <div class="text-2xl mb-2">📕</div>
-            <h3 class="font-bold text-slate-900">3ème</h3>
-            <p class="text-xs text-slate-400 mt-1">Préparation au Brevet</p>
-          </button>
+          
+          <div class="bg-white p-5 border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition text-left flex flex-col justify-between">
+            <div>
+              <div class="text-2xl mb-2">📗</div>
+              <h3 class="font-bold text-slate-900">6ème</h3>
+              <p class="text-xs text-slate-400 mt-1 mb-4">Bases et consolidation</p>
+            </div>
+            <button onclick="selectionnerNiveau('6e')" class="action-btn w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold rounded-xl transition">Entrer</button>
+          </div>
+
+          <div class="bg-white p-5 border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition text-left flex flex-col justify-between">
+            <div>
+              <div class="text-2xl mb-2">📘</div>
+              <h3 class="font-bold text-slate-900">5ème</h3>
+              <p class="text-xs text-slate-400 mt-1 mb-4">Approfondissement</p>
+            </div>
+            <button onclick="selectionnerNiveau('5e')" class="action-btn w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold rounded-xl transition">Entrer</button>
+          </div>
+
+          <div class="bg-white p-5 border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition text-left flex flex-col justify-between">
+            <div>
+              <div class="text-2xl mb-2">📙</div>
+              <h3 class="font-bold text-slate-900">4ème</h3>
+              <p class="text-xs text-slate-400 mt-1 mb-4">Passage au raisonnement</p>
+            </div>
+            <button onclick="selectionnerNiveau('4e')" class="action-btn w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold rounded-xl transition">Entrer</button>
+          </div>
+
+          <div class="bg-white p-5 border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition text-left flex flex-col justify-between">
+            <div>
+              <div class="text-2xl mb-2">📕</div>
+              <h3 class="font-bold text-slate-900">3ème</h3>
+              <p class="text-xs text-slate-400 mt-1 mb-4">Préparation au Brevet</p>
+            </div>
+            <button onclick="selectionnerNiveau('3e')" class="action-btn w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold rounded-xl transition">Entrer</button>
+          </div>
+
         </div>
       </section>
 
@@ -147,7 +164,7 @@
               <h3 class="font-bold text-slate-900 mb-1">Cours</h3>
               <p class="text-xs text-slate-500 mb-4">Tes cours résumés et fiches théoriques.</p>
             </div>
-            <button onclick="ouvrirPageCours()" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Consulter</button>
+            <button onclick="ouvrirPageCours()" class="action-btn w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Consulter</button>
           </div>
 
           <!-- Carte 2 : Vidéos -->
@@ -157,7 +174,7 @@
               <h3 class="font-bold text-slate-900 mb-1">Vidéos</h3>
               <p class="text-xs text-slate-500 mb-4">Explications animées pas à pas.</p>
             </div>
-            <button onclick="ouvrirPageVideos()" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Regarder</button>
+            <button onclick="ouvrirPageVideos()" class="action-btn w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Regarder</button>
           </div>
 
           <!-- Carte 3 : Exercices -->
@@ -167,7 +184,7 @@
               <h3 class="font-bold text-slate-900 mb-1">Exercices</h3>
               <p class="text-xs text-slate-500 mb-4">Entraînements pratiques et QCM.</p>
             </div>
-            <button onclick="ouvrirPageExercices()" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">S'entraîner</button>
+            <button onclick="ouvrirPageExercices()" class="action-btn w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">S'entraîner</button>
           </div>
 
           <!-- Carte 4 : Mon Calculateur -->
@@ -177,7 +194,7 @@
               <h3 class="font-bold text-slate-900 mb-1">Mon Calculateur</h3>
               <p class="text-xs text-slate-500 mb-4">Résous tes équations et opérations.</p>
             </div>
-            <button onclick="afficherVueContent('calculateur')" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Utiliser</button>
+            <button onclick="afficherVueContent('calculateur')" class="action-btn w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Utiliser</button>
           </div>
 
         </div>
@@ -200,7 +217,7 @@
               </div>
               <input type="text" id="equation-input" placeholder="Ex: sqrt(64)+3^2 ou 2x+4=0" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-500 text-sm">
               <div class="flex gap-3">
-                  <button onclick="resoudre()" class="flex-1 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Calculer</button>
+                  <button onclick="resoudre()" class="action-btn flex-1 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Calculer</button>
                   <button onclick="effacerSolveur()" class="flex-1 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm font-semibold rounded-xl transition">Effacer</button>
               </div>
               <div id="resultat-solveur" class="min-h-[20px]"></div>
@@ -216,7 +233,7 @@
       <!-- WIDGET MON COACH SYLVIE -->
       <section id="ai-chat-container" class="bg-gradient-to-r from-brand-50 to-purple-50 p-6 rounded-3xl border border-brand-100 shadow-sm space-y-4">
           <div class="flex items-center gap-3">
-            <div class="w-11 h-11 rounded-2xl bg-brand-500 text-white flex items-center justify-center text-xl shadow-md shadow-brand-500/20">🤖</div>
+            <div id="ai-avatar-badge" class="w-11 h-11 rounded-2xl bg-brand-500 text-white flex items-center justify-center text-xl shadow-md shadow-brand-500/20">🤖</div>
             <div>
               <h3 class="font-bold text-slate-900 leading-tight">Mon Coach Sylvie</h3>
               <span class="text-xs text-emerald-600 font-semibold flex items-center gap-1">
@@ -233,56 +250,12 @@
           
           <div class="flex flex-col sm:flex-row gap-2">
               <input type="text" id="monInputIA" placeholder="Pose ta question à Sylvie..." class="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-500 text-sm bg-white">
-              <button onclick="envoyerQuestionIA()" class="px-6 py-3 sm:py-0 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Demander</button>
+              <button onclick="envoyerQuestionIA()" class="action-btn px-6 py-3 sm:py-0 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-xl transition">Demander</button>
           </div>
       </section>
 
     </main>
   </div>
-
-  <!-- Modale Login 
-  <div id="login-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="bg-white p-6 rounded-3xl w-full max-w-sm relative shadow-xl space-y-4">
-          <span onclick="fermerModalLogin()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl cursor-pointer">&times;</span>
-          <h2 class="text-xl font-bold text-brand-500">Connexion</h2>
-          <input type="email" id="login-email" placeholder="Email" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500">
-          <input type="password" id="login-pass" placeholder="Mot de passe" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500">
-          <button onclick="login()" class="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm rounded-xl transition">Se connecter</button>
-      </div>
-  </div>   -->
-
-  <!-- Modale Signup (Avec sélection du rôle & de l'école) 
-  <div id="signup-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="bg-white p-6 rounded-3xl w-full max-w-sm relative shadow-xl space-y-4">
-          <span onclick="fermerModalSignup()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl cursor-pointer">&times;</span>
-          <h2 class="text-xl font-bold text-brand-500">Créer un compte</h2>
-          
-          <input type="text" id="signup-name" placeholder="Nom d'utilisateur" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500">
-          <input type="email" id="signup-email" placeholder="Email" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500">
-          <input type="password" id="signup-pass" placeholder="Mot de passe" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500">
-          
-          -->
-          <!-- Sélection du Rôle
-          <select id="signup-role" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500 bg-white">
-              <option value="eleve">Élève</option>
-              <option value="professeur">Professeur</option>
-          </select>
-           -->
-
-          <!-- Sélection Établissement/École 
-          <select id="signup-ecole" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500 bg-white">
-              <option value="1">École Par Défaut / Démo</option>
-          </select>
--->
-          <!-- Sélection Classe (Dynamique pour les élèves) 
-          <select id="signup-level" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500 bg-white">
-              <option value="">-- Sélectionne ta classe --</option>
-          </select>
-
-          <button onclick="signup()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm rounded-xl transition">S'inscrire</button>
-      </div>
-  </div>   
-  -->
 
   <!-- Footer -->
   <footer class="bg-white border-t border-slate-200/80 text-slate-600 pt-10 pb-6 mt-16">
@@ -362,53 +335,61 @@
         }
       }
 
-      // 2. Chargement dynamique du thème de l'école (Logo + Nom)
+      // 2. Chargement dynamique du thème de l'école (Logo + Nom + Couleur)
       chargerThemeEcole(user);
     });
 
+    function chargerThemeEcole(user) {
+        const ecoleData = (user && user.ecole) ? user.ecole : JSON.parse(localStorage.getItem('ecole') || '{}');
 
- function chargerThemeEcole(user) {
-    const ecoleData = (user && user.ecole) ? user.ecole : JSON.parse(localStorage.getItem('ecole') || '{}');
+        if (ecoleData) {
+            // Nom de l'école
+            const nomEcole = ecoleData.nom;
+            if (nomEcole) {
+                const headerTitle = document.getElementById('header-title');
+                const footerTitle = document.getElementById('footer-title');
+                const welcomeTitle = document.getElementById('welcome-guest-title');
 
-    if (ecoleData) {
-        // Nom de l'école
-        const nomEcole = ecoleData.nom;
-        if (nomEcole) {
-            const headerTitle = document.getElementById('header-title');
-            const footerTitle = document.getElementById('footer-title');
-            const welcomeTitle = document.getElementById('welcome-guest-title');
+                if (headerTitle) headerTitle.textContent = nomEcole;
+                if (footerTitle) footerTitle.textContent = nomEcole;
+                if (welcomeTitle) welcomeTitle.textContent = `Bienvenue sur ${nomEcole} ! 👋`;
+            }
 
-            if (headerTitle) headerTitle.textContent = nomEcole;
-            if (footerTitle) footerTitle.textContent = nomEcole;
-            if (welcomeTitle) welcomeTitle.textContent = `Bienvenue sur ${nomEcole} ! 👋`;
-        }
+            // Logo (si disponible)
+            const logoUrl = ecoleData.logo || ecoleData.logo_url;
+            if (logoUrl) {
+                const headerLogo = document.getElementById('header-logo');
+                const footerLogo = document.getElementById('footer-logo');
+                if (headerLogo) headerLogo.src = logoUrl;
+                if (footerLogo) footerLogo.src = logoUrl;
+            }
 
-        // Logo (si disponible)
-        const logoUrl = ecoleData.logo || ecoleData.logo_url;
-        if (logoUrl) {
-            const headerLogo = document.getElementById('header-logo');
-            const footerLogo = document.getElementById('footer-logo');
-            if (headerLogo) headerLogo.src = logoUrl;
-            if (footerLogo) footerLogo.src = logoUrl;
-        }
+            // Couleur dynamique (Thème)
+            const couleurTheme = ecoleData.couleur || ecoleData.couleur_primaire;
+            if (couleurTheme) {
+                // Appliquer la couleur à tous les boutons (y compris les boutons de niveaux et d'action)
+                const boutons = document.querySelectorAll(
+                    '.bg-brand-500, .nav-btn, button.bg-brand-500, .action-btn, #levels-container button, #ai-avatar-badge'
+                );
 
-        // Couleur dynamique
-        const couleurTheme = ecoleData.couleur || ecoleData.couleur_primaire;
-        if (couleurTheme) {
-            // Applique la couleur à TOUS les éléments d'un coup
-            document.querySelectorAll('.bg-brand-500, .nav-btn, button.bg-brand-500, .action-btn').forEach(btn => {
-                btn.style.setProperty('background-color', couleurTheme, 'important');
-                btn.style.setProperty('border-color', couleurTheme, 'important');
-                btn.style.backgroundImage = 'none';
-            });
+                boutons.forEach(btn => {
+                    btn.style.setProperty('background-color', couleurTheme, 'important');
+                    btn.style.setProperty('border-color', couleurTheme, 'important');
+                    btn.style.backgroundImage = 'none';
+                });
 
-            document.querySelectorAll('.text-brand-500, .text-brand-600').forEach(el => {
-                el.style.setProperty('color', couleurTheme, 'important');
-            });
+                // Appliquer la couleur aux éléments textuels
+                document.querySelectorAll('.text-brand-500, .text-brand-600, #current-niveau-display').forEach(el => {
+                    el.style.setProperty('color', couleurTheme, 'important');
+                });
+
+                // Appliquer la couleur aux bordures
+                document.querySelectorAll('.border-brand-100, .border-brand-500').forEach(el => {
+                    el.style.setProperty('border-color', couleurTheme, 'important');
+                });
+            }
         }
     }
-}
-
 
     // Helper JS pour les redirections
     function ouvrirPageCours() {
