@@ -60,13 +60,21 @@ function chargerClassesSignup() {
             niveauEl.innerHTML = '<option value="">-- Sélectionne ta classe --</option>';
             classes.forEach(cls => {
                 const option = document.createElement("option");
-                option.value = cls.nom; // ou cls.id selon ton besoin côté backend
+                option.value = cls.nom || cls.id;
                 option.textContent = cls.nom; // ex: "6ème A", "6ème B"
                 niveauEl.appendChild(option);
             });
         })
         .catch(err => {
             console.error("Erreur chargement classes signup :", err);
+            // Fallback si l'API est absente ou hors-ligne
+            niveauEl.innerHTML = `
+                <option value="">-- Sélectionne ta classe --</option>
+                <option value="6e">6ème</option>
+                <option value="5e">5ème</option>
+                <option value="4e">4ème</option>
+                <option value="3e">3ème</option>
+            `;
         });
 }
 
@@ -158,7 +166,7 @@ async function login() {
 function logout() {
     localStorage.removeItem('user');
     localStorage.removeItem('user_progression');
-    window.location.href = "login.html";
+    window.location.href = "index.html";
 }
 
 function deconnexion() {
@@ -190,7 +198,7 @@ function appliquerPersonnalisationEcole(ecole) {
     const logoEcoleElement = document.getElementById('logo-ecole') || document.getElementById('header-logo');
 
     if (nomEcoleElement && ecole.nom) {
-        nomEcoleElement.innerText = `MathsCollege - ${ecole.nom}`;
+        nomEcoleElement.innerText = ecole.nom;
     }
     if (logoEcoleElement && ecole.logo) {
         logoEcoleElement.src = ecole.logo;
@@ -230,18 +238,23 @@ function showContent(blockId, title) {
         return;
     }
     
-    const container = document.getElementById(blockId) || document.getElementById(blockId + "-list");
+    const container = document.getElementById(blockId) || document.getElementById(blockId + "-block");
     if (!container) return;
     
     container.classList.remove("hidden");
     container.style.display = "";
     container.innerHTML = "<h3 class='text-slate-500 font-semibold p-4'>Chargement...</h3>";
 
-    fetch(`/api/${blockId}/${currentNiveauId}`)
+    fetch(`/api/${blockId}/${currentNiveauId || localStorage.getItem('niveauSelectionne') || '6e'}`)
         .then(res => res.json())
         .then(data => {
             container.innerHTML = `<h3 class="text-lg font-bold text-slate-800 mb-4">${title}</h3>`;
             
+            if (!data || data.length === 0) {
+                container.innerHTML += `<p class="text-slate-500 text-sm">Aucun contenu disponible pour ce niveau pour le moment.</p>`;
+                return;
+            }
+
             data.forEach(item => {
                 if (blockId === "cours") {
                     let renduFinal = "";
@@ -260,7 +273,7 @@ function showContent(blockId, title) {
                         </div>`;
                 } 
                 else if (blockId === "videos") {
-                    let rawData = item.youtube_id.trim();
+                    let rawData = (item.youtube_id || item.url || "").trim();
                     let finalUrl = "";
 
                     if (rawData.includes('http')) {
@@ -749,8 +762,10 @@ function afficherVueContent(type) {
 })();
 
 function effacerSolveur() {
-    document.getElementById('equation-input').value = "";
-    document.getElementById('resultat-solveur').innerHTML = "";
+    const input = document.getElementById('equation-input');
+    const res = document.getElementById('resultat-solveur');
+    if (input) input.value = "";
+    if (res) res.innerHTML = "";
 }
 
 // ================= COACH SYLVIE IA =================
@@ -758,8 +773,9 @@ function effacerSolveur() {
 async function envoyerQuestionIA() {
     const input = document.getElementById('monInputIA');
     const reponseZone = document.getElementById('reponseIA');
-    const question = input.value.trim();
+    if (!input || !reponseZone) return;
 
+    const question = input.value.trim();
     if (!question) return;
 
     const userStocke = localStorage.getItem('user');
@@ -893,9 +909,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    document.getElementById("btn-cours")?.addEventListener("click", () => showContent("cours", "Cours"));
-    document.getElementById("btn-videos")?.addEventListener("click", () => showContent("videos", "Vidéos"));
-
     document.getElementById('monInputIA')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') envoyerQuestionIA();
     });
@@ -904,18 +917,20 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch("/niveaux")
             .then(res => res.json())
             .then(data => {
-                levelsContainer.innerHTML = ""; 
-                data.forEach(niveau => {
-                    const card = document.createElement("div");
-                    card.className = "level-card bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition text-left flex flex-col justify-between";
-                    card.innerHTML = `
-                        <h3 class="font-bold text-slate-900 text-lg mb-4">${niveau.nom}</h3>
-                        <button class="action-btn bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2 px-4 rounded-xl text-sm transition w-full" onclick="entrerDansNiveau(${niveau.id}, '${niveau.nom}')">Entrer</button>
-                    `;
-                    levelsContainer.appendChild(card);
-                });
+                if (data && data.length > 0) {
+                    levelsContainer.innerHTML = ""; 
+                    data.forEach(niveau => {
+                        const card = document.createElement("div");
+                        card.className = "level-card bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition text-left flex flex-col justify-between";
+                        card.innerHTML = `
+                            <h3 class="font-bold text-slate-900 text-lg mb-4">${niveau.nom}</h3>
+                            <button class="action-btn bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2 px-4 rounded-xl text-sm transition w-full" onclick="entrerDansNiveau(${niveau.id}, '${niveau.nom}')">Entrer</button>
+                        `;
+                        levelsContainer.appendChild(card);
+                    });
+                }
             })
-            .catch(err => console.error("Serveur Backend éteint ou inaccessible."));
+            .catch(err => console.error("Mode local ou backend non connecté."));
     }
 });
 
