@@ -341,42 +341,74 @@
 
     function chargerThemeEcole(user) {
     const ecoleData = (user && user.ecole) ? user.ecole : JSON.parse(localStorage.getItem('ecole') || '{}');
-    const couleurTheme = ecoleData.couleur || ecoleData.couleur_primaire;
 
-    if (couleurTheme) {
-        // Crée ou réutilise une balise de style globale
-        let styleTag = document.getElementById('dynamic-theme-style');
-        if (!styleTag) {
-            styleTag = document.createElement('style');
-            styleTag.id = 'dynamic-theme-style';
-            document.head.appendChild(styleTag);
+    if (ecoleData) {
+        const nomEcole = ecoleData.nom;
+        const logoUrl = ecoleData.logo || ecoleData.logo_url;
+        const couleurTheme = ecoleData.couleur || ecoleData.couleur_primaire;
+
+        // 1. MISE À JOUR DU NOM (Header, Footer et Bannière)
+        if (nomEcole) {
+            const headerTitle = document.getElementById('header-title');
+            const footerTitle = document.getElementById('footer-title');
+            const welcomeTitle = document.getElementById('welcome-guest-title');
+
+            if (headerTitle) {
+                headerTitle.textContent = nomEcole;
+                // Supprime le gradient transparent Tailwind pour autoriser la couleur dynamique
+                headerTitle.className = "text-base sm:text-xl font-extrabold truncate";
+            }
+            if (footerTitle) {
+                footerTitle.textContent = nomEcole;
+                footerTitle.className = "text-xl font-extrabold";
+            }
+            if (welcomeTitle) welcomeTitle.textContent = `Bienvenue sur ${nomEcole} ! 👋`;
         }
 
-        // Force la couleur sur TOUS les boutons actuels ET futurs !
-        styleTag.innerHTML = `
-            .bg-brand-500, .nav-btn, button.bg-brand-500, .action-btn, #levels-container button, #ai-avatar-badge {
-                background-color: ${couleurTheme} !important;
-                background-image: none !important;
-                border-color: ${couleurTheme} !important;
-            }
-            .bg-brand-500:hover, .action-btn:hover {
-                filter: brightness(0.9) !important;
-            }
-            .text-brand-500, .text-brand-600, #current-niveau-display {
-                color: ${couleurTheme} !important;
-            }
-            .border-brand-100, .border-brand-500 {
-                border-color: ${couleurTheme} !important;
-            }
-        `;
-    }
+        // 2. MISE À JOUR DU LOGO (Header et Footer)
+        if (logoUrl) {
+            const headerLogo = document.getElementById('header-logo');
+            const footerLogo = document.getElementById('footer-logo');
+            if (headerLogo) headerLogo.src = logoUrl;
+            if (footerLogo) footerLogo.src = logoUrl;
+        }
 
-    // Gestion du nom et logo
-    if (ecoleData.nom) {
-        const headerTitle = document.getElementById('header-title');
-        const welcomeTitle = document.getElementById('welcome-guest-title');
-        if (headerTitle) headerTitle.textContent = ecoleData.nom;
-        if (welcomeTitle) welcomeTitle.textContent = `Bienvenue sur ${ecoleData.nom} ! 👋`;
+        // 3. APPLICATION GLOBALE DU THÈME (Header, Footer, Boutons, Badges)
+        if (couleurTheme) {
+            let styleTag = document.getElementById('dynamic-theme-style');
+            if (!styleTag) {
+                styleTag = document.createElement('style');
+                styleTag.id = 'dynamic-theme-style';
+                document.head.appendChild(styleTag);
+            }
+
+            styleTag.innerHTML = `
+                /* Boutons principaux, boutons de niveaux, badges */
+                .bg-brand-500, .nav-btn, button.bg-brand-500, .action-btn, #levels-container button, #ai-avatar-badge {
+                    background-color: ${couleurTheme} !important;
+                    background-image: none !important;
+                    border-color: ${couleurTheme} !important;
+                }
+                .bg-brand-500:hover, .action-btn:hover {
+                    filter: brightness(0.9) !important;
+                }
+
+                /* Textes et Titres (Header + Footer + Contenu) */
+                #header-title, #footer-title, .text-brand-500, .text-brand-600, #current-niveau-display {
+                    color: ${couleurTheme} !important;
+                }
+
+                /* Fond des cartes/bannières légères */
+                .bg-brand-50 {
+                    background-color: ${couleurTheme}15 !important; /* 15% d'opacité */
+                }
+
+                /* Bordures */
+                .border-brand-100, .border-brand-500 {
+                    border-color: ${couleurTheme} !important;
+                }
+            `;
+        }
     }
 }
 
