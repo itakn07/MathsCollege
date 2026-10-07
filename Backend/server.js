@@ -86,16 +86,7 @@ const db = mysql.createPool({
     } : undefined
 });
 
-db.getConnection((err, connection) => {
-    if (err) {
-        console.log('Erreur MySQL:', err);
-    } else {
-        console.log('Connecté à MySQL');
-        connection.release();
-    }
-});
-
-// ============= TÂCHE AUTOMATIQUE : VÉRIFICATION ABONNEMENTS ÉPIRÉS =============
+// ============= TÂCHE AUTOMATIQUE : VÉRIFICATION ABONNEMENTS EXPIRÉS =============
 function verifierAbonnementsExpires() {
     const updateExpiredSql = `
         UPDATE ecoles 
@@ -106,16 +97,53 @@ function verifierAbonnementsExpires() {
     `;
     db.query(updateExpiredSql, (err, result) => {
         if (err) {
-            console.error("[CRON Abonnements] Erreur mise à jour statut :", err);
+            if (err.code === 'ER_NO_SUCH_TABLE') {
+                console.error(
+                    `[CRON Abonnements] La table 'ecoles' est introuvable sur le serveur MySQL ` +
+                    `${process.env.DB_HOST}:${process.env.DB_PORT || 3306}, base '${process.env.DB_NAME}'. ` +
+                    `Vérifie que le .env pointe vers le même serveur que MySQL Workbench.`
+                );
+            } else {
+                console.error("[CRON Abonnements] Erreur mise à jour statut :", err);
+            }
         } else if (result.affectedRows > 0) {
             console.log(`[CRON Abonnements] ${result.affectedRows} école(s) passée(s) en statut inactif/expiré.`);
         }
     });
 }
 
-// Lancement de la vérification au démarrage puis toutes les heures
-verifierAbonnementsExpires();
-setInterval(verifierAbonnementsExpires, 1000 * 60 * 60);
+// Test de connexion + diagnostic (serveur, base, table ecoles), puis lancement de la tâche
+db.getConnection((err, connection) => {
+    if (err) {
+        console.log('Erreur MySQL:', err);
+        return;
+    }
+
+    console.log('Connecté à MySQL');
+    console.log(`[DB] Hôte : ${process.env.DB_HOST} | Port : ${process.env.DB_PORT || 3306} | Base demandée : ${process.env.DB_NAME}`);
+
+    connection.query('SELECT DATABASE() AS base, @@hostname AS serveur, @@port AS port', (e1, r1) => {
+        if (!e1 && r1 && r1[0]) {
+            console.log(`[DB] Base active : ${r1[0].base} | Serveur MySQL : ${r1[0].serveur} | Port : ${r1[0].port}`);
+        }
+
+        connection.query("SHOW TABLES LIKE 'ecoles'", (e2, r2) => {
+            connection.release();
+
+            if (e2) {
+                console.error('[DB] Impossible de vérifier la table ecoles :', e2.message);
+            } else if (!r2 || r2.length === 0) {
+                console.error("[DB] ATTENTION : la table 'ecoles' n'existe pas sur CE serveur MySQL.");
+            } else {
+                console.log("[DB] Table 'ecoles' trouvée.");
+            }
+
+            // Lancement de la vérification au démarrage puis toutes les heures
+            verifierAbonnementsExpires();
+            setInterval(verifierAbonnementsExpires, 1000 * 60 * 60);
+        });
+    });
+});
 
 // ============= FONCTIONS UTILITAIRES =============
 function genererMotDePasseTemp() {
