@@ -366,28 +366,61 @@
       chargerThemeEcole(user);
     });
 
-    function chargerThemeEcole(user) {
-      const ecoleData = (user && user.ecole) ? user.ecole : JSON.parse(localStorage.getItem('ecole') || '{}');
-      if (ecoleData && ecoleData.nom) {
-        // En-tête et pied de page
+   function chargerThemeEcole(user) {
+    // 1. Récupération des données d'école depuis le profil utilisateur ou le localStorage
+    const ecoleData = (user && user.ecole) ? user.ecole : JSON.parse(localStorage.getItem('ecole') || '{}');
+
+    if (ecoleData && (ecoleData.nom || ecoleData.couleur)) {
+        // --- MISE À JOUR DU LOGO ET DU NOM ---
         const headerLogo = document.getElementById('header-logo');
         const footerLogo = document.getElementById('footer-logo');
         const headerTitle = document.getElementById('header-title');
         const footerTitle = document.getElementById('footer-title');
         const welcomeTitle = document.getElementById('welcome-guest-title');
 
-        if (ecoleData.logo_url) {
-          if (headerLogo) headerLogo.src = ecoleData.logo_url;
-          if (footerLogo) footerLogo.src = ecoleData.logo_url;
+        const logoUrl = ecoleData.logo || ecoleData.logo_url;
+        if (logoUrl) {
+            if (headerLogo) headerLogo.src = logoUrl;
+            if (footerLogo) footerLogo.src = logoUrl;
         }
 
-        if (ecoleData.nom) {
-          if (headerTitle) headerTitle.textContent = ecoleData.nom;
-          if (footerTitle) footerTitle.textContent = ecoleData.nom;
-          if (welcomeTitle) welcomeTitle.textContent = `Bienvenue sur ${ecoleData.nom} ! 👋`;
+        const nomEcole = ecoleData.nom;
+        if (nomEcole) {
+            if (headerTitle) headerTitle.textContent = nomEcole;
+            if (footerTitle) footerTitle.textContent = nomEcole;
+            if (welcomeTitle) welcomeTitle.textContent = `Bienvenue sur ${nomEcole} ! 👋`;
         }
-      }
+
+        // --- APPLICATION DYNAMIQUE DU THÈME DE COULEUR ---
+        const couleurTheme = ecoleData.couleur || ecoleData.couleur_primaire;
+        if (couleurTheme) {
+            // A. Appliquer aux boutons de navigation et boutons principaux
+            const boutons = document.querySelectorAll('.bg-brand-500, .nav-btn, button.bg-brand-500');
+            boutons.forEach(btn => {
+                btn.style.backgroundColor = couleurTheme;
+                btn.style.borderColor = couleurTheme;
+            });
+
+            // B. Appliquer aux textes de marque (titres, accents)
+            const textes = document.querySelectorAll('.text-brand-500, .text-brand-600');
+            textes.forEach(el => {
+                el.style.color = couleurTheme;
+            });
+
+            // C. Appliquer aux bordures de conteneurs/cartes
+            const bordures = document.querySelectorAll('.border-brand-100, .border-brand-500');
+            bordures.forEach(el => {
+                el.style.borderColor = couleurTheme;
+            });
+
+            // D. Appliquer aux badges d'en-tête
+            const userBadge = document.getElementById('user-badge');
+            if (userBadge) {
+                userBadge.style.color = couleurTheme;
+            }
+        }
     }
+}
 
     // Helper JS pour les redirections
     function ouvrirPageCours() {
