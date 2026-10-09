@@ -81,41 +81,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!ecole) return;
 
-    // 1. Application de la couleur primaire dynamique
-    if (ecole.couleur) {
-        document.documentElement.style.setProperty('--brand-color', ecole.couleur);
-        // Si tu utilises Tailwind pour les boutons/éléments colorés dynamiquement
-        const brandElements = document.querySelectorAll('.bg-brand-500, .text-brand-500');
-        brandElements.forEach(el => {
-            if (el.classList.contains('bg-brand-500')) el.style.backgroundColor = ecole.couleur;
-            if (el.classList.contains('text-brand-500')) el.style.color = ecole.couleur;
-        });
-    }
+    // 1. Détermination de la couleur de l'école (avec couleur par défaut si non définie)
+    const primaryColor = ecole.couleur_primaire || ecole.couleur || '#0284c7';
 
-    // 2. Mise à jour du Logo (Header + Footer + Badge Profil)
-    const logoSrc = ecole.logo || 'uploads/logo_default.png';
-    const headerLogo = document.getElementById('header-logo');
-    const footerLogo = document.getElementById('footer-logo');
-    
-    if (headerLogo) headerLogo.src = logoSrc;
-    if (footerLogo) footerLogo.src = logoSrc;
+    // 2. Application de la couleur aux textes (Nom dans Header, Footer, Titres, etc.)
+    const textBrandElements = document.querySelectorAll('.text-brand-500, .text-brand-600, .text-brand-700');
+    textBrandElements.forEach(el => {
+        el.style.color = primaryColor;
+    });
 
-    // 3. Mise à jour du Nom de l'établissement
-    const ecoleNom = ecole.nom || 'MathsCollege';
+    // Colorer spécifiquement le nom dans le header et le footer
     const headerSchoolName = document.getElementById('header-school-name');
     const footerSchoolName = document.getElementById('footer-school-name');
-    
+    if (headerSchoolName) headerSchoolName.style.color = primaryColor;
+    if (footerSchoolName) footerSchoolName.style.color = primaryColor;
+
+    // 3. Application de la couleur aux fonds (Boutons, Badges, Avatars, etc.)
+    const bgBrandElements = document.querySelectorAll('.bg-brand-500, .bg-brand-600, #user-avatar');
+    bgBrandElements.forEach(el => {
+        el.style.backgroundColor = primaryColor;
+    });
+
+    // 4. Injection du NOM de l'établissement (Header & Footer)
+    const ecoleNom = ecole.nom || 'MathsCollege';
     if (headerSchoolName) headerSchoolName.textContent = ecoleNom;
     if (footerSchoolName) footerSchoolName.textContent = ecoleNom;
 
-    // 4. Coordonnées dans le Footer (Adresse, Email, Téléphone)
+    // 5. Injection du LOGO de l'établissement (Header & Footer)
+    const logoSrc = ecole.logo_url || ecole.logo || 'uploads/logo_default.png';
+    const headerLogo = document.getElementById('header-logo');
+    const footerLogo = document.getElementById('footer-logo');
+    
+    if (headerLogo) {
+        headerLogo.src = logoSrc;
+        headerLogo.style.width = 'auto';
+    }
+    if (footerLogo) {
+        footerLogo.src = logoSrc;
+        footerLogo.style.width = 'auto';
+    }
+
+    // 6. Injection des COORDONNÉES dans le Footer (Adresse, Email, Téléphone)
     const addressText = document.getElementById('footer-address-text');
     const emailText = document.getElementById('footer-email-text');
     const emailLink = document.getElementById('footer-email-link');
     const phoneText = document.getElementById('footer-phone-text');
     const phoneLink = document.getElementById('footer-phone-link');
 
-    if (ecole.adresse && addressText) addressText.textContent = ecole.adresse;
+    if (ecole.adresse && addressText) {
+        addressText.textContent = ecole.adresse;
+    } else if (ecole.ville && addressText) {
+        const quartier = ecole.quartier ? `${ecole.quartier}, ` : '';
+        addressText.textContent = `${quartier}${ecole.ville}, République du Congo`;
+    }
     
     const ecoleEmail = ecole.email_contact || ecole.email;
     if (ecoleEmail) {
