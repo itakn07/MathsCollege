@@ -132,3 +132,60 @@ async function updatePassword(event) {
         alert('Erreur réseau lors du changement de mot de passe.');
     }
 }
+
+function chargerProgressionDepuisStorage() {
+    // 1. Récupérer les cours lus depuis le localStorage (même clé que dans cours.js)
+    const progRaw = localStorage.getItem('mathscollege_progression');
+    const prog = progRaw ? JSON.parse(progRaw) : {};
+
+    // 2. Afficher la section si c'est un élève
+    const containerProgression = document.getElementById('container-progression');
+    if (containerProgression) containerProgression.classList.remove('hidden');
+
+    // 3. Charger la liste des cours (si disponible en localStorage ou via l'API des cours)
+    // Sinon, parcourir les IDs ou faire un fetch simple de la liste des cours
+    fetch('/api/cours')
+        .then(res => res.json())
+        .then(coursList => {
+            let totalAlgebre = 0, lusAlgebre = 0;
+            let totalGeometrie = 0, lusGeometrie = 0;
+
+            coursList.forEach(c => {
+                const estLu = prog[c.id] === true;
+                const matiere = (c.matiere || '').toLowerCase();
+
+                if (matiere.includes('alg') || c.categorie === 'algebre') {
+                    totalAlgebre++;
+                    if (estLu) lusAlgebre++;
+                } else if (matiere.includes('géo') || c.categorie === 'geometrie') {
+                    totalGeometrie++;
+                    if (estLu) lusGeometrie++;
+                }
+            });
+
+            // Calculs des pourcentages
+            const pctAlgebre = totalAlgebre > 0 ? Math.round((lusAlgebre / totalAlgebre) * 100) : 0;
+            const pctGeometrie = totalGeometrie > 0 ? Math.round((lusGeometrie / totalGeometrie) * 100) : 0;
+
+            // Mise à jour de l'affichage DOM
+            document.getElementById('percent-algebre').textContent = `${pctAlgebre}%`;
+            document.getElementById('bar-algebre').style.width = `${pctAlgebre}%`;
+            document.getElementById('text-algebre').textContent = `${lusAlgebre} sur ${totalAlgebre} chapitres lus`;
+
+            document.getElementById('percent-geometrie').textContent = `${pctGeometrie}%`;
+            document.getElementById('bar-geometrie').style.width = `${pctGeometrie}%`;
+            document.getElementById('text-geometrie').textContent = `${lusGeometrie} sur ${totalGeometrie} chapitres lus`;
+        })
+        .catch(err => console.error("Erreur chargement liste des cours :", err));
+}
+
+// Appeler au chargement du DOM si l'utilisateur est un élève
+document.addEventListener('DOMContentLoaded', () => {
+    const userRaw = localStorage.getItem('user');
+    if (!userRaw) return;
+    const user = JSON.parse(userRaw);
+
+    if (user.role === 'eleve') {
+        chargerProgressionDepuisStorage();
+    }
+});

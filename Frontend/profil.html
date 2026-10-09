@@ -41,6 +41,49 @@
         </div>
     </header>
 
+
+    <!-- Section Progression de Lecture (Élèves uniquement) -->
+<div id="container-progression" class="hidden bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+    <h2 class="text-base font-bold text-slate-900 mb-4 border-b border-slate-100 pb-3 flex items-center space-x-2">
+        <i class="fa-solid fa-chart-line text-brand-500"></i>
+        <span>Progression des Cours</span>
+    </h2>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <!-- Carte Algèbre -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+            <div class="flex justify-between items-center">
+                <span class="text-xs font-bold text-slate-700 flex items-center space-x-1.5">
+                    <span>📐</span>
+                    <span>Algèbre</span>
+                </span>
+                <span id="percent-algebre" class="text-xs font-extrabold text-brand-600">0%</span>
+            </div>
+            <!-- Barre de progression -->
+            <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                <div id="bar-algebre" class="bg-brand-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <p id="text-algebre" class="text-[11px] text-slate-500">0 sur 0 chapitres lus</p>
+        </div>
+
+        <!-- Carte Géométrie -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+            <div class="flex justify-between items-center">
+                <span class="text-xs font-bold text-slate-700 flex items-center space-x-1.5">
+                    <span>📏</span>
+                    <span>Géométrie</span>
+                </span>
+                <span id="percent-geometrie" class="text-xs font-extrabold text-brand-600">0%</span>
+            </div>
+            <!-- Barre de progression -->
+            <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                <div id="bar-geometrie" class="bg-brand-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <p id="text-geometrie" class="text-[11px] text-slate-500">0 sur 0 chapitres lus</p>
+        </div>
+    </div>
+</div>
+
     <!-- Conteneur Principal -->
     <main class="max-w-3xl mx-auto px-4 py-8 w-full flex-1 space-y-6">
 
