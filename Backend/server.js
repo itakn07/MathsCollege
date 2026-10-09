@@ -960,6 +960,48 @@ app.post('/api/admin/validate-prof/:id', (req, res) => {
     });
 });
 
+
+// PUT : Mise à jour des infos du profil
+app.put('/api/user/profile', (req, res) => {
+    const { userId, username, email, niveau } = req.body;
+
+    const sql = `UPDATE users SET username = ?, email = ?, niveau = ? WHERE id = ?`;
+    db.query(sql, [username, email, niveau, userId], (err, result) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, message: "Erreur serveur ou email déjà utilisé" });
+        }
+        res.json({ success: true, message: "Profil mis à jour" });
+    });
+});
+
+// PUT : Changement de mot de passe
+app.put('/api/user/password', async (req, res) => {
+    const { userId, oldPassword, newPassword } = req.body;
+
+    // 1. Récupérer le mot de passe actuel
+    db.query('SELECT password FROM users WHERE id = ?', [userId], async (err, result) => {
+        if (err || result.length === 0) {
+            return res.status(500).json({ success: false, message: "Utilisateur non trouvé" });
+        }
+
+        const user = result[0];
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+
+        if (!isMatch) {
+            return res.status(400).json({ success: false, message: "L'ancien mot de passe est incorrect" });
+        }
+
+        // 2. Hash du nouveau mot de passe
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        db.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, userId], (err, updateResult) => {
+            if (err) return res.status(500).json({ success: false, message: "Erreur lors de la mise à jour" });
+            res.json({ success: true, message: "Mot de passe modifié avec succès" });
+        });
+    });
+});
+
 // ============= LANCEMENT DU SERVEUR =============
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
