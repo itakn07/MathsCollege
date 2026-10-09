@@ -42,7 +42,28 @@
     </header>
 
 
-    <!-- Section Progression de Lecture (Élèves uniquement) -->
+   
+    <!-- Conteneur Principal -->
+    <main class="max-w-3xl mx-auto px-4 py-8 w-full flex-1 space-y-6">
+
+        <!-- Carte En-tête Profil -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6 text-center sm:text-left">
+            <div class="w-20 h-20 rounded-2xl bg-brand-500 text-white flex items-center justify-center text-3xl font-extrabold uppercase shadow-sm shrink-0" id="user-avatar">
+                U
+            </div>
+            <div class="space-y-1.5 flex-1">
+                <h1 class="text-2xl font-black text-slate-900" id="profile-username">Utilisateur</h1>
+                <p class="text-sm text-slate-500" id="profile-email">email@exemple.cg</p>
+                
+                <div class="flex flex-wrap gap-2 pt-2 justify-center sm:justify-start">
+                    <span id="badge-role" class="px-3 py-1 bg-brand-50 text-brand-700 text-xs font-bold rounded-full uppercase">Rôle</span>
+                    <span id="badge-ecole" class="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded-full">Établissement</span>
+                    <span id="badge-niveau" class="px-3 py-1 bg-amber-50 text-amber-700 text-xs font-semibold rounded-full hidden">Niveau</span>
+                </div>
+            </div>
+        </div>
+
+         <!-- Section Progression de Lecture (Élèves uniquement) -->
 <div id="container-progression" class="hidden bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
     <h2 class="text-base font-bold text-slate-900 mb-4 border-b border-slate-100 pb-3 flex items-center space-x-2">
         <i class="fa-solid fa-chart-line text-brand-500"></i>
@@ -84,25 +105,6 @@
     </div>
 </div>
 
-    <!-- Conteneur Principal -->
-    <main class="max-w-3xl mx-auto px-4 py-8 w-full flex-1 space-y-6">
-
-        <!-- Carte En-tête Profil -->
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6 text-center sm:text-left">
-            <div class="w-20 h-20 rounded-2xl bg-brand-500 text-white flex items-center justify-center text-3xl font-extrabold uppercase shadow-sm shrink-0" id="user-avatar">
-                U
-            </div>
-            <div class="space-y-1.5 flex-1">
-                <h1 class="text-2xl font-black text-slate-900" id="profile-username">Utilisateur</h1>
-                <p class="text-sm text-slate-500" id="profile-email">email@exemple.cg</p>
-                
-                <div class="flex flex-wrap gap-2 pt-2 justify-center sm:justify-start">
-                    <span id="badge-role" class="px-3 py-1 bg-brand-50 text-brand-700 text-xs font-bold rounded-full uppercase">Rôle</span>
-                    <span id="badge-ecole" class="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded-full">Établissement</span>
-                    <span id="badge-niveau" class="px-3 py-1 bg-amber-50 text-amber-700 text-xs font-semibold rounded-full hidden">Niveau</span>
-                </div>
-            </div>
-        </div>
 
         <!-- Formulaire Informatique Personnelles -->
         <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
