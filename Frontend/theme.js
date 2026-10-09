@@ -68,3 +68,63 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
+
+// profil.html
+
+document.addEventListener('DOMContentLoaded', () => {
+    const userRaw = localStorage.getItem('user');
+    if (!userRaw) return;
+
+    const user = JSON.parse(userRaw);
+    const ecole = user.ecole;
+
+    if (!ecole) return;
+
+    // 1. Application de la couleur primaire dynamique
+    if (ecole.couleur) {
+        document.documentElement.style.setProperty('--brand-color', ecole.couleur);
+        // Si tu utilises Tailwind pour les boutons/éléments colorés dynamiquement
+        const brandElements = document.querySelectorAll('.bg-brand-500, .text-brand-500');
+        brandElements.forEach(el => {
+            if (el.classList.contains('bg-brand-500')) el.style.backgroundColor = ecole.couleur;
+            if (el.classList.contains('text-brand-500')) el.style.color = ecole.couleur;
+        });
+    }
+
+    // 2. Mise à jour du Logo (Header + Footer + Badge Profil)
+    const logoSrc = ecole.logo || 'uploads/logo_default.png';
+    const headerLogo = document.getElementById('header-logo');
+    const footerLogo = document.getElementById('footer-logo');
+    
+    if (headerLogo) headerLogo.src = logoSrc;
+    if (footerLogo) footerLogo.src = logoSrc;
+
+    // 3. Mise à jour du Nom de l'établissement
+    const ecoleNom = ecole.nom || 'MathsCollege';
+    const headerSchoolName = document.getElementById('header-school-name');
+    const footerSchoolName = document.getElementById('footer-school-name');
+    
+    if (headerSchoolName) headerSchoolName.textContent = ecoleNom;
+    if (footerSchoolName) footerSchoolName.textContent = ecoleNom;
+
+    // 4. Coordonnées dans le Footer (Adresse, Email, Téléphone)
+    const addressText = document.getElementById('footer-address-text');
+    const emailText = document.getElementById('footer-email-text');
+    const emailLink = document.getElementById('footer-email-link');
+    const phoneText = document.getElementById('footer-phone-text');
+    const phoneLink = document.getElementById('footer-phone-link');
+
+    if (ecole.adresse && addressText) addressText.textContent = ecole.adresse;
+    
+    const ecoleEmail = ecole.email_contact || ecole.email;
+    if (ecoleEmail) {
+        if (emailText) emailText.textContent = ecoleEmail;
+        if (emailLink) emailLink.href = `mailto:${ecoleEmail}`;
+    }
+
+    if (ecole.telephone) {
+        if (phoneText) phoneText.textContent = ecole.telephone;
+        if (phoneLink) phoneLink.href = `tel:${ecole.telephone.toString().replace(/\s+/g, '')}`;
+    }
+});
