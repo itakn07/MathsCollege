@@ -326,7 +326,17 @@ app.post('/login', (req, res) => {
     const { email, password } = req.body; 
 
     const sql = `
-        SELECT u.*, e.nom AS ecole_nom, e.logo_url, e.couleur_primaire, e.statut_abonnement, e.date_fin_abonnement
+        SELECT u.*, 
+               e.nom AS ecole_nom, 
+               e.logo_url, 
+               e.couleur_primaire, 
+               e.ville AS ecole_ville,
+               e.quartier AS ecole_quartier,
+               e.arrondissement AS ecole_arrondissement,
+               e.telephone AS ecole_telephone, 
+               e.email_contact AS ecole_email,
+               e.statut_abonnement, 
+               e.date_fin_abonnement
         FROM users u
         LEFT JOIN ecoles e ON u.ecole_id = e.id
         WHERE u.email = ?
@@ -365,6 +375,10 @@ app.post('/login', (req, res) => {
                 redirectUrl = "super_admin.html";
             }
 
+            // Formattage propre de l'adresse (ex: "Moungali, Arr. 3, Brazzaville")
+            const elementsAdresse = [user.ecole_quartier, user.ecole_arrondissement, user.ecole_ville].filter(Boolean);
+            const adresseFormatee = elementsAdresse.length > 0 ? elementsAdresse.join(', ') : null;
+
             res.json({ 
                 success: true, 
                 message: "Connexion réussie !",
@@ -380,6 +394,9 @@ app.post('/login', (req, res) => {
                         nom: user.ecole_nom || 'MathsCollege Officiel',
                         logo: user.logo_url,
                         couleur: user.couleur_primaire || '#4F46E5',
+                        adresse: adresseFormatee,
+                        telephone: user.ecole_telephone,
+                        email_contact: user.ecole_email,
                         statut: user.statut_abonnement || 'actif'
                     }
                 }

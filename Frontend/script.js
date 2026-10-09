@@ -983,7 +983,7 @@ function scrollToSolveur() {
 
 
  //footer email+contact et adrsses dynamique
-document.addEventListener('DOMContentLoaded', () => {
+ document.addEventListener('DOMContentLoaded', () => {
     // Récupération des informations de l'utilisateur stockées lors du login
     const user = JSON.parse(localStorage.getItem('user'));
 
