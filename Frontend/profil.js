@@ -9,14 +9,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const user = JSON.parse(userRaw);
 
     // 2. Pré-remplissage des informations
-    document.getElementById('profile-username').textContent = user.username || 'Utilisateur';
-    document.getElementById('profile-email').textContent = user.email || '';
-    document.getElementById('input-username').value = user.username || '';
-    document.getElementById('input-email').value = user.email || '';
+    const usernameEl = document.getElementById('profile-username');
+    const emailEl = document.getElementById('profile-email');
+    const inputUsername = document.getElementById('input-username');
+    const inputEmail = document.getElementById('input-email');
+
+    if (usernameEl) usernameEl.textContent = user.username || user.nom || 'Utilisateur';
+    if (emailEl) emailEl.textContent = user.email || '';
+    if (inputUsername) inputUsername.value = user.username || user.nom || '';
+    if (inputEmail) inputEmail.value = user.email || '';
 
     // Initiale pour l'avatar
-    const initial = user.username ? user.username.charAt(0).toUpperCase() : 'U';
-    document.getElementById('user-avatar').textContent = initial;
+    const initial = (user.username || user.nom || 'U').charAt(0).toUpperCase();
+    const avatarEl = document.getElementById('user-avatar');
+    if (avatarEl) avatarEl.textContent = initial;
 
     // Badges (Rôle et École)
     const roleBadge = document.getElementById('badge-role');
@@ -31,12 +37,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const ecoleBadge = document.getElementById('badge-ecole');
-    if (ecoleBadge && user.ecole) {
-        ecoleBadge.textContent = user.ecole.nom || 'MathsCollege';
+    if (ecoleBadge) {
+        ecoleBadge.textContent = user.ecole ? (user.ecole.nom || 'MathsCollege') : 'MathsCollege';
     }
 
     // Gestion du niveau d'étude (si c'est un élève)
-    if (user.role === 'eleve' || user.niveau) {
+    const role = (user.role || '').toLowerCase();
+    if (role === 'eleve' || role === 'élève' || user.niveau) {
         const containerNiveau = document.getElementById('container-niveau');
         const badgeNiveau = document.getElementById('badge-niveau');
         const selectNiveau = document.getElementById('select-niveau');
@@ -49,7 +56,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (selectNiveau && user.niveau) {
             selectNiveau.value = user.niveau;
         }
+
+        // Lancement du calcul de la progression de lecture
+        chargerProgressionDepuisStorage(user);
     }
+
+    // Attachement des événements de formulaires s'ils existent
+    const formProfile = document.getElementById('formUpdateProfile') || document.getElementById('form-profile');
+    if (formProfile) formProfile.addEventListener('submit', updateProfile);
+
+    const formPassword = document.getElementById('formUpdatePassword');
+    if (formPassword) formPassword.addEventListener('submit', updatePassword);
 });
 
 // 3. Mise à jour des informations du profil
@@ -57,10 +74,13 @@ async function updateProfile(event) {
     event.preventDefault();
 
     const user = JSON.parse(localStorage.getItem('user'));
-    const username = document.getElementById('input-username').value.trim();
-    const email = document.getElementById('input-email').value.trim();
+    const inputUsername = document.getElementById('input-username');
+    const inputEmail = document.getElementById('input-email');
     const selectNiveau = document.getElementById('select-niveau');
-    const niveau = selectNiveau ? selectNiveau.value : null;
+
+    const username = inputUsername ? inputUsername.value.trim() : user.username;
+    const email = inputEmail ? inputEmail.value.trim() : user.email;
+    const niveau = selectNiveau ? selectNiveau.value : user.niveau;
 
     try {
         const response = await fetch('/api/user/profile', {
@@ -133,11 +153,11 @@ async function updatePassword(event) {
     }
 }
 
-async function chargerProgressionDepuisStorage() {
-    const userRaw = localStorage.getItem('user');
-    if (!userRaw) return;
-    
-    const user = JSON.parse(userRaw);
+// 5. Calcul et affichage de la progression de lecture
+async function chargerProgressionDepuisStorage(userData) {
+    const user = userData || JSON.parse(localStorage.getItem('user'));
+    if (!user) return;
+
     const progRaw = localStorage.getItem('mathscollege_progression');
     const prog = progRaw ? JSON.parse(progRaw) : {};
 
@@ -146,9 +166,17 @@ async function chargerProgressionDepuisStorage() {
     const containerProgression = document.getElementById('container-progression');
     if (containerProgression) containerProgression.classList.remove('hidden');
 
-    // Nettoyage du niveau (ex: "6ÈME A" -> "6")
+    // Nettoyage et normalisation du niveau (ex: "6ÈME A" -> "6eme")
     let rawNiveau = user.niveau || '3eme';
-    let niveauUser = rawNiveau.split(' ')[0].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    let niveauUser = rawNiveau.split(' ')[0]
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace('ème', 'eme')
+        .replace('è', 'e');
+
+    if (/^\d+$/.test(niveauUser)) {
+        niveauUser += 'eme';
+    }
 
     const ecoleId = user.ecole_id || (user.ecole ? user.ecole.id : 1);
 
@@ -164,12 +192,11 @@ async function chargerProgressionDepuisStorage() {
         console.log("📚 Cours Algèbre reçus du serveur :", coursAlgebre);
         console.log("📐 Cours Géométrie reçus du serveur :", coursGeometrie);
 
-        // Calcul Algèbre (vérification permissive des IDs)
+        // Calcul Algèbre
         const totalAlgebre = Array.isArray(coursAlgebre) ? coursAlgebre.length : 0;
         let lusAlgebre = 0;
         if (totalAlgebre > 0) {
             coursAlgebre.forEach(c => {
-                // On vérifie avec c.id ou c.cours_id (selon le nom dans ta BD)
                 const idCours = c.id || c.cours_id;
                 if (prog[idCours] === true || prog[String(idCours)] === true) {
                     lusAlgebre++;
@@ -191,16 +218,24 @@ async function chargerProgressionDepuisStorage() {
         }
         const pctGeometrie = totalGeometrie > 0 ? Math.round((lusGeometrie / totalGeometrie) * 100) : 0;
 
-        // Affichage
-        document.getElementById('percent-algebre').textContent = `${pctAlgebre}%`;
-        document.getElementById('bar-algebre').style.width = `${pctAlgebre}%`;
-        document.getElementById('text-algebre').textContent = `${lusAlgebre} sur ${totalAlgebre} chapitres lus`;
+        // Affichage dans le DOM
+        const elPercentAlg = document.getElementById('percent-algebre');
+        const elBarAlg = document.getElementById('bar-algebre');
+        const elTextAlg = document.getElementById('text-algebre');
 
-        document.getElementById('percent-geometrie').textContent = `${pctGeometrie}%`;
-        document.getElementById('bar-geometrie').style.width = `${pctGeometrie}%`;
-        document.getElementById('text-geometrie').textContent = `${lusGeometrie} sur ${totalGeometrie} chapitres lus`;
+        const elPercentGeo = document.getElementById('percent-geometrie');
+        const elBarGeo = document.getElementById('bar-geometrie');
+        const elTextGeo = document.getElementById('text-geometrie');
+
+        if (elPercentAlg) elPercentAlg.textContent = `${pctAlgebre}%`;
+        if (elBarAlg) elBarAlg.style.width = `${pctAlgebre}%`;
+        if (elTextAlg) elTextAlg.textContent = `${lusAlgebre} sur ${totalAlgebre} chapitres lus`;
+
+        if (elPercentGeo) elPercentGeo.textContent = `${pctGeometrie}%`;
+        if (elBarGeo) elBarGeo.style.width = `${pctGeometrie}%`;
+        if (elTextGeo) elTextGeo.textContent = `${lusGeometrie} sur ${totalGeometrie} chapitres lus`;
 
     } catch (err) {
-        console.error("❌ Erreur lors du chargement :", err);
+        console.error("❌ Erreur lors du chargement de la progression :", err);
     }
 }
