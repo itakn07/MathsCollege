@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Profil - MathsCollege</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#f0f9ff', 500: '#0284c7', 600: '#0369a1', 700: '#075985' }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome pour les icônes -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+    <!-- En-tête / Navbar simplifiée -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="index.html" class="flex items-center space-x-2">
+                <img id="header-logo" src="uploads/logo_default.png" alt="Logo" class="h-9 w-auto object-contain">
+                <span id="header-school-name" class="font-bold text-slate-900 text-lg">MathsCollege</span>
+            </a>
+            <a href="index.html" class="text-xs font-semibold text-slate-500 hover:text-brand-500 flex items-center space-x-1.5 transition">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Retour à l'accueil</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Conteneur Principal -->
+    <main class="max-w-3xl mx-auto px-4 py-8 w-full flex-1 space-y-6">
+
+        <!-- Carte En-tête Profil -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6 text-center sm:text-left">
+            <div class="w-20 h-20 rounded-2xl bg-brand-500 text-white flex items-center justify-center text-3xl font-extrabold uppercase shadow-sm shrink-0" id="user-avatar">
+                U
+            </div>
+            <div class="space-y-1.5 flex-1">
+                <h1 class="text-2xl font-black text-slate-900" id="profile-username">Utilisateur</h1>
+                <p class="text-sm text-slate-500" id="profile-email">email@exemple.cg</p>
+                
+                <div class="flex flex-wrap gap-2 pt-2 justify-center sm:justify-start">
+                    <span id="badge-role" class="px-3 py-1 bg-brand-50 text-brand-700 text-xs font-bold rounded-full uppercase">Rôle</span>
+                    <span id="badge-ecole" class="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded-full">Établissement</span>
+                    <span id="badge-niveau" class="px-3 py-1 bg-amber-50 text-amber-700 text-xs font-semibold rounded-full hidden">Niveau</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulaire Informatique Personnelles -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <h2 class="text-base font-bold text-slate-900 mb-4 border-b border-slate-100 pb-3 flex items-center space-x-2">
+                <i class="fa-solid fa-user-gear text-brand-500"></i>
+                <span>Informations Personnelles</span>
+            </h2>
+            
+            <form id="formUpdateProfile" onsubmit="updateProfile(event)" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Nom d'utilisateur</label>
+                        <input type="text" id="input-username" class="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-500" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Adresse Email</label>
+                        <input type="email" id="input-email" class="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-500" required>
+                    </div>
+
+                    <!-- Champ Niveau (Dynamique : visible uniquement pour les élèves) -->
+                    <div id="container-niveau" class="hidden">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Niveau d'étude</label>
+                        <select id="select-niveau" class="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none bg-white focus:border-brand-500">
+                            <option value="6eme">6ème</option>
+                            <option value="5eme">5ème</option>
+                            <option value="4eme">4ème</option>
+                            <option value="3eme">3ème</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button type="submit" class="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition shadow-sm">
+                        Enregistrer les modifications
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Section Sécurité / Mot de passe -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <h2 class="text-base font-bold text-slate-900 mb-4 border-b border-slate-100 pb-3 flex items-center space-x-2">
+                <i class="fa-solid fa-lock text-brand-500"></i>
+                <span>Sécurité du Compte</span>
+            </h2>
+            
+            <form id="formUpdatePassword" onsubmit="updatePassword(event)" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Ancien mot de passe</label>
+                        <input type="password" id="old-password" placeholder="••••••••" class="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Nouveau mot de passe</label>
+                        <input type="password" id="new-password" placeholder="••••••••" class="w-full p-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-500" required>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition shadow-sm">
+                        Changer le mot de passe
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </main>
+
+    <!-- Pied de page dynamique -->
+    <footer class="bg-white border-t border-slate-200/80 pt-10 pb-6 mt-16">
+        <div class="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="space-y-3">
+                <div class="flex items-center space-x-2">
+                    <img id="footer-logo" src="uploads/logo_default.png" alt="Logo" class="h-8 w-auto object-contain">
+                    <span id="footer-school-name" class="font-extrabold text-slate-900">MathsCollege</span>
+                </div>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Plateforme d'accompagnement et de révision en mathématiques du collège.
+                </p>
+            </div>
+
+            <div class="space-y-3">
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Navigation</h4>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="index.html" class="text-slate-600 hover:text-brand-500 transition">Accueil</a></li>
+                    <li><a href="exercices.html" class="text-slate-600 hover:text-brand-500 transition">Exercices</a></li>
+                </ul>
+            </div>
+
+            <!-- Contact Dynamique Établissement -->
+            <div class="space-y-3">
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Contact</h4>
+                <div class="space-y-2 text-sm">
+                    <div id="footer-address-container" class="flex items-center space-x-2.5 text-slate-600">
+                        <span class="text-base">📍</span>
+                        <span id="footer-address-text">Brazzaville, République du Congo</span>
+                    </div>
+                    <a id="footer-email-link" href="mailto:ritakngot3@gmail.com" class="flex items-center space-x-2.5 text-slate-600 hover:text-brand-500 transition-colors">
+                        <span class="text-base">✉️</span>
+                        <span id="footer-email-text">ritakngot3@gmail.com</span>
+                    </a>
+                    <a id="footer-phone-link" href="tel:00242044781874" class="flex items-center space-x-2.5 text-slate-600 hover:text-brand-500 transition-colors">
+                        <span class="text-base">📞</span>
+                        <span id="footer-phone-text">+242 04 478 18 74</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-6xl mx-auto px-6 mt-8 pt-4 border-t border-slate-100 text-center text-xs text-slate-400">
+            <p>© 2026 MathsCollege. Tous droits réservés.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts de personnalisation et de logique -->
+    <script src="theme.js"></script>
+    <script src="profil.js"></script>
+</body>
+</html>
