@@ -43,3 +43,28 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("Erreur lors du chargement du thème de l'école :", err);
     }
 });
+
+//footer dynamique
+document.addEventListener('DOMContentLoaded', () => {
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    const addressText = document.getElementById('footer-address-text');
+    const emailText = document.getElementById('footer-email-text');
+    const emailLink = document.getElementById('footer-email-link');
+    const phoneText = document.getElementById('footer-phone-text');
+    const phoneLink = document.getElementById('footer-phone-link');
+
+    if (user && user.ecole) {
+        if (user.ecole.adresse && addressText) {
+            addressText.textContent = user.ecole.adresse;
+        }
+        if (user.ecole.email_contact && emailText && emailLink) {
+            emailText.textContent = user.ecole.email_contact;
+            emailLink.href = `mailto:${user.ecole.email_contact}`;
+        }
+        if (user.ecole.telephone && phoneText && phoneLink) {
+            phoneText.textContent = user.ecole.telephone;
+            phoneLink.href = `tel:${user.ecole.telephone.replace(/\s+/g, '')}`;
+        }
+    }
+});
