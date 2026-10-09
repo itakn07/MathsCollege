@@ -141,38 +141,39 @@ async function chargerProgressionDepuisStorage() {
     const progRaw = localStorage.getItem('mathscollege_progression');
     const prog = progRaw ? JSON.parse(progRaw) : {};
 
-    // Afficher la section de progression
+    console.log("📌 Progression dans localStorage :", prog);
+
     const containerProgression = document.getElementById('container-progression');
     if (containerProgression) containerProgression.classList.remove('hidden');
 
-    // Nettoyage dynamique du niveau (transforme "6ÈME A" ou "6e A" en "6eme")
+    // Nettoyage du niveau (ex: "6ÈME A" -> "6")
     let rawNiveau = user.niveau || '3eme';
-    let niveauUser = rawNiveau.split(' ')[0]
-        .toLowerCase()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-        .replace('ème', 'eme')
-        .replace('è', 'e');
-
-    if (/^\d+$/.test(niveauUser)) {
-        niveauUser += 'eme';
-    }
+    let niveauUser = rawNiveau.split(' ')[0].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
     const ecoleId = user.ecole_id || (user.ecole ? user.ecole.id : 1);
 
     try {
-        // Appels API avec le niveau nettoyé
+        console.log(`📡 Requête API pour niveau: "${niveauUser}", ecole_id: ${ecoleId}`);
+
         const resAlgebre = await fetch(`/api/cours/${niveauUser}/algebre?ecole_id=${ecoleId}`);
         const coursAlgebre = resAlgebre.ok ? await resAlgebre.json() : [];
 
         const resGeometrie = await fetch(`/api/cours/${niveauUser}/geometrie?ecole_id=${ecoleId}`);
         const coursGeometrie = resGeometrie.ok ? await resGeometrie.json() : [];
 
-        // Calcul Algèbre
+        console.log("📚 Cours Algèbre reçus du serveur :", coursAlgebre);
+        console.log("📐 Cours Géométrie reçus du serveur :", coursGeometrie);
+
+        // Calcul Algèbre (vérification permissive des IDs)
         const totalAlgebre = Array.isArray(coursAlgebre) ? coursAlgebre.length : 0;
         let lusAlgebre = 0;
         if (totalAlgebre > 0) {
             coursAlgebre.forEach(c => {
-                if (prog[c.id] === true) lusAlgebre++;
+                // On vérifie avec c.id ou c.cours_id (selon le nom dans ta BD)
+                const idCours = c.id || c.cours_id;
+                if (prog[idCours] === true || prog[String(idCours)] === true) {
+                    lusAlgebre++;
+                }
             });
         }
         const pctAlgebre = totalAlgebre > 0 ? Math.round((lusAlgebre / totalAlgebre) * 100) : 0;
@@ -182,12 +183,15 @@ async function chargerProgressionDepuisStorage() {
         let lusGeometrie = 0;
         if (totalGeometrie > 0) {
             coursGeometrie.forEach(c => {
-                if (prog[c.id] === true) lusGeometrie++;
+                const idCours = c.id || c.cours_id;
+                if (prog[idCours] === true || prog[String(idCours)] === true) {
+                    lusGeometrie++;
+                }
             });
         }
         const pctGeometrie = totalGeometrie > 0 ? Math.round((lusGeometrie / totalGeometrie) * 100) : 0;
 
-        // Mise à jour du DOM
+        // Affichage
         document.getElementById('percent-algebre').textContent = `${pctAlgebre}%`;
         document.getElementById('bar-algebre').style.width = `${pctAlgebre}%`;
         document.getElementById('text-algebre').textContent = `${lusAlgebre} sur ${totalAlgebre} chapitres lus`;
@@ -197,17 +201,6 @@ async function chargerProgressionDepuisStorage() {
         document.getElementById('text-geometrie').textContent = `${lusGeometrie} sur ${totalGeometrie} chapitres lus`;
 
     } catch (err) {
-        console.error("Erreur lors de la récupération de la progression :", err);
+        console.error("❌ Erreur lors du chargement :", err);
     }
 }
-
-// Appeler au chargement du DOM si l'utilisateur est un élève
-document.addEventListener('DOMContentLoaded', () => {
-    const userRaw = localStorage.getItem('user');
-    if (!userRaw) return;
-    const user = JSON.parse(userRaw);
-
-    if (user.role === 'eleve') {
-        chargerProgressionDepuisStorage();
-    }
-});
