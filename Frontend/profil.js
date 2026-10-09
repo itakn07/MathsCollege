@@ -145,17 +145,27 @@ async function chargerProgressionDepuisStorage() {
     const containerProgression = document.getElementById('container-progression');
     if (containerProgression) containerProgression.classList.remove('hidden');
 
-    const niveauUser = user.niveau || '3eme'; // Niveau par défaut ou celui de l'élève
+    // Nettoyage dynamique du niveau (transforme "6ÈME A" ou "6e A" en "6eme")
+    let rawNiveau = user.niveau || '3eme';
+    let niveauUser = rawNiveau.split(' ')[0]
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace('ème', 'eme')
+        .replace('è', 'e');
+
+    if (/^\d+$/.test(niveauUser)) {
+        niveauUser += 'eme';
+    }
+
     const ecoleId = user.ecole_id || (user.ecole ? user.ecole.id : 1);
 
     try {
-        // 1. Récupérer les cours d'Algèbre
+        // Appels API avec le niveau nettoyé
         const resAlgebre = await fetch(`/api/cours/${niveauUser}/algebre?ecole_id=${ecoleId}`);
-        const coursAlgebre = await resAlgebre.json();
+        const coursAlgebre = resAlgebre.ok ? await resAlgebre.json() : [];
 
-        // 2. Récupérer les cours de Géométrie
         const resGeometrie = await fetch(`/api/cours/${niveauUser}/geometrie?ecole_id=${ecoleId}`);
-        const coursGeometrie = await resGeometrie.json();
+        const coursGeometrie = resGeometrie.ok ? await resGeometrie.json() : [];
 
         // Calcul Algèbre
         const totalAlgebre = Array.isArray(coursAlgebre) ? coursAlgebre.length : 0;
@@ -177,7 +187,7 @@ async function chargerProgressionDepuisStorage() {
         }
         const pctGeometrie = totalGeometrie > 0 ? Math.round((lusGeometrie / totalGeometrie) * 100) : 0;
 
-        // 3. Injection dans l'interface
+        // Mise à jour du DOM
         document.getElementById('percent-algebre').textContent = `${pctAlgebre}%`;
         document.getElementById('bar-algebre').style.width = `${pctAlgebre}%`;
         document.getElementById('text-algebre').textContent = `${lusAlgebre} sur ${totalAlgebre} chapitres lus`;
