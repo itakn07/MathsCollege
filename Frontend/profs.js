@@ -41,6 +41,12 @@ async function chargerStatsDashboard(professeurId) {
             const data = await response.json();
             
             if (data.success) {
+
+const schoolBadge = document.getElementById('school-name-badge');
+if (schoolBadge && data.ecoleNom) {
+    schoolBadge.textContent = data.ecoleNom;
+}
+
                 dashboardProfData.classes = data.classes || [];
                 dashboardProfData.coursPublies = data.coursPublies || [];
 

@@ -418,12 +418,16 @@ app.get('/api/prof/dashboard-stats', async (req, res) => {
     }
 
     try {
-        // 1. Récupérer l'école du professeur
-        const [profInfo] = await db.promise().query(
-            "SELECT ecole_id FROM users WHERE id = ?", 
-            [professeurId]
-        );
+        // 1. Récupérer l'école du professeur ET son nom
+        const [profInfo] = await db.promise().query(`
+            SELECT u.ecole_id, e.nom AS ecole_nom 
+            FROM users u
+            LEFT JOIN ecoles e ON u.ecole_id = e.id
+            WHERE u.id = ?
+        `, [professeurId]);
+        
         const ecoleId = profInfo[0]?.ecole_id || 1;
+        const ecoleNom = profInfo[0]?.ecole_nom || "Établissement";
 
         // 2. Récupérer les classes gérées par ce professeur
         const [classesProf] = await db.promise().query(`
@@ -474,6 +478,7 @@ app.get('/api/prof/dashboard-stats', async (req, res) => {
 
         res.json({
             success: true,
+            ecoleNom: ecoleNom, // <--- On transmet le nom de l'école ici
             classes: classesData,
             coursPublies: coursPublies
         });
