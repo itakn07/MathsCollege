@@ -698,11 +698,11 @@ app.get('/api/cours/:niveau/:domaine', (req, res) => {
         JOIN niveaux n ON c.niveau_id = n.id
         WHERE (c.niveau_id = ? OR LOWER(n.nom) = LOWER(?))
         AND LOWER(c.domaine) = LOWER(?)
-        AND (c.ecole_id = ? OR c.est_public = TRUE)
+        AND (c.ecole_id = ? OR (c.est_public = TRUE AND (c.niveau_id = ? OR LOWER(n.nom) = LOWER(?))))
     `;
 
-    // ⚠️ Attention à l'ordre des paramètres pour les 4 points d'interrogation (?)
-    db.query(sql, [niveau, niveau, domaine, ecoleId], (err, results) => {
+    // On passe le paramètre de niveau 5 fois pour tous les '?'
+    db.query(sql, [niveau, niveau, domaine, ecoleId, niveau, niveau], (err, results) => {
         if (err) {
             console.error("Erreur SQL :", err);
             return res.status(500).send("Erreur serveur");
