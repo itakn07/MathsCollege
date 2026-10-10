@@ -47,7 +47,7 @@ async function chargerDonneesEcole() {
       schoolData.classes = data.classes || [];
       schoolData.teachers = data.teachers || [];
       
-      // Appel de la fonction pour afficher l'IA et les cours
+      // ✅ Appel direct ici avec les données reçues du serveur
       renderAdminExtras(data.topQuestions, data.coursPublies);
     } else {
       console.warn("Impossible de récupérer les données du serveur pour cette école.");
