@@ -961,22 +961,34 @@ app.post('/api/admin/validate-prof/:id', (req, res) => {
 });
 
 
-// Route pour créer un administrateur d'école rattaché à un ecole_id
-app.post('/api/admin/creer-admin-ecole', (req, res) => {
+// Route sécurisée pour créer un administrateur d'école
+app.post('/api/admin/creer-admin-ecole', async (req, res) => {
     const { username, email, password, ecole_id } = req.body;
 
-    const sql = `
-        INSERT INTO users (username, email, password, role, ecole_id) 
-        VALUES (?, ?, ?, 'admin_ecole', ?)
-    `;
+    if (!username || !email || !password || !ecole_id) {
+        return res.status(400).json({ success: false, message: "Tous les champs sont requis." });
+    }
 
-    db.query(sql, [username, email, password, ecole_id], (err, result) => {
-        if (err) {
-            console.error("Erreur SQL création admin école :", err);
-            return res.status(500).json({ success: false, message: "Erreur serveur ou email déjà utilisé" });
-        }
-        res.json({ success: true, message: "Admin d'école créé avec succès !" });
-    });
+    try {
+        // Hachage du mot de passe (10 tours de salt)
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const sql = `
+            INSERT INTO users (username, email, password, role, ecole_id) 
+            VALUES (?, ?, ?, 'admin_ecole', ?)
+        `;
+
+        db.query(sql, [username, email, hashedPassword, ecole_id], (err, result) => {
+            if (err) {
+                console.error("Erreur SQL création admin école :", err);
+                return res.status(500).json({ success: false, message: "Erreur lors de la création ou cet email est déjà utilisé." });
+            }
+            res.json({ success: true, message: "Administrateur d'école créé avec succès !" });
+        });
+    } catch (err) {
+        console.error("Erreur de hachage bcrypt :", err);
+        res.status(500).json({ success: false, message: "Erreur technique du serveur." });
+    }
 });
 
 
