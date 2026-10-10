@@ -391,47 +391,41 @@ async function supprimerProfesseurBDD(teacherId) {
  */
 function renderAdminExtras(topQuestions, coursPublies) {
     console.log("=== EXÉCUTION DE renderAdminExtras ===");
-    console.log("Top Questions reçues :", topQuestions);
-    console.log("Cours publiés reçus :", coursPublies);
 
-    try {
-        // 1. Total des interactions IA
-        const totalIaEl = document.getElementById("stat-total-ia-questions");
-        if (totalIaEl && topQuestions) {
-            const totalFrequence = topQuestions.reduce((acc, item) => acc + item.frequence, 0);
-            totalIaEl.textContent = totalFrequence;
-        }
+    // 1. Total des interactions IA
+    const totalIaEl = document.getElementById("stat-total-ia-questions");
+    if (totalIaEl && topQuestions) {
+        const totalFrequence = topQuestions.reduce((acc, item) => acc + item.frequence, 0);
+        totalIaEl.textContent = totalFrequence;
+    }
 
-        // 2. Injection sécurisée des cours publiés
-        const coursContainer = document.getElementById("published-cours-list"); 
-        if (!coursContainer) {
-            console.error("L'élément HTML #published-cours-list est introuvable !");
-            return;
-        }
+    // 2. Injection des cours publiés (cherche l'un ou l'autre des ID pour être sûr)
+    const coursContainer = document.getElementById("published-cours-list") || document.getElementById("admin-cours-publies"); 
+    
+    if (!coursContainer) {
+        console.error("ERREUR : Aucun conteneur HTML trouvé pour les cours publiés !");
+        return;
+    }
 
-        if (coursPublies && coursPublies.length > 0) {
-            let htmlContent = "";
-            coursPublies.forEach(pub => {
-                const titreCours = pub.titre || pub.titre_cours || pub.nom || "Cours sans titre";
-                const domaineCours = pub.domaine || 'Mathématiques';
+    if (coursPublies && coursPublies.length > 0) {
+        let htmlContent = "";
+        coursPublies.forEach(pub => {
+            const titreCours = pub.titre || pub.titre_cours || pub.nom || "Cours sans titre";
+            const domaineCours = pub.domaine || 'Mathématiques';
 
-                htmlContent += `
-                    <div class="py-2.5 flex justify-between items-center text-xs border-b border-slate-100 last:border-none">
-                        <div>
-                            <span class="font-bold text-slate-800">${titreCours}</span>
-                            <span class="text-slate-400 ml-2">(${domaineCours})</span>
-                        </div>
-                        <span class="bg-indigo-50 text-indigo-700 font-semibold px-2.5 py-1 rounded-md">📘 Cours</span>
+            htmlContent += `
+                <div class="py-2.5 flex justify-between items-center text-xs border-b border-slate-100 last:border-none">
+                    <div>
+                        <span class="font-bold text-slate-800">${titreCours}</span>
+                        <span class="text-slate-400 ml-2">(${domaineCours})</span>
                     </div>
-                `;
-            });
-            coursContainer.innerHTML = htmlContent;
-            console.log("✅ Cours injectés avec succès dans le DOM !");
-        } else {
-            coursContainer.innerHTML = `<p class="py-2 text-xs text-slate-400 italic">Aucun cours publié pour le moment.</p>`;
-            console.log("⚠️ Aucun cours trouvé dans le tableau, affichage du message 'Aucun cours'.");
-        }
-    } catch (err) {
-        console.error("❌ Erreur critique dans renderAdminExtras :", err);
+                    <span class="bg-indigo-50 text-indigo-700 font-semibold px-2.5 py-1 rounded-md">📘 Cours</span>
+                </div>
+            `;
+        });
+        coursContainer.innerHTML = htmlContent;
+        console.log("✅ Cours affichés avec succès !");
+    } else {
+        coursContainer.innerHTML = `<p class="py-2 text-xs text-slate-400 italic">Aucun cours publié pour le moment.</p>`;
     }
 }
