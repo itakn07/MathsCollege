@@ -418,7 +418,7 @@ app.get('/api/prof/dashboard-stats', async (req, res) => {
     }
 
     try {
-        // 1. Récupérer l'école du professeur et son nom
+        // 1. Récupérer l'école du professeur ET son nom
         const [profInfo] = await db.promise().query(`
             SELECT u.ecole_id, e.nom AS ecole_nom 
             FROM users u
@@ -438,28 +438,27 @@ app.get('/api/prof/dashboard-stats', async (req, res) => {
             ORDER BY c.nom ASC
         `, [professeurId]);
 
-        console.log(`[DEBUG Dashboard] Prof ID: ${professeurId} | École ID: ${ecoleId} | Classes trouvées:`, classesProf.map(c => c.id));
-
+        // 3. Pour chaque classe, récupérer l'effectif et le top 10 IA
         const classesData = [];
 
         for (const cls of classesProf) {
-            // Effectif de la classe (par class_id)
+            // Effectif de la classe
             const [elevesCount] = await db.promise().query(`
                 SELECT COUNT(*) AS total 
                 FROM users 
-                WHERE role = 'eleve' AND class_id = ?
-            `, [cls.id]);
+                WHERE role = 'eleve' AND (class_id = ? OR niveau = ?)
+            `, [cls.id, cls.nom]);
 
-            // Top questions IA posées par les élèves de cette classe précise
+            // Top questions IA posées par les élèves de cette classe
             const [topQuestions] = await db.promise().query(`
                 SELECT ci.question, COUNT(*) as frequence 
                 FROM conversations_ia ci
                 JOIN users u ON ci.user_id = u.id
-                WHERE u.class_id = ?
+                WHERE u.class_id = ? OR u.niveau = ?
                 GROUP BY ci.question 
                 ORDER BY frequence DESC 
                 LIMIT 10
-            `, [cls.id]);
+            `, [cls.id, cls.nom]);
 
             classesData.push({
                 id: cls.id,
@@ -469,7 +468,7 @@ app.get('/api/prof/dashboard-stats', async (req, res) => {
             });
         }
 
-        // 4. Historique des cours publiés par ce professeur dans cette école
+        // 4. Historique des cours & exercices publiés par ce professeur dans son école
         const [coursPublies] = await db.promise().query(`
             SELECT id, titre, domaine, 'cours' AS type
             FROM cours
@@ -477,11 +476,9 @@ app.get('/api/prof/dashboard-stats', async (req, res) => {
             ORDER BY id DESC
         `, [professeurId, ecoleId]);
 
-        console.log(`[DEBUG Dashboard] Cours trouvés pour ce prof/école:`, coursPublies.length);
-
         res.json({
             success: true,
-            ecoleNom: ecoleNom,
+            ecoleNom: ecoleNom, // <--- On transmet le nom de l'école ici
             classes: classesData,
             coursPublies: coursPublies
         });
