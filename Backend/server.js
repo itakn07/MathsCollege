@@ -597,9 +597,30 @@ app.get('/api/admin-ecole/dashboard/:ecoleId', async (req, res) => {
             };
         });
 
+        // 1. Récupérer les questions IA posées par les élèves de cette école
+        const [topQuestions] = await db.promise().query(`
+            SELECT ci.question, COUNT(*) as frequence 
+            FROM conversations_ia ci
+            JOIN users u ON ci.user_id = u.id
+            WHERE u.ecole_id = ?
+            GROUP BY ci.question 
+            ORDER BY frequence DESC 
+            LIMIT 10
+        `, [ecoleId]);
+
+        // 2. Récupérer l'historique des cours publiés dans cette école
+        const [coursPublies] = await db.promise().query(`
+            SELECT id, titre, domaine, 'cours' AS type
+            FROM cours
+            WHERE ecole_id = ?
+            ORDER BY id DESC
+        `, [ecoleId]);
+
         res.json({
             classes: classesList,
-            teachers: teachers
+            teachers: teachers,
+            topQuestions: topQuestions,
+            coursPublies: coursPublies
         });
 
     } catch (err) {

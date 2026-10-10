@@ -46,11 +46,14 @@ async function chargerDonneesEcole() {
       const data = await response.json();
       schoolData.classes = data.classes || [];
       schoolData.teachers = data.teachers || [];
+      
+      // Appel de l'affichage des extras (IA + Cours)
+      renderAdminExtras(data.topQuestions, data.coursPublies);
     } else {
       console.warn("Impossible de récupérer les données du serveur pour cette école.");
     }
   } catch (err) {
-    console.error("Erreur de connexion lors de la récupération des données :", err);
+    console.error("Erreur de connexion :", err);
   } finally {
     renderDashboard();
     remplirOptionsClassesModal();
