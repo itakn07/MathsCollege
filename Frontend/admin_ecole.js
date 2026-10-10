@@ -397,31 +397,29 @@ function renderAdminExtras(topQuestions, coursPublies) {
         totalIaEl.textContent = totalFrequence;
     }
 
-    // 2. Cours & Exercices publiés (Ciblage du bon ID HTML)
+    // 2. Injection forcée des cours publiés
     const coursContainer = document.getElementById("published-cours-list"); 
     if (coursContainer) {
-        coursContainer.innerHTML = "";
-        
-        if (!coursPublies || coursPublies.length === 0) {
+        if (coursPublies && coursPublies.length > 0) {
+            let htmlContent = "";
+            coursPublies.forEach(pub => {
+                const titreCours = pub.titre || pub.titre_cours || pub.nom || "Cours sans titre";
+                const domaineCours = pub.domaine || 'Mathématiques';
+
+                htmlContent += `
+                    <div class="py-2.5 flex justify-between items-center text-xs border-b border-slate-100 last:border-none">
+                        <div>
+                            <span class="font-bold text-slate-800">${titreCours}</span>
+                            <span class="text-slate-400 ml-2">(${domaineCours})</span>
+                        </div>
+                        <span class="bg-indigo-50 text-indigo-700 font-semibold px-2.5 py-1 rounded-md">📘 Cours</span>
+                    </div>
+                `;
+            });
+            coursContainer.innerHTML = htmlContent;
+        } else {
             coursContainer.innerHTML = `<p class="py-2 text-xs text-slate-400 italic">Aucun cours publié pour le moment.</p>`;
-            return;
-        } 
-
-        coursPublies.forEach(pub => {
-            const titreCours = pub.titre || pub.titre_cours || pub.nom || "Cours sans titre";
-            const domaineCours = pub.domaine || 'Mathématiques';
-
-            const div = document.createElement("div");
-            div.className = "py-2.5 flex justify-between items-center text-xs border-b border-slate-100 last:border-none";
-            div.innerHTML = `
-                <div>
-                    <span class="font-bold text-slate-800">${titreCours}</span>
-                    <span class="text-slate-400 ml-2">(${domaineCours})</span>
-                </div>
-                <span class="bg-indigo-50 text-indigo-700 font-semibold px-2.5 py-1 rounded-md">📘 Cours</span>
-            `;
-            coursContainer.appendChild(div);
-        });
+        }
     }
 }
   
