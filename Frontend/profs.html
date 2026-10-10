@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MathsCollege - Espace Enseignant</title>
 
- <!-- Favicon (icône dans l'onglet du navigateur) -->
-    <link rel="icon" type="image/png" href="logo.png">
+  <!-- Favicon (icône dans l'onglet du navigateur) -->
+  <link rel="icon" type="image/png" href="logo.png">
 
-
+  <!-- Tailwind CSS & FontAwesome Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen p-6">
 
@@ -33,17 +34,28 @@
       </div>
     </div>
 
+    <!-- 0. Sélecteur des Classes Assignées (Cartes cliquables) -->
+    <div>
+      <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-chalkboard text-indigo-600"></i>
+        <span>Mes Classes Assignées</span>
+      </h2>
+      <div id="classes-cards-container" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <p class="text-xs text-slate-400 italic col-span-full">Chargement de vos classes...</p>
+      </div>
+    </div>
+
     <!-- 1. Chiffres Clés & IA Insights -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       
-      <!-- ÉLÈVES INSCRITS -->
+      <!-- ÉLÈVES INSCRITS PAR CLASSE -->
       <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
-        <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-2">
+        <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-2 text-lg">
           👥
         </div>
         <p class="text-xs uppercase font-bold text-slate-400">Élèves Inscrits</p>
         <p id="stat-total-eleves" class="text-4xl font-extrabold text-indigo-600 mt-1">0</p>
-        <p class="text-xs text-slate-400 mt-1">Élèves actifs sur la plateforme</p>
+        <p class="text-xs text-slate-400 mt-1">Élèves actifs dans cette classe</p>
       </div>
 
       <!-- TOP 10 DES NOTIONS/QUESTIONS IA -->
@@ -52,7 +64,7 @@
           <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
             <span>📚</span> Top 10 des notions & questions posées à l'IA
           </h2>
-          <span class="text-xs text-slate-400">Mises à jour en direct</span>
+          <span class="text-xs text-slate-400">Filtré par classe</span>
         </div>
         <ol id="list-top-questions" class="space-y-2 text-sm text-slate-700 max-h-40 overflow-y-auto pr-2">
           <li class="text-xs text-slate-400 italic">Chargement des données...</li>
@@ -153,6 +165,19 @@
         </form>
       </div>
 
+    </div>
+
+    <!-- 3. Historique des Publications -->
+    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-clock-rotate-left text-indigo-600"></i>
+          <span>Historique de mes Publications (Cours & Exercices)</span>
+        </h2>
+      </div>
+      <div id="historique-publications-list" class="divide-y divide-slate-100 max-h-60 overflow-y-auto text-sm">
+        <p class="py-2 text-xs text-slate-400 italic">Chargement de l'historique...</p>
+      </div>
     </div>
 
   </div>

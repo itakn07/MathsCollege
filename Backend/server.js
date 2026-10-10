@@ -408,26 +408,82 @@ app.post('/login', (req, res) => {
 });
 
 // ============= ROUTES PROFESSEUR =============
+
+// ROUTE : Dashboard Enseignant - Données filtrées par classe et par école
 app.get('/api/prof/dashboard-stats', async (req, res) => {
+    const professeurId = req.query.professeur_id;
+
+    if (!professeurId) {
+        return res.status(400).json({ success: false, message: "ID du professeur requis." });
+    }
+
     try {
-        const [elevesCount] = await db.promise().query("SELECT COUNT(*) AS total FROM users WHERE role = 'eleve'");
-        const [topQuestions] = await db.promise().query(`
-            SELECT question, COUNT(*) as frequence 
-            FROM conversations_ia 
-            GROUP BY question 
-            ORDER BY frequence DESC 
-            LIMIT 10
-        `);
+        // 1. Récupérer l'école du professeur
+        const [profInfo] = await db.promise().query(
+            "SELECT ecole_id FROM users WHERE id = ?", 
+            [professeurId]
+        );
+        const ecoleId = profInfo[0]?.ecole_id || 1;
+
+        // 2. Récupérer les classes gérées par ce professeur
+        const [classesProf] = await db.promise().query(`
+            SELECT c.id, c.nom, c.niveau_nom 
+            FROM class_teachers ct
+            JOIN classes c ON ct.class_id = c.id
+            WHERE ct.teacher_id = ?
+            ORDER BY c.nom ASC
+        `, [professeurId]);
+
+        // 3. Pour chaque classe, récupérer l'effectif et le top 10 IA
+        const classesData = [];
+
+        for (const cls of classesProf) {
+            // Effectif de la classe
+            const [elevesCount] = await db.promise().query(`
+                SELECT COUNT(*) AS total 
+                FROM users 
+                WHERE role = 'eleve' AND (class_id = ? OR niveau = ?)
+            `, [cls.id, cls.nom]);
+
+            // Top questions IA posées par les élèves de cette classe
+            const [topQuestions] = await db.promise().query(`
+                SELECT ci.question, COUNT(*) as frequence 
+                FROM conversations_ia ci
+                JOIN users u ON ci.user_id = u.id
+                WHERE u.class_id = ? OR u.niveau = ?
+                GROUP BY ci.question 
+                ORDER BY frequence DESC 
+                LIMIT 10
+            `, [cls.id, cls.nom]);
+
+            classesData.push({
+                id: cls.id,
+                nom: cls.nom,
+                totalEleves: elevesCount[0]?.total || 0,
+                topQuestions: topQuestions || []
+            });
+        }
+
+        // 4. Historique des cours & exercices publiés par ce professeur dans son école
+        const [coursPublies] = await db.promise().query(`
+            SELECT id, titre, domaine, 'cours' AS type
+            FROM cours
+            WHERE professeur_id = ? OR ecole_id = ?
+            ORDER BY id DESC
+        `, [professeurId, ecoleId]);
 
         res.json({
-            totalEleves: elevesCount[0].total,
-            topQuestions: topQuestions
+            success: true,
+            classes: classesData,
+            coursPublies: coursPublies
         });
+
     } catch (err) {
-        console.error("Erreur Dashboard Stats:", err);
-        res.status(500).json({ error: "Erreur lors de la récupération des données du tableau de bord." });
+        console.error("Erreur Dashboard Prof Stats:", err);
+        res.status(500).json({ success: false, message: "Erreur serveur lors de la récupération des données." });
     }
 });
+
 
 app.post('/api/prof/cours', upload.single('pdf_file'), async (req, res) => {
     try {
