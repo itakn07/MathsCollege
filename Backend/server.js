@@ -549,15 +549,18 @@ app.get('/api/admin-ecole/dashboard/:ecoleId', async (req, res) => {
 });
 
 app.post('/api/admin-ecole/add-teacher', async (req, res) => {
-    const { username, email, ecole_id, class_ids } = req.body;
+    // 1. On récupère aussi le champ 'password' envoyé par le formulaire
+    const { username, email, password, ecole_id, class_ids } = req.body;
 
     if (!username || !email || !ecole_id) {
         return res.status(400).json({ error: "Le nom, l'email et l'école sont requis." });
     }
 
     try {
-        const tempPassword = genererMotDePasseTemp();
-        const hashedPassword = await bcrypt.hash(tempPassword, 10);
+        // 2. Si l'admin a saisi un mot de passe dans la modale, on l'utilise.
+        // Sinon, on génère un mot de passe temporaire par sécurité.
+        const passwordToHash = (password && password.trim() !== '') ? password : genererMotDePasseTemp();
+        const hashedPassword = await bcrypt.hash(passwordToHash, 10);
 
         const [result] = await db.promise().query(`
             INSERT INTO users (username, email, password, role, ecole_id)
@@ -575,8 +578,7 @@ app.post('/api/admin-ecole/add-teacher', async (req, res) => {
 
         res.json({
             success: true,
-            message: "Professeur créé avec succès !",
-            generatedPassword: tempPassword
+            message: "Professeur créé avec succès !"
         });
 
     } catch (err) {
