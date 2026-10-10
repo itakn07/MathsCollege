@@ -389,30 +389,48 @@ async function supprimerProfesseurBDD(teacherId) {
 /**
  * Affiche le total des questions IA et les cours publiés sur le dashboard admin école
  */
-function renderPublishedCours(coursPublies) {
-  const container = document.getElementById('published-courses-list');
-  if (!container) {
-    console.error("L'élément HTML #published-courses-list est introuvable !");
-    return;
-  }
+function renderAdminExtras(topQuestions, coursPublies) {
+    console.log("=== EXÉCUTION DE renderAdminExtras ===");
+    console.log("Top Questions reçues :", topQuestions);
+    console.log("Cours publiés reçus :", coursPublies);
 
-  if (!coursPublies || coursPublies.length === 0) {
-    container.innerHTML =
-      '<p class="py-2 text-xs text-slate-400 italic">Aucun cours publié pour le moment.</p>';
-    return;
-  }
+    // 1. Total des interactions IA
+    const totalIaEl = document.getElementById("stat-total-ia-questions");
+    if (totalIaEl && topQuestions) {
+        const totalFrequence = topQuestions.reduce((acc, item) => acc + item.frequence, 0);
+        totalIaEl.textContent = totalFrequence;
+    }
 
-  container.innerHTML = coursPublies.map(c => `
-    <div class="py-2 flex justify-between items-center">
-      <div>
-        <p class="font-semibold text-slate-800">${c.titre ?? 'Sans titre'}</p>
-        <p class="text-xs text-slate-500">
-          ${c.type ?? 'Cours'} · ${c.classe ?? ''}
-        </p>
-      </div>
-      <span class="text-xs text-slate-400">
-        ${c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR') : ''}
-      </span>
-    </div>
-  `).join('');
+    // 2. Injection des cours publiés
+    const coursContainer =
+        document.getElementById("published-courses-list") ||
+        document.getElementById("published-cours-list") ||
+        document.getElementById("admin-cours-publies");
+
+    if (!coursContainer) {
+        console.error("ERREUR : Aucun conteneur HTML trouvé pour les cours publiés !");
+        return;
+    }
+
+    if (coursPublies && coursPublies.length > 0) {
+        let htmlContent = "";
+        coursPublies.forEach(pub => {
+            const titreCours = pub.titre || pub.titre_cours || pub.nom || "Cours sans titre";
+            const domaineCours = pub.domaine || "Mathématiques";
+
+            htmlContent += `
+                <div class="py-2.5 flex justify-between items-center text-xs border-b border-slate-100 last:border-none">
+                    <div>
+                        <span class="font-bold text-slate-800">${titreCours}</span>
+                        <span class="text-slate-400 ml-2">(${domaineCours})</span>
+                    </div>
+                    <span class="bg-indigo-50 text-indigo-700 font-semibold px-2.5 py-1 rounded-md">📘 Cours</span>
+                </div>
+            `;
+        });
+        coursContainer.innerHTML = htmlContent;
+        console.log("✅ Cours affichés avec succès !");
+    } else {
+        coursContainer.innerHTML = `<p class="py-2 text-xs text-slate-400 italic">Aucun cours publié pour le moment.</p>`;
+    }
 }
