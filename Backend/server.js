@@ -1052,6 +1052,87 @@ app.post('/api/admin-ecole/classes', async (req, res) => {
     }
 });
 
+// ============= ROUTES ADMIN ÉCOLE (Mise à jour complète) =============
+app.get('/api/admin-ecole/dashboard/:ecoleId', async (req, res) => {
+    const { ecoleId } = req.params;
+
+    try {
+        // 1. Professeurs de l'école avec leurs classes et leurs publications
+        const [teachers] = await db.promise().query(`
+            SELECT 
+                u.id, 
+                u.username AS name, 
+                u.email,
+                COALESCE(GROUP_CONCAT(DISTINCT c.nom SEPARATOR ', '), 'Aucune classe') AS classes
+            FROM users u
+            LEFT JOIN class_teachers ct ON u.id = ct.teacher_id
+            LEFT JOIN classes c ON ct.class_id = c.id
+            WHERE u.role = 'professeur' AND u.ecole_id = ?
+            GROUP BY u.id
+        `, [ecoleId]);
+
+        // 2. Classes de l'école
+        const [classes] = await db.promise().query(`
+            SELECT id, nom AS name, niveau_nom 
+            FROM classes 
+            WHERE ecole_id = ?
+        `, [ecoleId]);
+
+        // 3. Élèves de l'école (avec récupération d'un indicateur de progression si tu as une table de suivi, sinon simulé/basé sur les colonnes existantes)
+        const [eleves] = await db.promise().query(`
+            SELECT id, username, niveau, class_id, questions_posees_aujourdhui 
+            FROM users 
+            WHERE role = 'eleve' AND ecole_id = ?
+        `, [ecoleId]);
+
+        // 4. Cours et exercices publiés liés à l'école ou globaux
+        const [coursPublies] = await db.promise().query(`
+            SELECT c.id, c.titre, c.domaine, u.username AS professeur_nom
+            FROM cours c
+            LEFT JOIN users u ON c.professeur_id = u.id
+            WHERE c.ecole_id = ? OR c.est_public = TRUE
+        `, [ecoleId]);
+
+        // 5. Statistiques globales d'utilisation de l'IA par l'école
+        const [iaStats] = await db.promise().query(`
+            SELECT COUNT(*) AS total_questions_ia 
+            FROM conversations_ia ci
+            JOIN users u ON ci.user_id = u.id
+            WHERE u.ecole_id = ?
+        `, [ecoleId]);
+
+        // Structuration des classes avec leurs élèves respectifs et leur progression
+        const classesList = classes.map(cls => {
+            const classStudents = eleves
+                .filter(e => e.class_id === cls.id || e.niveau === cls.name || e.niveau === cls.niveau_nom)
+                .map(e => ({
+                    id: e.id,
+                    username: e.username,
+                    // Exemple de calcul de progression basé sur l'activité ou les exercices validés
+                    progression: e.questions_posees_aujourdhui ? `${Math.min(e.questions_posees_aujourdhui * 25, 100)}%` : "0%"
+                }));
+
+            return {
+                id: cls.id,
+                name: cls.name,
+                students: classStudents
+            };
+        });
+
+        res.json({
+            success: true,
+            classes: classesList,
+            teachers: teachers,
+            cours: coursPublies,
+            totalQuestionsIA: iaStats[0]?.total_questions_ia || 0
+        });
+
+    } catch (err) {
+        console.error("Erreur BDD Admin École Dashboard :", err);
+        res.status(500).json({ error: "Erreur lors du chargement des données." });
+    }
+});
+
 // ============= LANCEMENT DU SERVEUR =============
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

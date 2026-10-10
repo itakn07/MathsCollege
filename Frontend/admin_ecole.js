@@ -309,6 +309,7 @@ function setupEventListeners() {
 /**
  * 4. AFFICHAGE DES ÉLÈVES D'UNE CLASSE SÉLECTIONNÉE
  */
+// Affichage enrichi des élèves d'une classe avec leur niveau de progression
 function openStudentsModal(classId) {
   const modalStudents = document.getElementById("modal-students");
   const selectedClass = schoolData.classes.find(c => c.id === classId);
@@ -316,7 +317,7 @@ function openStudentsModal(classId) {
   if (!selectedClass || !modalStudents) return;
 
   const titleEl = document.getElementById("modal-class-title");
-  if (titleEl) titleEl.textContent = `Élèves de la classe : ${selectedClass.name || selectedClass.nom_classe}`;
+  if (titleEl) titleEl.textContent = `Élèves de la classe : ${selectedClass.name}`;
 
   const listContainer = document.getElementById("modal-students-list");
   if (listContainer) {
@@ -326,10 +327,18 @@ function openStudentsModal(classId) {
     if (students.length === 0) {
       listContainer.innerHTML = `<li class="py-3 text-slate-400 italic">Aucun élève inscrit dans cette classe pour le moment.</li>`;
     } else {
-      students.forEach(studentName => {
+      students.forEach(student => {
         const li = document.createElement("li");
-        li.className = "py-2.5 text-slate-700 font-medium border-b border-slate-50 last:border-none flex items-center gap-2";
-        li.innerHTML = `<span>🎓</span> <span>${studentName}</span>`;
+        li.className = "py-3 text-slate-700 text-sm border-b border-slate-50 last:border-none flex justify-between items-center";
+        li.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span>🎓</span> 
+            <span class="font-bold">${student.username}</span>
+          </div>
+          <span class="bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-lg">
+            Progression : ${student.progression}
+          </span>
+        `;
         listContainer.appendChild(li);
       });
     }

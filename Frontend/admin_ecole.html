@@ -112,6 +112,42 @@
       </div>
     </div>
 
+
+    <!-- 4. Suivi de l'Activité Pédagogique & Engagement IA -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  
+  <!-- Carte : Utilisation de l'IA par les Élèves -->
+  <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between space-y-4">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg">
+        <i class="fa-solid fa-robot"></i>
+      </div>
+      <div>
+        <h3 class="text-sm font-bold text-slate-900">Activité Coach Sylvie (IA)</h3>
+        <p class="text-xs text-slate-500">Questions posées par les élèves</p>
+      </div>
+    </div>
+    <div>
+      <p id="stat-total-ia-questions" class="text-3xl font-black text-purple-600">0</p>
+      <p class="text-xs text-slate-400 mt-1">Total d'interactions enregistrées</p>
+    </div>
+  </div>
+
+  <!-- Carte / Liste : Publications des Professeurs -->
+  <div class="md:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+      <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+        <i class="fa-solid fa-book-open text-indigo-600"></i>
+        <span>Derniers Cours & Exercices Publiés</span>
+      </h3>
+    </div>
+    <div id="published-courses-list" class="divide-y divide-slate-100 max-h-40 overflow-y-auto text-sm">
+      <p class="py-2 text-xs text-slate-400 italic">Chargement des cours publiés...</p>
+    </div>
+  </div>
+
+ </div>
+
   </div>
 
   <!-- MODALE : Liste des Élèves d'une classe -->
