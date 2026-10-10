@@ -961,6 +961,25 @@ app.post('/api/admin/validate-prof/:id', (req, res) => {
 });
 
 
+// Route pour créer un administrateur d'école rattaché à un ecole_id
+app.post('/api/admin/creer-admin-ecole', (req, res) => {
+    const { username, email, password, ecole_id } = req.body;
+
+    const sql = `
+        INSERT INTO users (username, email, password, role, ecole_id) 
+        VALUES (?, ?, ?, 'admin_ecole', ?)
+    `;
+
+    db.query(sql, [username, email, password, ecole_id], (err, result) => {
+        if (err) {
+            console.error("Erreur SQL création admin école :", err);
+            return res.status(500).json({ success: false, message: "Erreur serveur ou email déjà utilisé" });
+        }
+        res.json({ success: true, message: "Admin d'école créé avec succès !" });
+    });
+});
+
+
 // PUT : Mise à jour des infos du profil
 app.put('/api/user/profile', (req, res) => {
     const { userId, username, email, niveau } = req.body;

@@ -376,3 +376,82 @@ function fermerModalEcole() {
     modal.classList.add("hidden");
     modal.classList.remove("flex");
 }
+
+
+// --- GESTION DE LA MODALE ADMIN D'ÉCOLE ---
+
+// Ouvrir la modale et charger la liste des écoles dans le select
+async function ouvrirModalAdminEcole() {
+    const modal = document.getElementById('modal-admin-ecole');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    const selectEcole = document.getElementById('admin-ecole-select');
+    selectEcole.innerHTML = '<option value="">Chargement des écoles...</option>';
+
+    try {
+        const res = await fetch('/api/admin/ecoles');
+        const ecoles = await res.json();
+
+        selectEcole.innerHTML = '<option value="">-- Choisir une école --</option>';
+        ecoles.forEach(ecole => {
+            const option = document.createElement('option');
+            option.value = ecole.id;
+            option.textContent = ecole.nom;
+            selectEcole.appendChild(option);
+        });
+    } catch (err) {
+        console.error("Erreur chargement écoles :", err);
+        selectEcole.innerHTML = '<option value="">Erreur de chargement</option>';
+    }
+}
+
+function fermerModalAdminEcole() {
+    const modal = document.getElementById('modal-admin-ecole');
+    modal.classList.remove('flex');
+    modal.classList.add('hidden');
+    document.getElementById('formAddAdminEcole').reset();
+}
+
+// Envoyer la création de l'admin d'école au backend
+async function creerAdminEcole(event) {
+    event.preventDefault();
+
+    const username = document.getElementById('admin-username').value.trim();
+    const email = document.getElementById('admin-email').value.trim();
+    const password = document.getElementById('admin-password').value;
+    const ecoleId = document.getElementById('admin-ecole-select').value;
+
+    if (!ecoleId) {
+        alert("Veuillez sélectionner un établissement.");
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/admin/creer-admin-ecole', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: username,
+                email: email,
+                password: password,
+                ecole_id: ecoleId
+            })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            alert("Administrateur d'école créé avec succès !");
+            fermerModalAdminEcole();
+            // Recharge la liste des utilisateurs si la fonction existe
+            if (typeof chargerUtilisateurs === 'function') {
+                chargerUtilisateurs();
+            }
+        } else {
+            alert(data.message || "Erreur lors de la création.");
+        }
+    } catch (err) {
+        console.error("Erreur réseau :", err);
+        alert("Erreur réseau ou serveur.");
+    }
+}
