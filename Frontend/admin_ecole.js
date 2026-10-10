@@ -390,16 +390,25 @@ async function supprimerProfesseurBDD(teacherId) {
  * Affiche le total des questions IA et les cours publiés sur le dashboard admin école
  */
 function renderAdminExtras(topQuestions, coursPublies) {
-    // 1. Total des interactions IA
-    const totalIaEl = document.getElementById("stat-total-ia-questions");
-    if (totalIaEl && topQuestions) {
-        const totalFrequence = topQuestions.reduce((acc, item) => acc + item.frequence, 0);
-        totalIaEl.textContent = totalFrequence;
-    }
+    console.log("=== EXÉCUTION DE renderAdminExtras ===");
+    console.log("Top Questions reçues :", topQuestions);
+    console.log("Cours publiés reçus :", coursPublies);
 
-    // 2. Injection forcée des cours publiés
-    const coursContainer = document.getElementById("published-cours-list"); 
-    if (coursContainer) {
+    try {
+        // 1. Total des interactions IA
+        const totalIaEl = document.getElementById("stat-total-ia-questions");
+        if (totalIaEl && topQuestions) {
+            const totalFrequence = topQuestions.reduce((acc, item) => acc + item.frequence, 0);
+            totalIaEl.textContent = totalFrequence;
+        }
+
+        // 2. Injection sécurisée des cours publiés
+        const coursContainer = document.getElementById("published-cours-list"); 
+        if (!coursContainer) {
+            console.error("L'élément HTML #published-cours-list est introuvable !");
+            return;
+        }
+
         if (coursPublies && coursPublies.length > 0) {
             let htmlContent = "";
             coursPublies.forEach(pub => {
@@ -417,11 +426,12 @@ function renderAdminExtras(topQuestions, coursPublies) {
                 `;
             });
             coursContainer.innerHTML = htmlContent;
+            console.log("✅ Cours injectés avec succès dans le DOM !");
         } else {
             coursContainer.innerHTML = `<p class="py-2 text-xs text-slate-400 italic">Aucun cours publié pour le moment.</p>`;
+            console.log("⚠️ Aucun cours trouvé dans le tableau, affichage du message 'Aucun cours'.");
         }
+    } catch (err) {
+        console.error("❌ Erreur critique dans renderAdminExtras :", err);
     }
 }
-  
-
-    
