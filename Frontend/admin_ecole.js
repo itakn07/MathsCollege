@@ -317,7 +317,9 @@ function openStudentsModal(classId) {
   if (!selectedClass || !modalStudents) return;
 
   const titleEl = document.getElementById("modal-class-title");
-  if (titleEl) titleEl.textContent = `Élèves de la classe : ${selectedClass.name}`;
+  if (titleEl) {
+    titleEl.textContent = `Élèves de la classe : ${selectedClass.name || selectedClass.nom_classe || 'Classe'}`;
+  }
 
   const listContainer = document.getElementById("modal-students-list");
   if (listContainer) {
@@ -328,15 +330,27 @@ function openStudentsModal(classId) {
       listContainer.innerHTML = `<li class="py-3 text-slate-400 italic">Aucun élève inscrit dans cette classe pour le moment.</li>`;
     } else {
       students.forEach(student => {
+        // Extraction sécurisée du nom
+        let studentName = "Élève";
+        let progression = "0%";
+
+        if (typeof student === 'string') {
+          studentName = student;
+          progression = "Actif";
+        } else if (typeof student === 'object' && student !== null) {
+          studentName = student.username || student.name || student.nom || "Élève";
+          progression = student.progression || "0%";
+        }
+
         const li = document.createElement("li");
         li.className = "py-3 text-slate-700 text-sm border-b border-slate-50 last:border-none flex justify-between items-center";
         li.innerHTML = `
           <div class="flex items-center gap-2">
             <span>🎓</span> 
-            <span class="font-bold">${student.username}</span>
+            <span class="font-bold text-slate-800">${studentName}</span>
           </div>
           <span class="bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-lg">
-            Progression : ${student.progression}
+            Progression : ${progression}
           </span>
         `;
         listContainer.appendChild(li);
@@ -346,7 +360,6 @@ function openStudentsModal(classId) {
 
   modalStudents.classList.remove("hidden");
 }
-
 /**
  * 5. SUPPRESSION D'UN PROFESSEUR DANS LA BDD
  */

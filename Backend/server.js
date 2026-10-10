@@ -1102,22 +1102,23 @@ app.get('/api/admin-ecole/dashboard/:ecoleId', async (req, res) => {
         `, [ecoleId]);
 
         // Structuration des classes avec leurs élèves respectifs et leur progression
-        const classesList = classes.map(cls => {
-            const classStudents = eleves
-                .filter(e => e.class_id === cls.id || e.niveau === cls.name || e.niveau === cls.niveau_nom)
-                .map(e => ({
-                    id: e.id,
-                    username: e.username,
-                    // Exemple de calcul de progression basé sur l'activité ou les exercices validés
-                    progression: e.questions_posees_aujourdhui ? `${Math.min(e.questions_posees_aujourdhui * 25, 100)}%` : "0%"
-                }));
+const classesList = classes.map(cls => {
+    const classStudents = eleves
+        .filter(e => e.class_id === cls.id || e.niveau === cls.name || e.niveau === cls.niveau_nom)
+        .map(e => ({
+            id: e.id,
+            // Sécurité : on prend username ou name ou un nom par défaut si undefined
+            username: e.username || e.nom || "Élève",
+            // Calcul de la progression (ex: basé sur les questions IA posées ou 0%)
+            progression: e.questions_posees_aujourdhui ? `${Math.min(e.questions_posees_aujourdhui * 25, 100)}%` : "0%"
+        }));
 
-            return {
-                id: cls.id,
-                name: cls.name,
-                students: classStudents
-            };
-        });
+    return {
+        id: cls.id,
+        name: cls.name,
+        students: classStudents
+    };
+});
 
         res.json({
             success: true,
