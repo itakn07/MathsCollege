@@ -47,13 +47,13 @@ async function chargerDonneesEcole() {
       schoolData.classes = data.classes || [];
       schoolData.teachers = data.teachers || [];
       
-      // Appel de l'affichage des extras (IA + Cours)
+      // Appel de la fonction pour afficher l'IA et les cours
       renderAdminExtras(data.topQuestions, data.coursPublies);
     } else {
       console.warn("Impossible de récupérer les données du serveur pour cette école.");
     }
   } catch (err) {
-    console.error("Erreur de connexion :", err);
+    console.error("Erreur de connexion lors de la récupération des données :", err);
   } finally {
     renderDashboard();
     remplirOptionsClassesModal();
@@ -381,4 +381,50 @@ async function supprimerProfesseurBDD(teacherId) {
   } catch (err) {
     console.error("Erreur de suppression :", err);
   }
+}
+
+/**
+ * Affiche le top des questions IA et les cours publiés sur le dashboard admin école
+ */
+function renderAdminExtras(topQuestions, coursPublies) {
+    // 1. Top des questions IA
+    const iaContainer = document.getElementById("admin-top-questions"); 
+    if (iaContainer) {
+        iaContainer.innerHTML = "";
+        if (!topQuestions || topQuestions.length === 0) {
+            iaContainer.innerHTML = `<p class="text-xs text-slate-400 italic">Aucune question posée à l'IA pour l'instant.</p>`;
+        } else {
+            topQuestions.forEach((item, index) => {
+                const div = document.createElement("div");
+                div.className = "py-1.5 flex justify-between items-center text-xs border-b border-slate-100 last:border-none";
+                div.innerHTML = `
+                    <span class="text-slate-800 font-medium"><strong>${index + 1}.</strong> ${item.question}</span>
+                    <span class="bg-purple-50 text-purple-700 font-bold px-2 py-0.5 rounded">${item.frequence} fois</span>
+                `;
+                iaContainer.appendChild(div);
+            });
+        }
+    }
+
+    // 2. Cours & Exercices publiés
+    const coursContainer = document.getElementById("admin-cours-publies"); 
+    if (coursContainer) {
+        coursContainer.innerHTML = "";
+        if (!coursPublies || coursPublies.length === 0) {
+            coursContainer.innerHTML = `<p class="py-2 text-xs text-slate-400 italic">Aucun cours publié pour le moment.</p>`;
+        } else {
+            coursPublies.forEach(pub => {
+                const div = document.createElement("div");
+                div.className = "py-2.5 flex justify-between items-center text-xs border-b border-slate-100 last:border-none";
+                div.innerHTML = `
+                    <div>
+                        <span class="font-bold text-slate-800">${pub.titre}</span>
+                        <span class="text-slate-400 ml-2">(${pub.domaine || 'Mathématiques'})</span>
+                    </div>
+                    <span class="bg-indigo-50 text-indigo-700 font-semibold px-2 py-0.5 rounded">📘 Cours</span>
+                `;
+                coursContainer.appendChild(div);
+            });
+        }
+    }
 }
