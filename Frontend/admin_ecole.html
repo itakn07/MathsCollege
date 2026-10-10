@@ -5,67 +5,104 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MathsCollege - Espace Admin École</title>
 
- <!-- Favicon (icône dans l'onglet du navigateur) -->
-    <link rel="icon" type="image/png" href="logo.png">
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="logo.png">
 
-
+  <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome pour les icônes -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans min-h-screen p-6">
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-6 md:p-10">
 
   <div class="max-w-6xl mx-auto space-y-8">
     
     <!-- En-tête -->
-<div class="flex justify-between items-center">
-  <div>
-    <h1 class="text-2xl font-bold text-slate-900">Espace Administrateur - Collège</h1>
-    <p class="text-sm text-slate-500">Gestion des classes, des élèves et des professeurs de mathématiques.</p>
-  </div>
-  <div class="flex items-center gap-3">
-    <button id="btn-logout" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-semibold px-4 py-2 rounded-lg transition">
-      Déconnexion
-    </button>
-    <button id="btn-open-add-teacher" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm transition">
-      + Ajouter un Professeur
-    </button>
-  </div>
-</div>
+    <header class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div>
+        <h1 class="text-2xl font-black text-slate-900">
+          Espace Administrateur - <span id="header-school-name" class="text-indigo-600">Mon Établissement</span>
+        </h1>
+        <p class="text-sm text-slate-500 mt-0.5">Gestion des classes, des élèves et des professeurs de mathématiques.</p>
+      </div>
+      <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+        <button id="btn-logout" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center space-x-2">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Déconnexion</span>
+        </button>
+        <button id="btn-open-add-teacher" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition flex items-center space-x-2">
+          <i class="fa-solid fa-user-plus"></i>
+          <span>Ajouter un Professeur</span>
+        </button>
+      </div>
+    </header>
 
     <!-- 1. Chiffres Clés -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-        <p class="text-xs uppercase font-bold text-slate-400">Total Élèves</p>
-        <p id="stat-total-students" class="text-3xl font-extrabold text-indigo-600 mt-1">0</p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-4">
+        <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+          <i class="fa-solid fa-user-graduate"></i>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase text-slate-400">Total Élèves</p>
+          <p id="stat-total-students" class="text-3xl font-black text-slate-900 mt-0.5">0</p>
+        </div>
       </div>
-      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-        <p class="text-xs uppercase font-bold text-slate-400">Profs de Maths</p>
-        <p id="stat-total-teachers" class="text-3xl font-extrabold text-indigo-600 mt-1">0</p>
+      
+      <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-4">
+        <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+          <i class="fa-solid fa-chalkboard-user"></i>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase text-slate-400">Profs de Maths</p>
+          <p id="stat-total-teachers" class="text-3xl font-black text-slate-900 mt-0.5">0</p>
+        </div>
       </div>
-      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-        <p class="text-xs uppercase font-bold text-slate-400">Classes Actives</p>
-        <p id="stat-total-classes" class="text-3xl font-extrabold text-indigo-600 mt-1">0</p>
+
+      <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-4">
+        <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+          <i class="fa-solid fa-school"></i>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase text-slate-400">Classes Actives</p>
+          <p id="stat-total-classes" class="text-3xl font-black text-slate-900 mt-0.5">0</p>
+        </div>
       </div>
     </div>
 
     <!-- 2. Liste des Classes -->
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-      <h2 class="text-lg font-bold text-slate-900 mb-4">Classes et Effectifs</h2>
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-4">
+        <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+          <i class="fa-solid fa-door-open text-indigo-600"></i>
+          <span>Classes et Effectifs</span>
+        </h2>
+        <button id="btn-open-add-class" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center space-x-1.5">
+          <i class="fa-solid fa-plus"></i>
+          <span>Ajouter une classe</span>
+        </button>
+      </div>
       <div id="classes-list" class="divide-y divide-slate-100">
         <!-- Rempli dynamiquement par JS -->
       </div>
     </div>
 
     <!-- 3. Liste des Professeurs -->
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-      <h2 class="text-lg font-bold text-slate-900 mb-4">Professeurs de Mathématiques</h2>
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+      <div class="border-b border-slate-100 pb-4">
+        <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+          <i class="fa-solid fa-users-rectangle text-indigo-600"></i>
+          <span>Professeurs de Mathématiques</span>
+        </h2>
+      </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left text-sm text-slate-600">
           <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
             <tr>
-              <th class="py-2 px-3">Nom & Prénom</th>
-              <th class="py-2 px-3">Email</th>
-              <th class="py-2 px-3">Classes</th>
-              <th class="py-2 px-3 text-right">Action</th>
+              <th class="py-3 px-4">Nom & Prénom</th>
+              <th class="py-3 px-4">Email</th>
+              <th class="py-3 px-4">Classes assignées</th>
+              <th class="py-3 px-4 text-right">Action</th>
             </tr>
           </thead>
           <tbody id="teachers-table-body" class="divide-y divide-slate-100">
@@ -77,12 +114,12 @@
 
   </div>
 
-  <!-- MODALE : Liste des Élèves -->
+  <!-- MODALE : Liste des Élèves d'une classe -->
   <div id="modal-students" class="fixed inset-0 bg-slate-900/50 hidden flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-xl shadow-lg max-w-lg w-full p-6 space-y-4">
-      <div class="flex justify-between items-center border-b pb-3">
-        <h3 id="modal-class-title" class="text-lg font-bold text-slate-900">Élèves de la classe</h3>
-        <button id="btn-close-students-modal" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h3 id="modal-class-title" class="text-base font-bold text-slate-900">Élèves de la classe</h3>
+        <button id="btn-close-students-modal" class="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
       </div>
       <ul id="modal-students-list" class="divide-y divide-slate-100 max-h-60 overflow-y-auto text-sm">
         <!-- Rempli par JS -->
@@ -90,31 +127,65 @@
     </div>
   </div>
 
+  <!-- MODALE : Ajouter une Classe -->
+  <div id="modal-add-class" class="fixed inset-0 bg-slate-900/50 hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h3 class="text-base font-bold text-slate-900">Ajouter une nouvelle classe</h3>
+        <button id="btn-close-class-modal" class="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+      </div>
+      <form id="form-add-class" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Nom de la classe</label>
+          <input type="text" id="class-name-input" placeholder="Ex: 6ème A" required class="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:border-indigo-600">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Niveau d'étude</label>
+          <select id="class-level-input" class="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:border-indigo-600 bg-white" required>
+            <option value="6eme">6ème</option>
+            <option value="5eme">5ème</option>
+            <option value="4eme">4ème</option>
+            <option value="3eme">3ème</option>
+          </select>
+        </div>
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" id="btn-cancel-class" class="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl">Annuler</button>
+          <button type="submit" class="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm">Créer la classe</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- MODALE : Ajouter un Professeur -->
   <div id="modal-add-teacher" class="fixed inset-0 bg-slate-900/50 hidden flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-xl shadow-lg max-w-md w-full p-6 space-y-4">
-      <div class="flex justify-between items-center border-b pb-3">
-        <h3 class="text-lg font-bold text-slate-900">Ajouter un Professeur de Maths</h3>
-        <button id="btn-close-teacher-modal" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h3 class="text-base font-bold text-slate-900">Ajouter un Professeur de Maths</h3>
+        <button id="btn-close-teacher-modal" class="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
       </div>
       <form id="form-add-teacher" class="space-y-4">
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Nom complet</label>
-          <input type="text" id="teacher-name" required class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600">
+          <label class="block text-xs font-bold text-slate-600 mb-1">Nom & Prénom</label>
+          <input type="text" id="teacher-name" placeholder="Ex: Jean Dupont" required class="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:border-indigo-600">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Adresse Email</label>
-          <input type="email" id="teacher-email" required class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600">
+          <label class="block text-xs font-bold text-slate-600 mb-1">Adresse Email</label>
+          <input type="email" id="teacher-email" placeholder="prof@ecole.cg" required class="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:border-indigo-600">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Classe(s) à attribuer</label>
-          <select id="teacher-classes" multiple class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600 min-h-[100px]">
+          <label class="block text-xs font-bold text-slate-600 mb-1">Mot de passe provisoire</label>
+          <input type="password" id="teacher-password" placeholder="••••••••" required class="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:border-indigo-600">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Classe(s) à attribuer</label>
+          <select id="teacher-classes" multiple class="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:border-indigo-600 min-h-[100px] bg-white">
             <!-- Rempli dynamiquement par JS -->
           </select>
+          <p class="text-[11px] text-slate-400 mt-1">Maintenez Ctrl (ou Cmd sur Mac) pour sélectionner plusieurs classes.</p>
         </div>
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" id="btn-cancel-teacher" class="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 rounded-lg">Annuler</button>
-          <button type="submit" class="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg">Enregistrer</button>
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" id="btn-cancel-teacher" class="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl">Annuler</button>
+          <button type="submit" class="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm">Enregistrer</button>
         </div>
       </form>
     </div>

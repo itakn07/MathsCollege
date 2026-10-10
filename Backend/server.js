@@ -1033,6 +1033,25 @@ app.put('/api/user/password', async (req, res) => {
     });
 });
 
+// ROUTE : Ajouter une classe pour l'école
+app.post('/api/admin-ecole/classes', async (req, res) => {
+    const { ecole_id, nom_classe, niveau } = req.body;
+
+    if (!ecole_id || !nom_classe || !niveau) {
+        return res.status(400).json({ success: false, message: "Tous les champs sont requis." });
+    }
+
+    try {
+        const sql = `INSERT INTO classes (ecole_id, nom, niveau_nom) VALUES (?, ?, ?)`;
+        await db.promise().query(sql, [ecole_id, nom_classe, niveau]);
+
+        res.json({ success: true, message: "Classe ajoutée avec succès !" });
+    } catch (err) {
+        console.error("Erreur lors de l'ajout de la classe :", err);
+        res.status(500).json({ success: false, message: "Erreur serveur lors de la création de la classe." });
+    }
+});
+
 // ============= LANCEMENT DU SERVEUR =============
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

@@ -17,15 +17,28 @@ let schoolData = {
 
 // Initialisation au chargement de la page
 document.addEventListener("DOMContentLoaded", () => {
+  initialiserHeaderEcole();
   chargerDonneesEcole();
   setupEventListeners();
 });
 
 /**
+ * 0. INITIALISATION DE L'EN-TÊTE AVEC LE NOM DE L'ÉCOLE
+ */
+function initialiserHeaderEcole() {
+  const schoolNameEl = document.getElementById('header-school-name');
+  if (schoolNameEl) {
+    // Récupère le nom depuis l'objet ecole stocké ou une valeur par défaut
+    const nomEcole = currentUser.ecole?.nom || currentUser.ecole_nom || "Mon Établissement";
+    schoolNameEl.textContent = nomEcole;
+  }
+}
+
+/**
  * 1. CHARGEMENT DES DONNÉES RÉELLES DEPUIS LE SERVEUR / MYSQL
  */
 async function chargerDonneesEcole() {
-  const ecoleId = currentUser.ecole ? currentUser.ecole.id : 1;
+  const ecoleId = currentUser.ecole?.id || currentUser.ecole_id || 1;
 
   try {
     const response = await fetch(`/api/admin-ecole/dashboard/${ecoleId}`);
@@ -55,7 +68,7 @@ function renderDashboard() {
 
 // Mise à jour des cartes des Chiffres Clés
 function updateStats() {
-  const totalStudents = schoolData.classes.reduce((acc, c) => acc + (c.students ? c.students.length : 0), 0);
+  const totalStudents = schoolData.classes.reduce((acc, c) => acc + (c.students ? c.students.length : (c.effectif || 0)), 0);
   
   const elStudents = document.getElementById("stat-total-students");
   const elTeachers = document.getElementById("stat-total-teachers");
@@ -79,19 +92,18 @@ function renderClasses() {
   }
 
   schoolData.classes.forEach(cls => {
-    const studentCount = cls.students ? cls.students.length : 0;
-    const teacherName = cls.teacher || "Non attribué";
+    const studentCount = cls.students ? cls.students.length : (cls.effectif || 0);
+    const className = cls.name || cls.nom_classe || "Classe sans nom";
 
     const div = document.createElement("div");
-    div.className = "py-3 flex justify-between items-center border-b border-slate-100 last:border-none";
+    div.className = "py-3.5 flex justify-between items-center border-b border-slate-100 last:border-none";
     div.innerHTML = `
       <div>
-        <span class="font-bold text-slate-800">${cls.name}</span>
-        <span class="text-sm text-slate-500 ml-3">(${studentCount} élèves)</span>
-        <span class="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded ml-3">Prof : ${teacherName}</span>
+        <span class="font-bold text-slate-800">${className}</span>
+        <span class="text-xs bg-indigo-50 text-indigo-700 font-semibold px-2.5 py-1 rounded-lg ml-3">${studentCount} élève(s)</span>
       </div>
-      <button class="btn-view-students text-sm text-indigo-600 hover:underline font-medium" data-id="${cls.id}">
-        Voir la liste des élèves →
+      <button class="btn-view-students text-xs font-bold text-indigo-600 hover:text-indigo-800 transition" data-id="${cls.id}">
+        Voir les élèves →
       </button>
     `;
     container.appendChild(div);
@@ -114,11 +126,11 @@ function renderTeachers() {
     const tr = document.createElement("tr");
     tr.className = "hover:bg-slate-50/50 transition-colors";
     tr.innerHTML = `
-      <td class="py-3 px-3 font-semibold text-slate-800">${teacher.name}</td>
-      <td class="py-3 px-3">${teacher.email}</td>
-      <td class="py-3 px-3">${teacher.classes || "Aucune"}</td>
-      <td class="py-3 px-3 text-right">
-        <button class="btn-delete-teacher text-xs text-rose-500 hover:underline font-medium" data-id="${teacher.id}">
+      <td class="py-3.5 px-4 font-semibold text-slate-800">${teacher.name || teacher.username}</td>
+      <td class="py-3.5 px-4 text-slate-600">${teacher.email}</td>
+      <td class="py-3.5 px-4"><span class="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-lg font-medium">${teacher.classes || "Aucune"}</span></td>
+      <td class="py-3.5 px-4 text-right">
+        <button class="btn-delete-teacher text-xs font-bold text-rose-500 hover:text-rose-700 transition" data-id="${teacher.id}">
           Retirer
         </button>
       </td>
@@ -128,18 +140,17 @@ function renderTeachers() {
 }
 
 /**
- * Remplir dynamiquement les sous-groupes/classes dans la modale d'ajout
+ * Remplir dynamiquement les sous-groupes/classes dans la modale d'ajout de prof
  */
 function remplirOptionsClassesModal() {
   const selectClasses = document.getElementById("teacher-classes");
   if (!selectClasses) return;
 
-  if (selectClasses.tagName === 'SELECT') {
-    selectClasses.innerHTML = "";
-    schoolData.classes.forEach(c => {
-      selectClasses.innerHTML += `<option value="${c.id}">${c.name}</option>`;
-    });
-  }
+  selectClasses.innerHTML = "";
+  schoolData.classes.forEach(c => {
+    const className = c.name || c.nom_classe;
+    selectClasses.innerHTML += `<option value="${c.id}">${className}</option>`;
+  });
 }
 
 /**
@@ -148,6 +159,7 @@ function remplirOptionsClassesModal() {
 function setupEventListeners() {
   const modalStudents = document.getElementById("modal-students");
   const modalAddTeacher = document.getElementById("modal-add-teacher");
+  const modalAddClass = document.getElementById("modal-add-class");
 
   // Déconnexion
   const btnLogout = document.getElementById("btn-logout");
@@ -158,7 +170,50 @@ function setupEventListeners() {
     });
   }
 
-  // Cliquer sur "Voir la liste des élèves"
+  // --- GESTION MODALE CLASSE ---
+  const btnOpenAddClass = document.getElementById("btn-open-add-class");
+  if (btnOpenAddClass && modalAddClass) {
+    btnOpenAddClass.addEventListener("click", () => modalAddClass.classList.remove("hidden"));
+  }
+  const btnCloseClass = document.getElementById("btn-close-class-modal");
+  if (btnCloseClass && modalAddClass) {
+    btnCloseClass.addEventListener("click", () => modalAddClass.classList.add("hidden"));
+  }
+  const btnCancelClass = document.getElementById("btn-cancel-class");
+  if (btnCancelClass && modalAddClass) {
+    btnCancelClass.addEventListener("click", () => modalAddClass.classList.add("hidden"));
+  }
+
+  // Soumission du formulaire d'ajout d'une classe
+  const formAddClass = document.getElementById("form-add-class");
+  if (formAddClass) {
+    formAddClass.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const nomClasse = document.getElementById("class-name-input").value.trim();
+      const niveau = document.getElementById("class-level-input").value;
+      const ecoleId = currentUser.ecole?.id || currentUser.ecole_id || 1;
+
+      try {
+        const response = await fetch('/api/admin-ecole/classes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ecole_id: ecoleId, nom_classe: nomClasse, niveau: niveau })
+        });
+        const data = await response.json();
+        if (response.ok && data.success) {
+          formAddClass.reset();
+          modalAddClass.classList.add("hidden");
+          await chargerDonneesEcole();
+        } else {
+          alert("Erreur : " + (data.message || "Impossible d'ajouter la classe."));
+        }
+      } catch (err) {
+        console.error("Erreur réseau :", err);
+      }
+    });
+  }
+
+  // Cliquer sur "Voir les élèves" d'une classe
   const classesList = document.getElementById("classes-list");
   if (classesList) {
     classesList.addEventListener("click", (e) => {
@@ -172,9 +227,7 @@ function setupEventListeners() {
   // Fermer la modale Élèves
   const btnCloseStudents = document.getElementById("btn-close-students-modal");
   if (btnCloseStudents && modalStudents) {
-    btnCloseStudents.addEventListener("click", () => {
-      modalStudents.classList.add("hidden");
-    });
+    btnCloseStudents.addEventListener("click", () => modalStudents.classList.add("hidden"));
   }
 
   // Supprimer un Professeur
@@ -183,7 +236,6 @@ function setupEventListeners() {
     tbodyTeachers.addEventListener("click", async (e) => {
       if (e.target.classList.contains("btn-delete-teacher")) {
         const teacherId = parseInt(e.target.getAttribute("data-id"));
-        
         if (confirm("Voulez-vous vraiment retirer ce professeur ?")) {
           await supprimerProfesseurBDD(teacherId);
         }
@@ -194,23 +246,15 @@ function setupEventListeners() {
   // Ouverture et fermeture de la modale d'ajout de Professeur
   const btnOpenAddTeacher = document.getElementById("btn-open-add-teacher");
   if (btnOpenAddTeacher && modalAddTeacher) {
-    btnOpenAddTeacher.addEventListener("click", () => {
-      modalAddTeacher.classList.remove("hidden");
-    });
+    btnOpenAddTeacher.addEventListener("click", () => modalAddTeacher.classList.remove("hidden"));
   }
-
   const btnCloseTeacher = document.getElementById("btn-close-teacher-modal");
   if (btnCloseTeacher && modalAddTeacher) {
-    btnCloseTeacher.addEventListener("click", () => {
-      modalAddTeacher.classList.add("hidden");
-    });
+    btnCloseTeacher.addEventListener("click", () => modalAddTeacher.classList.add("hidden"));
   }
-
   const btnCancelTeacher = document.getElementById("btn-cancel-teacher");
   if (btnCancelTeacher && modalAddTeacher) {
-    btnCancelTeacher.addEventListener("click", () => {
-      modalAddTeacher.classList.add("hidden");
-    });
+    btnCancelTeacher.addEventListener("click", () => modalAddTeacher.classList.add("hidden"));
   }
 
   // Soumission du formulaire d'ajout d'un Professeur
@@ -221,19 +265,15 @@ function setupEventListeners() {
       
       const username = document.getElementById("teacher-name").value.trim();
       const email = document.getElementById("teacher-email").value.trim();
+      const password = document.getElementById("teacher-password").value;
       
       const selectClasses = document.getElementById("teacher-classes");
       let classIds = [];
-      
       if (selectClasses) {
-        if (selectClasses.tagName === 'SELECT' && selectClasses.multiple) {
-          classIds = Array.from(selectClasses.selectedOptions).map(opt => parseInt(opt.value));
-        } else if (selectClasses.tagName === 'SELECT') {
-          if (selectClasses.value) classIds.push(parseInt(selectClasses.value));
-        }
+        classIds = Array.from(selectClasses.selectedOptions).map(opt => parseInt(opt.value));
       }
 
-      const ecoleId = currentUser.ecole ? currentUser.ecole.id : 1;
+      const ecoleId = currentUser.ecole?.id || currentUser.ecole_id || 1;
 
       try {
         const response = await fetch('/api/admin-ecole/add-teacher', {
@@ -242,6 +282,7 @@ function setupEventListeners() {
           body: JSON.stringify({
             username: username,
             email: email,
+            password: password,
             ecole_id: ecoleId,
             class_ids: classIds
           })
@@ -250,11 +291,9 @@ function setupEventListeners() {
         const data = await response.json();
 
         if (response.ok && data.success) {
-          alert(`✅ Professeur créé avec succès !\n\nEmail : ${email}\nMot de passe temporaire : ${data.generatedPassword}\n\nVeuillez noter et transmettre ces identifiants au professeur.`);
-          
+          alert(`✅ Professeur créé avec succès !\n\nEmail : ${email}`);
           formAddTeacher.reset();
-          if (modalAddTeacher) modalAddTeacher.classList.add("hidden");
-          
+          modalAddTeacher.classList.add("hidden");
           await chargerDonneesEcole();
         } else {
           alert("Erreur : " + (data.error || data.message || "Impossible d'ajouter le professeur."));
@@ -277,16 +316,17 @@ function openStudentsModal(classId) {
   if (!selectedClass || !modalStudents) return;
 
   const titleEl = document.getElementById("modal-class-title");
-  if (titleEl) titleEl.textContent = `Élèves de la classe : ${selectedClass.name}`;
+  if (titleEl) titleEl.textContent = `Élèves de la classe : ${selectedClass.name || selectedClass.nom_classe}`;
 
   const listContainer = document.getElementById("modal-students-list");
   if (listContainer) {
     listContainer.innerHTML = "";
 
-    if (!selectedClass.students || selectedClass.students.length === 0) {
-      listContainer.innerHTML = `<li class="py-3 text-slate-400 italic">Aucun élève inscrit dans cette classe.</li>`;
+    const students = selectedClass.students || [];
+    if (students.length === 0) {
+      listContainer.innerHTML = `<li class="py-3 text-slate-400 italic">Aucun élève inscrit dans cette classe pour le moment.</li>`;
     } else {
-      selectedClass.students.forEach(studentName => {
+      students.forEach(studentName => {
         const li = document.createElement("li");
         li.className = "py-2.5 text-slate-700 font-medium border-b border-slate-50 last:border-none flex items-center gap-2";
         li.innerHTML = `<span>🎓</span> <span>${studentName}</span>`;
@@ -315,7 +355,5 @@ async function supprimerProfesseurBDD(teacherId) {
     }
   } catch (err) {
     console.error("Erreur de suppression :", err);
-    schoolData.teachers = schoolData.teachers.filter(t => t.id !== teacherId);
-    renderDashboard();
   }
 }
