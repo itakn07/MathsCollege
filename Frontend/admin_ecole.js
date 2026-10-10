@@ -397,7 +397,7 @@ function renderAdminExtras(topQuestions, coursPublies) {
         totalIaEl.textContent = totalFrequence;
     }
 
-    // 2. Affichage des cours publiés
+    // 2. Cours & Exercices publiés (Ciblage du bon ID HTML)
     const coursContainer = document.getElementById("published-cours-list"); 
     if (coursContainer) {
         coursContainer.innerHTML = "";
