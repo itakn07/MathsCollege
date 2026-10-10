@@ -386,25 +386,39 @@ async function supprimerProfesseurBDD(teacherId) {
 /**
  * Affiche le top des questions IA et les cours publiés sur le dashboard admin école
  */
+/**
+ * Affiche le total des questions IA et les cours publiés sur le dashboard admin école
+ */
 function renderAdminExtras(topQuestions, coursPublies) {
-    // 1. Top des questions IA
-    const iaContainer = document.getElementById("admin-top-questions"); 
-    if (iaContainer) {
-        iaContainer.innerHTML = "";
-        if (!topQuestions || topQuestions.length === 0) {
-            iaContainer.innerHTML = `<p class="text-xs text-slate-400 italic">Aucune question posée à l'IA pour l'instant.</p>`;
+    // 1. Mise à jour du total des interactions IA
+    const totalIaEl = document.getElementById("stat-total-ia-questions");
+    if (totalIaEl && topQuestions) {
+        const totalFrequence = topQuestions.reduce((acc, item) => acc + item.frequence, 0);
+        totalIaEl.textContent = totalFrequence;
+    }
+
+    // 2. Cours & Exercices publiés (utilise l'ID exact de ton HTML : "published-cours-list")
+    const coursContainer = document.getElementById("published-cours-list"); 
+    if (coursContainer) {
+        coursContainer.innerHTML = "";
+        if (!coursPublies || coursPublies.length === 0) {
+            coursContainer.innerHTML = `<p class="py-2 text-xs text-slate-400 italic">Aucun cours publié pour le moment.</p>`;
         } else {
-            topQuestions.forEach((item, index) => {
+            coursPublies.forEach(pub => {
                 const div = document.createElement("div");
-                div.className = "py-1.5 flex justify-between items-center text-xs border-b border-slate-100 last:border-none";
+                div.className = "py-2.5 flex justify-between items-center text-xs border-b border-slate-100 last:border-none";
                 div.innerHTML = `
-                    <span class="text-slate-800 font-medium"><strong>${index + 1}.</strong> ${item.question}</span>
-                    <span class="bg-purple-50 text-purple-700 font-bold px-2 py-0.5 rounded">${item.frequence} fois</span>
+                    <div>
+                        <span class="font-bold text-slate-800">${pub.titre}</span>
+                        <span class="text-slate-400 ml-2">(${pub.domaine || 'Mathématiques'})</span>
+                    </div>
+                    <span class="bg-indigo-50 text-indigo-700 font-semibold px-2 py-0.5 rounded">📘 Cours</span>
                 `;
-                iaContainer.appendChild(div);
+                coursContainer.appendChild(div);
             });
         }
     }
+  }
 
     // 2. Cours & Exercices publiés
     const coursContainer = document.getElementById("admin-cours-publies"); 
@@ -427,4 +441,3 @@ function renderAdminExtras(topQuestions, coursPublies) {
             });
         }
     }
-}
