@@ -426,24 +426,4 @@ function renderAdminExtras(topQuestions, coursPublies) {
 }
   
 
-    // 2. Cours & Exercices publiés
-    const coursContainer = document.getElementById("admin-cours-publies"); 
-    if (coursContainer) {
-        coursContainer.innerHTML = "";
-        if (!coursPublies || coursPublies.length === 0) {
-            coursContainer.innerHTML = `<p class="py-2 text-xs text-slate-400 italic">Aucun cours publié pour le moment.</p>`;
-        } else {
-            coursPublies.forEach(pub => {
-                const div = document.createElement("div");
-                div.className = "py-2.5 flex justify-between items-center text-xs border-b border-slate-100 last:border-none";
-                div.innerHTML = `
-                    <div>
-                        <span class="font-bold text-slate-800">${pub.titre}</span>
-                        <span class="text-slate-400 ml-2">(${pub.domaine || 'Mathématiques'})</span>
-                    </div>
-                    <span class="bg-indigo-50 text-indigo-700 font-semibold px-2 py-0.5 rounded">📘 Cours</span>
-                `;
-                coursContainer.appendChild(div);
-            });
-        }
-    }
+    
