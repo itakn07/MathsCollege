@@ -1101,16 +1101,17 @@ app.get('/api/admin-ecole/dashboard/:ecoleId', async (req, res) => {
             WHERE u.ecole_id = ?
         `, [ecoleId]);
 
-        // Structuration des classes avec leurs élèves respectifs et leur progression
+       // Structuration des classes avec leurs élèves respectifs et leur progression en %
 const classesList = classes.map(cls => {
     const classStudents = eleves
         .filter(e => e.class_id === cls.id || e.niveau === cls.name || e.niveau === cls.niveau_nom)
         .map(e => ({
             id: e.id,
-            // Sécurité : on prend username ou name ou un nom par défaut si undefined
             username: e.username || e.nom || "Élève",
-            // Calcul de la progression (ex: basé sur les questions IA posées ou 0%)
-            progression: e.questions_posees_aujourdhui ? `${Math.min(e.questions_posees_aujourdhui * 25, 100)}%` : "0%"
+            // Exemple : progression calculée selon l'activité (ou 0% par défaut)
+            progression: e.questions_posees_aujourdhui 
+                ? `${Math.min(e.questions_posees_aujourdhui * 25, 100)}%` 
+                : "0%"
         }));
 
     return {

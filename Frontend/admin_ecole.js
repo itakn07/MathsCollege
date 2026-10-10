@@ -330,16 +330,16 @@ function openStudentsModal(classId) {
       listContainer.innerHTML = `<li class="py-3 text-slate-400 italic">Aucun élève inscrit dans cette classe pour le moment.</li>`;
     } else {
       students.forEach(student => {
-        // Extraction sécurisée du nom
+        // Extraction sécurisée du nom et de la progression
         let studentName = "Élève";
-        let progression = "0%";
+        let progressionPercent = "0%";
 
         if (typeof student === 'string') {
           studentName = student;
-          progression = "Actif";
+          progressionPercent = "0%";
         } else if (typeof student === 'object' && student !== null) {
           studentName = student.username || student.name || student.nom || "Élève";
-          progression = student.progression || "0%";
+          progressionPercent = student.progression || "0%";
         }
 
         const li = document.createElement("li");
@@ -350,7 +350,7 @@ function openStudentsModal(classId) {
             <span class="font-bold text-slate-800">${studentName}</span>
           </div>
           <span class="bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-lg">
-            Progression : ${progression}
+            Progression : ${progressionPercent}
           </span>
         `;
         listContainer.appendChild(li);
