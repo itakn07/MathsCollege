@@ -21,9 +21,14 @@ function cleStorage(nom) {
     return `${nom}_${getEcoleId()}_${user?.id || 'invite'}`;
 }
 
-// Récupération et nettoyage du niveau pour correspondre à la BD ("6e", "5e", etc.)
-const niveauBrut = localStorage.getItem('niveauSelectionne') || '6e';
-const niveauChoisi = niveauBrut.toLowerCase().replace(/\s+/g, '').replace(/[èe]me/g, 'e');
+// Niveau de l'élève : pris dans user.niveau ("5ème A" → "5e"), sinon dans niveauSelectionne, sinon "6e"
+function getNiveauClean() {
+    const user = getUser();
+    const brut = user?.niveau || localStorage.getItem('niveauSelectionne') || '6e';
+    const chiffre = String(brut).match(/\d+/); // garde seulement le numéro de la classe
+    return chiffre ? `${chiffre[0]}e` : '6e';
+}
+const niveauChoisi = getNiveauClean();
 let domaineActuel = "algebre";
 let listeCoursCharges = [];
 let coursActuelId = null;
