@@ -171,23 +171,41 @@ function renderHistoriquePublications() {
 }
 
 /**
- * Charge la liste des cours existants dans le menu déroulant du formulaire des exercices
+ * Charge la liste des cours publiés par l'enseignant connecté
  */
 async function chargerListeCours() {
     try {
-        const response = await fetch('/api/prof/liste-cours');
+        const userStored = localStorage.getItem('user');
+        const currentUser = userStored ? JSON.parse(userStored) : null;
+        
+        // Si aucun utilisateur ou pas d'ID, on stoppe net pour éviter le Bad Request (400)
+        if (!currentUser || !currentUser.id) {
+            console.warn("⚠️ Impossible de charger la liste des cours : aucun ID professeur en session.");
+            return;
+        }
+
+        const professeurId = currentUser.id;
+        const ecoleId = currentUser.ecole_id || currentUser.ecole?.id || 1;
+
+        const response = await fetch(`/api/prof/liste-cours?professeur_id=${professeurId}&ecole_id=${ecoleId}`);
         if (response.ok) {
             const cours = await response.json();
             const selectExoCours = document.getElementById('exo-cours-id');
             if (selectExoCours) {
-                selectExoCours.innerHTML = '<option value="">Sélectionnez un cours...</option>';
+                selectExcours.innerHTML = '<option value="">Sélectionnez un de vos cours...</option>';
+                if (!cours || cours.length === 0) {
+                    selectExcours.innerHTML += '<option value="" disabled>Vous n\'avez publié aucun cours</option>';
+                    return;
+                }
                 cours.forEach(c => {
-                    selectExoCours.innerHTML += `<option value="${c.id}">${c.titre}</option>`;
+                    selectExcours.innerHTML += `<option value="${c.id}">${c.titre}</option>`;
                 });
             }
+        } else {
+            console.error("❌ Erreur HTTP lors de la récupération des cours:", response.status);
         }
     } catch (err) {
-        console.error("Erreur chargement liste des cours :", err);
+        console.error("❌ Erreur réseau chargement liste des cours :", err);
     }
 }
 
