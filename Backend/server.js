@@ -689,24 +689,31 @@ app.get('/niveaux', (req, res) => {
 });
 
 app.get('/api/cours/:niveau/:domaine', (req, res) => {
-    const { niveau, domaine } = req.params;
+    let { niveau, domaine } = req.params;
     const ecoleId = req.query.ecole_id || 1;
 
+    // Normalisation : si le front envoie "3ème" ou "3eme", on le convertit en "3e" pour matcher MySQL
+    let niveauClean = niveau.toLowerCase().replace('ème', 'e').replace('eme', 'e');
+
+    console.log(`🔍 Reçu: "${niveau}" -> Nettoyé: "${niveauClean}", Domaine: "${domaine}", École: ${ecoleId}`);
+
     const sql = `
-        SELECT c.* 
+        SELECT c.*, n.nom as nom_niveau 
         FROM cours c
         JOIN niveaux n ON c.niveau_id = n.id
-        WHERE (c.niveau_id = ? OR LOWER(n.nom) = LOWER(?))
+        WHERE (c.niveau_id = ? OR LOWER(n.nom) = ? OR LOWER(n.nom) LIKE ?)
         AND LOWER(c.domaine) = LOWER(?)
-        AND (c.ecole_id = ? OR (c.est_public = TRUE AND (c.niveau_id = ? OR LOWER(n.nom) = LOWER(?))))
+        AND (c.ecole_id = ? OR (c.est_public = TRUE AND (c.niveau_id = ? OR LOWER(n.nom) = ? OR LOWER(n.nom) LIKE ?)))
     `;
 
-    // On passe le paramètre de niveau 5 fois pour tous les '?'
-    db.query(sql, [niveau, niveau, domaine, ecoleId, niveau, niveau], (err, results) => {
+    const niveauLike = `%${niveauClean}%`;
+
+    db.query(sql, [niveauClean, niveauClean, niveauLike, domaine, ecoleId, niveauClean, niveauClean, niveauLike], (err, results) => {
         if (err) {
-            console.error("Erreur SQL :", err);
+            console.error("❌ Erreur SQL :", err);
             return res.status(500).send("Erreur serveur");
         }
+        console.log(`📦 Cours trouvés : ${results.length}`);
         res.json(results);
     });
 });
