@@ -520,13 +520,28 @@ app.post('/api/prof/cours', upload.single('pdf_file'), async (req, res) => {
 
 app.get('/api/prof/liste-cours', async (req, res) => {
     try {
-        const [cours] = await db.promise().query('SELECT id, titre FROM cours ORDER BY titre ASC');
+        const professeur_id = req.query.professeur_id;
+        const ecole_id = req.query.ecole_id || 1;
+
+        if (!professeur_id) {
+            return res.status(400).json({ error: "ID du professeur manquant" });
+        }
+
+        const sql = `
+            SELECT id, titre 
+            FROM cours 
+            WHERE professeur_id = ? AND ecole_id = ? 
+            ORDER BY titre ASC
+        `;
+        
+        const [cours] = await db.promise().query(sql, [professeur_id, ecole_id]);
         res.json(cours);
     } catch (err) {
-        console.error("Erreur lors de la récupération des cours:", err);
+        console.error("Erreur lors de la récupération des cours du prof:", err);
         res.status(500).json({ error: "Erreur serveur" });
     }
 });
+
 
 app.post('/api/prof/exercices', upload.single('pdf_file'), async (req, res) => {
     try {
