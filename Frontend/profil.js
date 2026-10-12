@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
             selectNiveau.value = user.niveau;
         }
 
-        // Lancement du calcul de la progression de lecture
+        // Lancement du calcul de la progression de lecture harmonisée
         chargerProgressionDepuisStorage(user);
     }
 
@@ -153,20 +153,31 @@ async function updatePassword(event) {
     }
 }
 
-// 5. Calcul et affichage de la progression de lecture
+// Fonctions utilitaires pour s'aligner exactement sur cours.js
+function getEcoleId(user) {
+    return user?.ecole?.id || user?.ecole_id || 1;
+}
+
+function cleStorage(nom, user) {
+    return `${nom}_${getEcoleId(user)}_${user?.id || 'invite'}`;
+}
+
+// 5. Calcul et affichage de la progression de lecture (Harmonisé avec cours.js)
 async function chargerProgressionDepuisStorage(userData) {
     const user = userData || JSON.parse(localStorage.getItem('user'));
     if (!user) return;
 
-    const progRaw = localStorage.getItem('mathscollege_progression');
+    // Utilisation de la même clé exacte que dans cours.js
+    const cleProgression = cleStorage('mathscollege_progression', user);
+    const progRaw = localStorage.getItem(cleProgression);
     const prog = progRaw ? JSON.parse(progRaw) : {};
 
-    console.log("📌 Progression dans localStorage :", prog);
+    console.log("📌 Progression récupérée via la clé :", cleProgression, prog);
 
     const containerProgression = document.getElementById('container-progression');
     if (containerProgression) containerProgression.classList.remove('hidden');
 
-    // Nettoyage et normalisation du niveau (ex: "6ÈME A" -> "6eme")
+    // Nettoyage et normalisation du niveau (ex: "5ème A" -> "5e")
     let rawNiveau = user.niveau || '3eme';
     let niveauUser = rawNiveau.split(' ')[0]
         .toLowerCase()
@@ -178,7 +189,7 @@ async function chargerProgressionDepuisStorage(userData) {
         niveauUser += 'eme';
     }
 
-    const ecoleId = user.ecole_id || (user.ecole ? user.ecole.id : 1);
+    const ecoleId = getEcoleId(user);
 
     try {
         console.log(`📡 Requête API pour niveau: "${niveauUser}", ecole_id: ${ecoleId}`);
@@ -188,9 +199,6 @@ async function chargerProgressionDepuisStorage(userData) {
 
         const resGeometrie = await fetch(`/api/cours/${niveauUser}/geometrie?ecole_id=${ecoleId}`);
         const coursGeometrie = resGeometrie.ok ? await resGeometrie.json() : [];
-
-        console.log("📚 Cours Algèbre reçus du serveur :", coursAlgebre);
-        console.log("📐 Cours Géométrie reçus du serveur :", coursGeometrie);
 
         // Calcul Algèbre
         const totalAlgebre = Array.isArray(coursAlgebre) ? coursAlgebre.length : 0;
