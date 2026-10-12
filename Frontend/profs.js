@@ -173,14 +173,14 @@ function renderHistoriquePublications() {
 /**
  * Charge la liste des cours publiés par l'enseignant connecté
  */
+
 async function chargerListeCours() {
     try {
         const userStored = localStorage.getItem('user');
         const currentUser = userStored ? JSON.parse(userStored) : null;
         
-        // Si aucun utilisateur ou pas d'ID, on stoppe net pour éviter le Bad Request (400)
         if (!currentUser || !currentUser.id) {
-            console.warn("⚠️ Impossible de charger la liste des cours : aucun ID professeur en session.");
+            console.warn("⚠️ Aucun ID professeur en session.");
             return;
         }
 
@@ -192,17 +192,17 @@ async function chargerListeCours() {
             const cours = await response.json();
             const selectExoCours = document.getElementById('exo-cours-id');
             if (selectExoCours) {
-                selectExcours.innerHTML = '<option value="">Sélectionnez un de vos cours...</option>';
+                selectExoCours.innerHTML = '<option value="">Sélectionnez un de vos cours...</option>';
                 if (!cours || cours.length === 0) {
-                    selectExcours.innerHTML += '<option value="" disabled>Vous n\'avez publié aucun cours</option>';
+                    selectExoCours.innerHTML += '<option value="" disabled>Vous n\'avez publié aucun cours</option>';
                     return;
                 }
                 cours.forEach(c => {
-                    selectExcours.innerHTML += `<option value="${c.id}">${c.titre}</option>`;
+                    selectExoCours.innerHTML += `<option value="${c.id}">${c.titre}</option>`;
                 });
             }
         } else {
-            console.error("❌ Erreur HTTP lors de la récupération des cours:", response.status);
+            console.error("❌ Erreur HTTP récupération cours :", response.status);
         }
     } catch (err) {
         console.error("❌ Erreur réseau chargement liste des cours :", err);
