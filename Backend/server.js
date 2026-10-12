@@ -695,18 +695,25 @@ app.get('/api/cours/:niveau/:domaine', (req, res) => {
     const niveauClean = niveau.toLowerCase()
         .replace(/\s+/g, '')
         .replace(/[èe]me/g, 'e');
+    const niveauId = /^\d+$/.test(niveau) ? parseInt(niveau, 10) : 0;
+
+    console.log(`🔍 niveau="${niveau}" → "${niveauClean}" | id=${niveauId} | domaine="${domaine}" | école=${ecoleId}`);
 
     const sql = `
         SELECT c.*, n.nom AS nom_niveau
         FROM cours c
         JOIN niveaux n ON c.niveau_id = n.id
         WHERE c.ecole_id = ?
-        AND LOWER(REPLACE(n.nom, ' ', '')) = ?
+        AND (c.niveau_id = ? OR LOWER(REPLACE(n.nom, ' ', '')) = ?)
         AND LOWER(c.domaine) = LOWER(?)
     `;
 
-    db.query(sql, [ecoleId, niveauClean, domaine], (err, results) => {
-        if (err) return res.status(500).json({ error: "Erreur serveur" });
+    db.query(sql, [ecoleId, niveauId, niveauClean, domaine], (err, results) => {
+        if (err) {
+            console.error("❌ Erreur SQL :", err);
+            return res.status(500).json({ error: "Erreur serveur" });
+        }
+        console.log(`📦 ${results.length} cours trouvés`);
         res.json(results);
     });
 });
