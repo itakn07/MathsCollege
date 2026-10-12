@@ -1,6 +1,29 @@
-// Récupération et nettoyage du niveau pour correspondre exactement à la BD ("6e", "5e", etc.)
+// -------------------------------------------------------------
+// UTILISATEUR CONNECTÉ
+// -------------------------------------------------------------
+function getUser() {
+    try {
+        return JSON.parse(localStorage.getItem('user')) || null;
+    } catch {
+        return null;
+    }
+}
+
+// L'école est dans user.ecole.id (objet imbriqué). Par défaut : site free (id = 1)
+function getEcoleId() {
+    const user = getUser();
+    return user?.ecole?.id || 1;
+}
+
+// Clés de stockage propres à chaque élève et à chaque école
+function cleStorage(nom) {
+    const user = getUser();
+    return `${nom}_${getEcoleId()}_${user?.id || 'invite'}`;
+}
+
+// Récupération et nettoyage du niveau pour correspondre à la BD ("6e", "5e", etc.)
 const niveauBrut = localStorage.getItem('niveauSelectionne') || '6e';
-const niveauChoisi = niveauBrut.toLowerCase().replace('ème', 'e').replace('E', 'e');
+const niveauChoisi = niveauBrut.toLowerCase().replace(/\s+/g, '').replace(/[èe]me/g, 'e');
 let domaineActuel = "algebre";
 let listeCoursCharges = [];
 let coursActuelId = null;
@@ -27,12 +50,17 @@ function sauvegarderDernierCours(chapitre) {
         domaine: domaineActuel,
         niveau: niveauChoisi
     };
-    localStorage.setItem('mathscollege_dernier_cours', JSON.stringify(infosDernierCours));
+    localStorage.setItem(cleStorage('mathscollege_dernier_cours'), JSON.stringify(infosDernierCours));
 }
 
 function verifierDernierCoursConsulte() {
     const bloc = document.getElementById('bloc-reprendre-lecture');
-    const dernier = JSON.parse(localStorage.getItem('mathscollege_dernier_cours'));
+    let dernier = null;
+    try {
+        dernier = JSON.parse(localStorage.getItem(cleStorage('mathscollege_dernier_cours')));
+    } catch {
+        dernier = null;
+    }
 
     if (!dernier || !bloc) return;
 
@@ -40,7 +68,7 @@ function verifierDernierCoursConsulte() {
     if (dernier.niveau === niveauChoisi) {
         document.getElementById('reprendre-titre-cours').innerText = dernier.titre;
         document.getElementById('reprendre-domaine-cours').innerText = `${dernier.domaine === 'algebre' ? 'Algèbre' : 'Géométrie'} • Classe de ${niveauChoisi.toUpperCase()}`;
-        
+
         // Configuration du bouton de reprise
         const btn = document.getElementById('btn-reprendre-lecture');
         btn.onclick = () => reprendreLectureDirecte(dernier);
@@ -53,10 +81,10 @@ function verifierDernierCoursConsulte() {
 
 async function reprendreLectureDirecte(dernierCours) {
     domaineActuel = dernierCours.domaine;
-    
+
     // On charge la liste du domaine en arrière-plan
     try {
-        const response = await fetch(`/api/cours/${niveauChoisi}/${domaineActuel}`);
+        const response = await fetch(`/api/cours/${niveauChoisi}/${domaineActuel}?ecole_id=${getEcoleId()}`);
         if (response.ok) {
             listeCoursCharges = await response.json();
             // On ouvre directement la leçon
@@ -71,7 +99,11 @@ async function reprendreLectureDirecte(dernierCours) {
 // GESTION DU STORAGE DE PROGRESSION
 // -------------------------------------------------------------
 function getProgressionStorage() {
-    return JSON.parse(localStorage.getItem('mathscollege_progression')) || {};
+    try {
+        return JSON.parse(localStorage.getItem(cleStorage('mathscollege_progression'))) || {};
+    } catch {
+        return {};
+    }
 }
 
 function estCoursLu(idCours) {
@@ -82,7 +114,7 @@ function estCoursLu(idCours) {
 function basculerEtatLecture(idCours) {
     const prog = getProgressionStorage();
     prog[idCours] = !prog[idCours];
-    localStorage.setItem('mathscollege_progression', JSON.stringify(prog));
+    localStorage.setItem(cleStorage('mathscollege_progression'), JSON.stringify(prog));
 
     renderBoutonLecture(idCours);
     actualiserAffichageListeEtProgression();
@@ -136,8 +168,8 @@ async function selectionnerDomaine(domaine) {
     `;
 
     try {
-        const response = await fetch(`/api/cours/${niveauChoisi}/${domaineActuel}`);
-        
+        const response = await fetch(`/api/cours/${niveauChoisi}/${domaineActuel}?ecole_id=${getEcoleId()}`);
+
         if (!response.ok) {
             throw new Error(`Erreur HTTP : ${response.status}`);
         }
@@ -160,7 +192,7 @@ async function selectionnerDomaine(domaine) {
         conteneur.innerHTML = `
             <div class="col-span-2 text-center py-12 bg-red-50 rounded-3xl border border-red-100 text-red-600">
                 <p class="font-semibold">Impossible de charger les cours.</p>
-                <p class="text-xs mt-1">Vérifie que ton serveur Node.js est bien lancé sur le port 3000.</p>
+                <p class="text-xs mt-1">Vérifie que ton serveur Node.js est bien lancé (port 4000 en local).</p>
             </div>
         `;
     }
@@ -171,7 +203,7 @@ function renderCartesChapitres() {
 
     conteneur.innerHTML = listeCoursCharges.map((chapitre, index) => {
         const lu = estCoursLu(chapitre.id);
-        const badgeStatut = lu 
+        const badgeStatut = lu
             ? `<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-md">✓ Lu</span>`
             : `<span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs font-medium rounded-md">Non lu</span>`;
 
@@ -217,7 +249,9 @@ function lireLecon(idCours) {
     let htmlContenu = chapitre.contenu || "<p class='text-slate-500'>Contenu indisponible.</p>";
 
     if (chapitre.pdf_path) {
-        const cheminPropre = chapitre.pdf_path.startsWith('/') ? chapitre.pdf_path : '/' + chapitre.pdf_path;
+        const cheminPropre = chapitre.pdf_path.startsWith('/') || chapitre.pdf_path.startsWith('http')
+            ? chapitre.pdf_path
+            : '/' + chapitre.pdf_path;
         const pdfUrl = `${cheminPropre}`;
 
         htmlContenu += `
@@ -269,7 +303,7 @@ function retourAuxDomaines() {
     document.getElementById("vue-liste-cours").classList.add("hidden");
     document.getElementById("vue-lecteur-cours").classList.add("hidden");
     document.getElementById("vue-domaine").classList.remove("hidden");
-    
+
     // Mettre à jour la bannière si un cours vient d'être ouvert
     verifierDernierCoursConsulte();
 }
