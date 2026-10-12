@@ -690,12 +690,11 @@ app.get('/niveaux', (req, res) => {
 
 app.get('/api/cours/:niveau/:domaine', (req, res) => {
     let { niveau, domaine } = req.params;
-    const ecoleId = req.query.ecole_id || 1;
+    // Si aucun ecole_id n'est fourni, on considère qu'il est rattaché à l'école publique/officielle (id = 1)
+    const ecoleId = req.query.ecole_id ? parseInt(req.query.ecole_id) : 1;
 
-    // Normalisation : si le front envoie "3ème" ou "3eme", on le convertit en "3e" pour matcher MySQL
     let niveauClean = niveau.toLowerCase().replace('ème', 'e').replace('eme', 'e');
-
-    console.log(`🔍 Reçu: "${niveau}" -> Nettoyé: "${niveauClean}", Domaine: "${domaine}", École: ${ecoleId}`);
+    console.log(`🔍 Niveau reçu: "${niveau}" (nettoyé: "${niveauClean}"), Domaine: "${domaine}", École ID: ${ecoleId}`);
 
     const sql = `
         SELECT c.*, n.nom as nom_niveau 
@@ -703,17 +702,24 @@ app.get('/api/cours/:niveau/:domaine', (req, res) => {
         JOIN niveaux n ON c.niveau_id = n.id
         WHERE (c.niveau_id = ? OR LOWER(n.nom) = ? OR LOWER(n.nom) LIKE ?)
         AND LOWER(c.domaine) = LOWER(?)
-        AND (c.ecole_id = ? OR (c.est_public = TRUE AND (c.niveau_id = ? OR LOWER(n.nom) = ? OR LOWER(n.nom) LIKE ?)))
+        AND (
+            -- Cas 1 : L'élève est sur l'école publique/officielle (ou invité sans école spécifique) -> il voit les cours publics/officiels
+            (? = 1 AND (c.ecole_id = 1 OR c.est_public = 1))
+            OR
+            -- Cas 2 : L'élève appartient à une autre école privée -> il voit STRICTEMENT et uniquement les cours de son école
+            (? <> 1 AND c.ecole_id = ?)
+        )
     `;
 
     const niveauLike = `%${niveauClean}%`;
 
-    db.query(sql, [niveauClean, niveauClean, niveauLike, domaine, ecoleId, niveauClean, niveauClean, niveauLike], (err, results) => {
+    // On passe ecoleId 3 fois pour correspondre aux trois '?' de la condition d'école
+    db.query(sql, [niveauClean, niveauClean, niveauLike, domaine, ecoleId, ecoleId, ecoleId], (err, results) => {
         if (err) {
             console.error("❌ Erreur SQL :", err);
             return res.status(500).send("Erreur serveur");
         }
-        console.log(`📦 Cours trouvés : ${results.length}`);
+        console.log(`📦 Cours filtrés et trouvés : ${results.length}`);
         res.json(results);
     });
 });
