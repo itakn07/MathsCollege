@@ -175,9 +175,6 @@ function afficherVueContent(type) {
     showContent(type, titre);
 }
 
-// Solveur universel et Coach Sylvie IA inchangés...
-// (Conserve les fonctions resoudre(), effacerSolveur(), envoyerQuestionIA(), declencherEntrainement())
-
 document.addEventListener('DOMContentLoaded', () => {
     chargerClassesSignup();
 
@@ -198,22 +195,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (document.getElementById('user-display-name')) document.getElementById('user-display-name').textContent = nom;
         if (document.getElementById('user-display-class')) document.getElementById('user-display-class').textContent = classe;
 
-        // 🎯 FILTRAGE AUTOMATIQUE : L'élève ne voit que sa carte de niveau
         if (userData.role === 'eleve' && classe) {
             const niveauEleveClean = classe.toLowerCase().replace('ème', 'e').replace('eme', 'e').trim();
             localStorage.setItem('niveauSelectionne', niveauEleveClean);
-
-            setTimeout(() => {
-                const cartesNiveaux = document.querySelectorAll('#levels-container > div');
-                cartesNiveaux.forEach(carte => {
-                    const titreCarte = carte.querySelector('h3').textContent.toLowerCase();
-                    if (!titreCarte.includes(niveauEleveClean.replace('e', ''))) {
-                        carte.style.display = 'none';
-                    } else {
-                        carte.style.display = 'flex';
-                    }
-                });
-            }, 200);
         }
 
         if (reponseIA) {
@@ -235,12 +219,23 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 if (data && data.length > 0) {
                     levelsContainer.innerHTML = ""; 
+
+                    const user = JSON.parse(localStorage.getItem('user') || 'null');
+                    const niveauEleve = user && user.niveau ? user.niveau.toLowerCase() : '';
+
                     data.forEach(niveau => {
+                        const nomNiveauClean = niveau.nom.toLowerCase().replace('ème', 'e').replace('eme', 'e');
+                        const eleveClean = niveauEleve.replace('ème', 'e').replace('eme', 'e');
+
+                        if (user && user.role === 'eleve' && niveauEleve && !eleveClean.includes(nomNiveauClean)) {
+                            return; 
+                        }
+
                         const card = document.createElement("div");
                         card.className = "level-card bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition text-left flex flex-col justify-between";
                         card.innerHTML = `
                             <h3 class="font-bold text-slate-900 text-lg mb-4">${niveau.nom}</h3>
-                            <button class="action-btn bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2 px-4 rounded-xl text-sm transition w-full" onclick="entrerDansNiveau(${niveau.id}, '${niveau.nom}')">Entrer</button>
+                            <button class="action-btn bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2 px-4 rounded-xl text-sm transition w-full" onclick="selectionnerNiveau('${niveau.nom}')">Entrer</button>
                         `;
                         levelsContainer.appendChild(card);
                     });
