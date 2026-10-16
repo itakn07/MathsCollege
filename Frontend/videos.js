@@ -1,60 +1,34 @@
-// Récupération sécurisée de l'utilisateur et de son école
+// Récupération sécurisée de l'utilisateur et de son école au chargement du script
 const userStored = localStorage.getItem('user');
 const currentUser = userStored ? JSON.parse(userStored) : null;
 const ecoleId = currentUser?.ecole_id || currentUser?.ecole?.id || 1;
-
-
-document.addEventListener("DOMContentLoaded", () => {
-    // 1. Récupération de l'utilisateur connecté depuis le localStorage
-    const userStored = localStorage.getItem('user');
-    const currentUser = userStored ? JSON.parse(userStored) : null;
-    
-    if (currentUser) {
-        // Récupération du nom de l'école (selon la structure de ton objet user)
-        const nomEcole = currentUser.ecole?.nom || currentUser.ecole_nom || (typeof currentUser.ecole === 'string' ? currentUser.ecole : null);
-        
-        if (nomEcole && nomEcole !== "1") {
-            // Mise à jour du titre dans le header
-            const headerTitleEl = document.getElementById('header-title');
-            if (headerTitleEl) headerTitleEl.textContent = nomEcole;
-
-            // Mise à jour du nom de l'école dans le footer
-            const footerSchoolEl = document.getElementById('footer-school-name');
-            if (footerSchoolEl) footerSchoolEl.textContent = nomEcole;
-        }
-    }
-
-    // 2. Affichage du niveau et chargement des vidéos
-    const elTitreNiveau = document.getElementById("niveau-titre");
-    if (elTitreNiveau) {
-        elTitreNiveau.textContent = niveauSelectionne.toUpperCase();
-    }
-
-    chargerVideos();
-});
 
 // Récupération du niveau sélectionné dans localStorage (ex: '6e')
 const niveauSelectionne = (localStorage.getItem('niveauSelectionne') || '6e').toLowerCase();
 let domaineActuel = 'algebre';
 
+// Unique écouteur global au chargement du DOM
 document.addEventListener("DOMContentLoaded", () => {
-    // 1. Personnaliser le nom du site dans le header selon l'école connectée
-    const headerTitleEl = document.querySelector('header h1');
-    if (headerTitleEl && currentUser) {
-        const nomEcole = currentUser.ecole_nom || currentUser.ecole?.nom || currentUser.ecole || "MathsCollege";
-        // Si l'utilisateur appartient à une école spécifique, on affiche son nom
-        if (nomEcole && nomEcole !== "1") {
-            headerTitleEl.textContent = nomEcole;
+    // 1. Personnalisation du nom de l'école dans le header et le footer
+    if (currentUser) {
+        const nomEcole = currentUser.ecole_nom || currentUser.ecole?.nom || currentUser.ecole;
+        
+        if (nomEcole && nomEcole !== "1" && nomEcole !== "MathsCollege") {
+            const headerTitleEl = document.getElementById('header-title');
+            if (headerTitleEl) headerTitleEl.textContent = nomEcole;
+
+            const footerSchoolEl = document.getElementById('footer-school-name');
+            if (footerSchoolEl) footerSchoolEl.textContent = nomEcole;
         }
     }
 
-    // 2. Affichage du nom du niveau dans l'en-tête
+    // 2. Affichage du nom du niveau dans l'en-tête de la page
     const elTitreNiveau = document.getElementById("niveau-titre");
     if (elTitreNiveau) {
         elTitreNiveau.textContent = niveauSelectionne.toUpperCase();
     }
 
-    // 3. Chargement par défaut sur le domaine Algèbre
+    // 3. Chargement initial des vidéos sur le domaine Algèbre
     filtrerDomaine('algebre');
 });
 
@@ -113,7 +87,6 @@ async function chargerVideos() {
     `;
 
     try {
-        // Construction de l'URL unique avec le niveau dans l'URL, et le domaine/école en paramètres GET
         let url = `/api/videos/${niveauSelectionne}?ecole_id=${ecoleId}`;
         if (domaineActuel) {
             url += `&domaine=${domaineActuel}`;
