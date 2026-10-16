@@ -760,19 +760,28 @@ app.get('/api/exercices/:niveau/:domaine', (req, res) => {
     });
 });
 
-app.get('/api/videos/:idDuNiveau/:domaine', (req, res) => {
+app.get('/api/videos/:idDuNiveau/:domaine?', (req, res) => {
     const niveauId = req.params.idDuNiveau;
-    const domaine = req.params.domaine;
+    const domaine = req.params.domaine; // Sera undefined si non fourni
+    const ecoleId = req.query.ecole_id || 1;
 
-    const sql = `
+    let sql = `
         SELECT v.* 
         FROM videos v
         LEFT JOIN niveaux n ON v.niveau_id = n.id
         WHERE (v.niveau_id = ? OR LOWER(n.nom) = LOWER(?))
-          AND LOWER(v.domaine) = LOWER(?)
+          AND (v.ecole_id = 1 OR v.ecole_id = ?)
     `;
+    
+    let params = [niveauId, niveauId, ecoleId];
 
-    db.query(sql, [niveauId, niveauId, domaine], (err, results) => {
+    // Si le domaine est spécifié dans l'URL, on affine la requête
+    if (domaine) {
+        sql += ` AND LOWER(v.domaine) = LOWER(?)`;
+        params.push(domaine);
+    }
+
+    db.query(sql, params, (err, results) => {
         if (err) {
             console.error("Erreur SQL videos :", err);
             return res.status(500).send(err);
@@ -781,24 +790,6 @@ app.get('/api/videos/:idDuNiveau/:domaine', (req, res) => {
     });
 });
 
-app.get('/api/videos/:idDuNiveau', (req, res) => {
-    const niveauId = req.params.idDuNiveau;
-
-    const sql = `
-        SELECT v.* 
-        FROM videos v
-        LEFT JOIN niveaux n ON v.niveau_id = n.id
-        WHERE v.niveau_id = ? OR LOWER(n.nom) = LOWER(?)
-    `;
-
-    db.query(sql, [niveauId, niveauId], (err, results) => {
-        if (err) {
-            console.error("Erreur SQL videos :", err);
-            return res.status(500).send(err);
-        }
-        res.json(results);
-    });
-});
 
 app.get('/api/jeux/:niveauId', (req, res) => {
     const query = "SELECT * FROM jeux WHERE niveau_id = ?";
