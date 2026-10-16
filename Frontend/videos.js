@@ -11,14 +11,23 @@ let domaineActuel = 'algebre';
 document.addEventListener("DOMContentLoaded", () => {
     // 1. Personnalisation du nom de l'école dans le header et le footer
     if (currentUser) {
-        const nomEcole = currentUser.ecole_nom || currentUser.ecole?.nom || currentUser.ecole;
+        // On récupère le nom de l'école peu importe la structure de l'objet stocké
+        const nomEcole = currentUser.ecole_nom || currentUser.ecole?.nom || currentUser.nom_ecole || (typeof currentUser.ecole === 'string' ? currentUser.ecole : null);
         
         if (nomEcole && nomEcole !== "1" && nomEcole !== "MathsCollege") {
+            // Mise à jour du header
             const headerTitleEl = document.getElementById('header-title');
-            if (headerTitleEl) headerTitleEl.textContent = nomEcole;
+            if (headerTitleEl) {
+                headerTitleEl.textContent = nomEcole;
+                headerTitleEl.className = "text-lg font-extrabold text-slate-900"; // Supprime le dégradé violet officiel pour uniformiser
+            }
 
-            const footerSchoolEl = document.getElementById('footer-school-name');
-            if (footerSchoolEl) footerSchoolEl.textContent = nomEcole;
+            // Mise à jour du footer (utilisation de footer-title qui est présent dans ton HTML)
+            const footerTitleEl = document.getElementById('footer-title');
+            if (footerTitleEl) {
+                footerTitleEl.textContent = nomEcole;
+                footerTitleEl.className = "text-xl font-extrabold text-slate-900"; // Uniformise aussi le footer
+            }
         }
     }
 
@@ -31,6 +40,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // 3. Chargement initial des vidéos sur le domaine Algèbre
     filtrerDomaine('algebre');
 });
+
+// ... (le reste de ton code filtrerDomaine, corrigerUrlYoutube et chargerVideos reste inchangé en bas)
 
 /**
  * Change le domaine sélectionné (algebre ou geometrie) et recharge les vidéos
