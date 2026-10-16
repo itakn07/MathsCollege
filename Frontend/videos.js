@@ -70,7 +70,7 @@ function corrigerUrlYoutube(urlOuId) {
 }
 
 /**
- * Récupère et affiche la liste des vidéos depuis l'API backend en filtrant par école
+ * Récupère et affiche la liste des vidéos depuis l'API backend en filtrant par école et domaine
  */
 async function chargerVideos() {
     const grille = document.getElementById("videos-grid");
@@ -83,8 +83,13 @@ async function chargerVideos() {
     `;
 
     try {
-        // ON AJOUTE ?ecole_id=${ecoleId} POUR RESPECTER LE CLOISONNEMENT MULTI-TENANT
-        const response = await fetch(`/api/videos/${niveauSelectionne}/${domaineActuel}?ecole_id=${ecoleId}`);
+        // Construction de l'URL unique avec le niveau dans l'URL, et le domaine/école en paramètres GET
+        let url = `/api/videos/${niveauSelectionne}?ecole_id=${ecoleId}`;
+        if (domaineActuel) {
+            url += `&domaine=${domaineActuel}`;
+        }
+
+        const response = await fetch(url);
         if (!response.ok) throw new Error(`Erreur HTTP : ${response.status}`);
 
         const videos = await response.json();
@@ -126,7 +131,7 @@ async function chargerVideos() {
         console.error("Erreur de chargement :", error);
         grille.innerHTML = `
             <div class="col-span-full text-center py-12 bg-rose-50 rounded-3xl border border-rose-100 text-rose-600 text-sm">
-                 Impossible de contacter le serveur.
+                 Impossible de charger les vidéos. Vérifie la connexion au serveur.
             </div>
         `;
     }
