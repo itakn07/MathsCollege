@@ -3,6 +3,36 @@ const userStored = localStorage.getItem('user');
 const currentUser = userStored ? JSON.parse(userStored) : null;
 const ecoleId = currentUser?.ecole_id || currentUser?.ecole?.id || 1;
 
+
+document.addEventListener("DOMContentLoaded", () => {
+    // 1. Récupération de l'utilisateur connecté depuis le localStorage
+    const userStored = localStorage.getItem('user');
+    const currentUser = userStored ? JSON.parse(userStored) : null;
+    
+    if (currentUser) {
+        // Récupération du nom de l'école (selon la structure de ton objet user)
+        const nomEcole = currentUser.ecole?.nom || currentUser.ecole_nom || (typeof currentUser.ecole === 'string' ? currentUser.ecole : null);
+        
+        if (nomEcole && nomEcole !== "1") {
+            // Mise à jour du titre dans le header
+            const headerTitleEl = document.getElementById('header-title');
+            if (headerTitleEl) headerTitleEl.textContent = nomEcole;
+
+            // Mise à jour du nom de l'école dans le footer
+            const footerSchoolEl = document.getElementById('footer-school-name');
+            if (footerSchoolEl) footerSchoolEl.textContent = nomEcole;
+        }
+    }
+
+    // 2. Affichage du niveau et chargement des vidéos
+    const elTitreNiveau = document.getElementById("niveau-titre");
+    if (elTitreNiveau) {
+        elTitreNiveau.textContent = niveauSelectionne.toUpperCase();
+    }
+
+    chargerVideos();
+});
+
 // Récupération du niveau sélectionné dans localStorage (ex: '6e')
 const niveauSelectionne = (localStorage.getItem('niveauSelectionne') || '6e').toLowerCase();
 let domaineActuel = 'algebre';
