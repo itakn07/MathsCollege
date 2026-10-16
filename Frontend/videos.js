@@ -1,15 +1,30 @@
+// Récupération sécurisée de l'utilisateur et de son école
+const userStored = localStorage.getItem('user');
+const currentUser = userStored ? JSON.parse(userStored) : null;
+const ecoleId = currentUser?.ecole_id || currentUser?.ecole?.id || 1;
+
 // Récupération du niveau sélectionné dans localStorage (ex: '6e')
 const niveauSelectionne = (localStorage.getItem('niveauSelectionne') || '6e').toLowerCase();
 let domaineActuel = 'algebre';
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Affichage du nom du niveau dans l'en-tête
+    // 1. Personnaliser le nom du site dans le header selon l'école connectée
+    const headerTitleEl = document.querySelector('header h1');
+    if (headerTitleEl && currentUser) {
+        const nomEcole = currentUser.ecole_nom || currentUser.ecole?.nom || currentUser.ecole || "MathsCollege";
+        // Si l'utilisateur appartient à une école spécifique, on affiche son nom
+        if (nomEcole && nomEcole !== "1") {
+            headerTitleEl.textContent = nomEcole;
+        }
+    }
+
+    // 2. Affichage du nom du niveau dans l'en-tête
     const elTitreNiveau = document.getElementById("niveau-titre");
     if (elTitreNiveau) {
         elTitreNiveau.textContent = niveauSelectionne.toUpperCase();
     }
 
-    // Chargement par défaut sur le domaine Algèbre
+    // 3. Chargement par défaut sur le domaine Algèbre
     filtrerDomaine('algebre');
 });
 
@@ -42,29 +57,25 @@ function filtrerDomaine(domaine) {
 function corrigerUrlYoutube(urlOuId) {
     if (!urlOuId) return '';
     
-    // Si l'URL contient watch?v=
     if (urlOuId.includes('watch?v=')) {
         const videoId = urlOuId.split('watch?v=')[1].split('&')[0];
         return `https://www.youtube.com/embed/${videoId}`;
     }
 
-    // Si c'est déjà un lien /embed/
     if (urlOuId.includes('/embed/')) {
         return urlOuId;
     }
 
-    // Si c'est juste un ID brut (ex: Lop-LKZXQSA)
     return `https://www.youtube.com/embed/${urlOuId}`;
 }
 
 /**
- * Récupère et affiche la liste des vidéos depuis l'API backend
+ * Récupère et affiche la liste des vidéos depuis l'API backend en filtrant par école
  */
 async function chargerVideos() {
     const grille = document.getElementById("videos-grid");
     if (!grille) return;
 
-    // Indicateur de chargement
     grille.innerHTML = `
         <div class="col-span-full text-center py-12 text-slate-400 text-sm">
             Chargement des vidéos en cours...
@@ -72,12 +83,12 @@ async function chargerVideos() {
     `;
 
     try {
-        const response = await fetch(`/api/videos/${niveauSelectionne}/${domaineActuel}`);
+        // ON AJOUTE ?ecole_id=${ecoleId} POUR RESPECTER LE CLOISONNEMENT MULTI-TENANT
+        const response = await fetch(`/api/videos/${niveauSelectionne}/${domaineActuel}?ecole_id=${ecoleId}`);
         if (!response.ok) throw new Error(`Erreur HTTP : ${response.status}`);
 
         const videos = await response.json();
 
-        // Si aucune vidéo n'est enregistrée pour ce niveau et ce domaine
         if (videos.length === 0) {
             grille.innerHTML = `
                 <div class="col-span-full text-center py-12 bg-white rounded-3xl border border-slate-100 shadow-sm">
@@ -89,14 +100,12 @@ async function chargerVideos() {
             return;
         }
 
-        // Génération dynamique du code HTML des cartes vidéos
         grille.innerHTML = videos.map(video => {
             const urlEmbed = corrigerUrlYoutube(video.youtube_id);
 
             return `
                 <div class="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
                     <div>
-                        <!-- Lecteur Iframe YouTube -->
                         <div class="aspect-video w-full rounded-2xl overflow-hidden bg-slate-900 mb-4 shadow-inner">
                             <iframe 
                                 class="w-full h-full" 
@@ -117,7 +126,7 @@ async function chargerVideos() {
         console.error("Erreur de chargement :", error);
         grille.innerHTML = `
             <div class="col-span-full text-center py-12 bg-rose-50 rounded-3xl border border-rose-100 text-rose-600 text-sm">
-                 Impossible de contacter le serveur local. Assure-toi que Node.js est bien lancé sur le port 3000.
+                 Impossible de contacter le serveur.
             </div>
         `;
     }
