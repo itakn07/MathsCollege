@@ -7,9 +7,12 @@ const ecoleId = currentUser?.ecole_id || currentUser?.ecole?.id || 1;
 const niveauSelectionne = (localStorage.getItem('niveauSelectionne') || '6e').toLowerCase();
 let domaineActuel = 'algebre';
 
+// Récupération de la couleur personnalisée de l'école (si définie)
+const couleurEcole = currentUser?.ecole_couleur || currentUser?.ecole?.couleur || currentUser?.couleur_primaire;
+
 // Unique écouteur global au chargement du DOM
 document.addEventListener("DOMContentLoaded", () => {
-    // 1. Personnalisation du nom, du logo et des couleurs dans le header et le footer
+    // 1. Personnalisation du nom, du logo et des éléments dans le header et le footer
     if (currentUser) {
         const nomEcole = currentUser.ecole_nom || currentUser.ecole?.nom || currentUser.nom_ecole || (typeof currentUser.ecole === 'string' ? currentUser.ecole : null);
         const logoEcole = currentUser.ecole?.logo || currentUser.logo || currentUser.ecole_logo;
@@ -19,10 +22,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const headerTitleEl = document.getElementById('header-title');
             if (headerTitleEl) {
                 headerTitleEl.textContent = nomEcole;
-                headerTitleEl.className = "text-lg font-extrabold text-slate-900"; // Même style que l'accueil
+                headerTitleEl.className = "text-lg font-extrabold text-slate-900";
             }
 
-            // Header : Logo de l'école (si présent dans l'objet user)
+            // Header : Logo de l'école
             const headerLogoEl = document.getElementById('header-logo');
             if (headerLogoEl && logoEcole) {
                 headerLogoEl.src = logoEcole;
@@ -52,10 +55,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // 3. Chargement initial des vidéos sur le domaine Algèbre
     filtrerDomaine('algebre');
 });
-// ... (le reste de ton code filtrerDomaine, corrigerUrlYoutube et chargerVideos reste inchangé en bas)
 
 /**
  * Change le domaine sélectionné (algebre ou geometrie) et recharge les vidéos
+ * Applique dynamiquement la couleur de l'école sur le bouton actif
  */
 function filtrerDomaine(domaine) {
     domaineActuel = domaine;
@@ -66,11 +69,25 @@ function filtrerDomaine(domaine) {
 
     if (btnAlg && btnGeo) {
         if (domaine === 'algebre') {
-            btnAlg.className = "px-4 py-2 rounded-xl text-xs font-semibold bg-brand-500 text-white shadow-sm transition";
+            btnAlg.className = "px-4 py-2 rounded-xl text-xs font-semibold text-white shadow-sm transition";
             btnGeo.className = "px-4 py-2 rounded-xl text-xs font-semibold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition";
+            
+            if (couleurEcole) {
+                btnAlg.style.backgroundColor = couleurEcole;
+                btnGeo.style.backgroundColor = '';
+            } else {
+                btnAlg.classList.add('bg-brand-500');
+            }
         } else {
-            btnGeo.className = "px-4 py-2 rounded-xl text-xs font-semibold bg-brand-500 text-white shadow-sm transition";
+            btnGeo.className = "px-4 py-2 rounded-xl text-xs font-semibold text-white shadow-sm transition";
             btnAlg.className = "px-4 py-2 rounded-xl text-xs font-semibold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition";
+            
+            if (couleurEcole) {
+                btnGeo.style.backgroundColor = couleurEcole;
+                btnAlg.style.backgroundColor = '';
+            } else {
+                btnGeo.classList.add('bg-brand-500');
+            }
         }
     }
 
