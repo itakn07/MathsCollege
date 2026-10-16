@@ -9,24 +9,36 @@ let domaineActuel = 'algebre';
 
 // Unique écouteur global au chargement du DOM
 document.addEventListener("DOMContentLoaded", () => {
-    // 1. Personnalisation du nom de l'école dans le header et le footer
+    // 1. Personnalisation du nom, du logo et des couleurs dans le header et le footer
     if (currentUser) {
-        // On récupère le nom de l'école peu importe la structure de l'objet stocké
         const nomEcole = currentUser.ecole_nom || currentUser.ecole?.nom || currentUser.nom_ecole || (typeof currentUser.ecole === 'string' ? currentUser.ecole : null);
+        const logoEcole = currentUser.ecole?.logo || currentUser.logo || currentUser.ecole_logo;
         
         if (nomEcole && nomEcole !== "1" && nomEcole !== "MathsCollege") {
-            // Mise à jour du header
+            // Header : Texte du nom de l'école
             const headerTitleEl = document.getElementById('header-title');
             if (headerTitleEl) {
                 headerTitleEl.textContent = nomEcole;
-                headerTitleEl.className = "text-lg font-extrabold text-slate-900"; // Supprime le dégradé violet officiel pour uniformiser
+                headerTitleEl.className = "text-lg font-extrabold text-slate-900"; // Même style que l'accueil
             }
 
-            // Mise à jour du footer (utilisation de footer-title qui est présent dans ton HTML)
+            // Header : Logo de l'école (si présent dans l'objet user)
+            const headerLogoEl = document.getElementById('header-logo');
+            if (headerLogoEl && logoEcole) {
+                headerLogoEl.src = logoEcole;
+            }
+
+            // Footer : Texte du nom de l'école
             const footerTitleEl = document.getElementById('footer-title');
             if (footerTitleEl) {
                 footerTitleEl.textContent = nomEcole;
-                footerTitleEl.className = "text-xl font-extrabold text-slate-900"; // Uniformise aussi le footer
+                footerTitleEl.className = "text-xl font-extrabold text-slate-900";
+            }
+
+            // Footer : Logo de l'école
+            const footerLogoEl = document.getElementById('footer-logo');
+            if (footerLogoEl && logoEcole) {
+                footerLogoEl.src = logoEcole;
             }
         }
     }
@@ -40,7 +52,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // 3. Chargement initial des vidéos sur le domaine Algèbre
     filtrerDomaine('algebre');
 });
-
 // ... (le reste de ton code filtrerDomaine, corrigerUrlYoutube et chargerVideos reste inchangé en bas)
 
 /**
