@@ -38,12 +38,13 @@
 <body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between">
 
   <div>
-    <!-- Header / Navbar -->
+    <!-- Header / Navbar identique à l'accueil -->
     <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 py-3">
       <div class="max-w-4xl mx-auto flex justify-between items-center">
-        <h1 class="text-xl font-extrabold bg-gradient-to-r from-brand-500 to-purple-600 bg-clip-text text-transparent cursor-pointer" onclick="window.location.href='index.html'">
-          MathsCollege
-        </h1>
+        <div class="flex items-center gap-2.5 cursor-pointer" onclick="window.location.href='index.html'">
+          <img id="header-logo" src="logo.png" alt="Logo" class="h-8 w-auto object-contain mix-blend-multiply">
+          <span id="header-title" class="text-lg font-extrabold text-slate-900">MathsCollege</span>
+        </div>
         <a href="index.html" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition">
           ← Retour à l'accueil
         </a>
@@ -82,23 +83,30 @@
     </main>
   </div>
 
-  <!-- Footer -->
-  <footer class="bg-white border-t border-slate-100 py-8 mt-12">
-    <div class="max-w-4xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-      <div>
-        <h3 class="font-bold text-slate-900 mb-2">À propos</h3>
-        <p class="text-slate-500 text-xs leading-relaxed">MathsCollege est ta plateforme permettant aux apprenants en cycle collège d'apprendre les mathématiques plus facilement.</p>
+  <!-- Footer identique à l'accueil -->
+    <footer class="bg-white border-t border-slate-200/80 text-slate-500 pt-8 pb-8 mt-16 text-xs">
+      <div class="max-w-4xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <img src="logo.png" alt="Logo" class="h-6 w-auto mix-blend-multiply">
+            <span id="footer-school-name" class="font-bold text-slate-900">MathsCollege</span>
+          </div>
+          <p class="text-slate-500 leading-relaxed">Plateforme d'apprentissage des mathématiques pour le collège.</p>
+        </div>
+        <div>
+          <h3 class="font-bold text-slate-900 mb-2">RESSOURCES</h3>
+          <ul class="space-y-1 text-slate-600">
+            <li><a href="index.html" class="hover:text-brand-600 transition">Les Cours</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-bold text-slate-900 mb-2">CONTACT</h3>
+          <p class="text-slate-600">📍 Brazzaville, République du Congo</p>
+          <p class="text-slate-600">📧 ritakngot3@gmail.com</p>
+          <p class="text-slate-600">📞 00242 04 478 18 74</p>
+        </div>
       </div>
-      <div>
-        <h3 class="font-bold text-slate-900 mb-2">E-mail</h3>
-        <p class="text-slate-500 text-xs">ritakngot3@gmail.com</p>
-      </div>
-      <div>
-        <h3 class="font-bold text-slate-900 mb-2">Téléphone</h3>
-        <p class="text-slate-500 text-xs">00242 04 478 18 74</p>
-      </div>
-    </div>
-  </footer>
+    </footer>
 
   <script src="videos.js"></script>
 </body>
