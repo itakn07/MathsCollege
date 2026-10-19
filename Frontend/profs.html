@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MathsCollege - Espace Enseignant</title>
 
-  <!-- Favicon (icône dans l'onglet du navigateur) -->
+  <!-- Favicon -->
   <link rel="icon" type="image/png" href="logo.png">
 
   <!-- Tailwind CSS & FontAwesome Icons -->
@@ -20,9 +20,9 @@
     <div class="flex justify-between items-center">
       <div>
         <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
-  <span class="text-indigo-600">∆</span> MathsCollege — Espace Enseignant
-  <span id="school-name-badge" class="text-xs font-semibold bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md ml-2"></span>
-</h1>
+          <span class="text-indigo-600">∆</span> MathsCollege — Espace Enseignant
+          <span id="school-name-badge" class="text-xs font-semibold bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md ml-2"></span>
+        </h1>
         <p class="text-sm text-slate-500">Tableau de bord de suivi et gestion des ressources pédagogiques.</p>
       </div>
       <div class="flex items-center gap-3">
@@ -35,7 +35,7 @@
       </div>
     </div>
 
-    <!-- 0. Sélecteur des Classes Assignées (Cartes cliquables) -->
+    <!-- 0. Sélecteur des Classes Assignées -->
     <div>
       <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
         <i class="fa-solid fa-chalkboard text-indigo-600"></i>
@@ -48,7 +48,6 @@
 
     <!-- 1. Chiffres Clés & IA Insights -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      
       <!-- ÉLÈVES INSCRITS PAR CLASSE -->
       <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
         <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-2 text-lg">
@@ -71,28 +70,27 @@
           <li class="text-xs text-slate-400 italic">Chargement des données...</li>
         </ol>
       </div>
-
     </div>
 
-    <!-- 2. Formulaires de Publication -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- 2. Formulaires de Publication (3 Colonnes) -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       
       <!-- FORMULAIRE 1 : PUBLIER UN COURS -->
       <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-          <span>📌</span> Publier un nouveau cours
+        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <span>📌</span> Publier un cours
         </h2>
         
-        <form id="form-add-cours" enctype="multipart/form-data" class="space-y-4">
+        <form id="form-add-cours" enctype="multipart/form-data" class="space-y-3">
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Titre du cours *</label>
-            <input type="text" id="cours-titre" required placeholder="ex: Les Équations du premier degré" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:outline-none focus:border-indigo-600">
+            <input type="text" id="cours-titre" required placeholder="ex: Équations 1er degré" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600">
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1">Niveau *</label>
-              <select id="cours-niveau" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:outline-none focus:border-indigo-600">
+              <select id="cours-niveau" required class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600">
                 <option value="1">6ème</option>
                 <option value="2">5ème</option>
                 <option value="3">4ème</option>
@@ -101,7 +99,7 @@
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1">Domaine</label>
-              <select id="cours-domaine" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:outline-none focus:border-indigo-600">
+              <select id="cours-domaine" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600">
                 <option value="algebre">Algèbre</option>
                 <option value="geometrie">Géométrie</option>
                 <option value="organisation">Organisation de données</option>
@@ -111,15 +109,15 @@
 
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Résumé ou contenu texte</label>
-            <textarea id="cours-contenu" rows="3" placeholder="Description ou aperçu du cours..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:outline-none focus:border-indigo-600"></textarea>
+            <textarea id="cours-contenu" rows="2" placeholder="Description courte..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600"></textarea>
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Document PDF du cours (facultatif)</label>
-            <input type="file" id="cours-pdf" accept=".pdf" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Document PDF (facultatif)</label>
+            <input type="file" id="cours-pdf" accept=".pdf" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
           </div>
 
-          <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2.5 rounded-lg shadow-sm transition">
+          <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2.5 rounded-lg shadow-sm transition">
             Publier le cours
           </button>
         </form>
@@ -127,42 +125,85 @@
 
       <!-- FORMULAIRE 2 : PUBLIER UN EXERCICE / CORRIGÉ -->
       <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-          <span>✏️</span> Publier un exercice / corrigé
+        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <span>✏️</span> Publier un exercice
         </h2>
         
-        <form id="form-add-exercice" enctype="multipart/form-data" class="space-y-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">Cours associé *</label>
-              <select id="exo-cours-id" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:outline-none focus:border-indigo-600">
-                <option value="">Sélectionnez un cours...</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">Titre de l'exercice *</label>
-              <input type="text" id="exo-titre" required placeholder="ex: Exercice 1 - Calcul littéral" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:outline-none focus:border-indigo-600">
-            </div>
+        <form id="form-add-exercice" enctype="multipart/form-data" class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Cours associé *</label>
+            <select id="exo-cours-id" required class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600">
+              <option value="">Sélectionnez un cours...</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Titre de l'exercice *</label>
+            <input type="text" id="exo-titre" required placeholder="ex: Exercice 1 - Calcul littéral" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600">
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Énoncé (texte)</label>
-            <textarea id="exo-enonce" rows="2" placeholder="Énoncé textuel si pas de fichier PDF..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:outline-none focus:border-indigo-600"></textarea>
+            <textarea id="exo-enonce" rows="2" placeholder="Énoncé..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600"></textarea>
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Corrigé / Réponses (texte)</label>
-            <textarea id="exo-reponse" rows="2" placeholder="Indications ou corrigé..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:outline-none focus:border-indigo-600"></textarea>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Corrigé / Réponses</label>
+            <textarea id="exo-reponse" rows="2" placeholder="Corrigé..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600"></textarea>
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Fichier PDF Exercice/Corrigé</label>
-            <input type="file" id="exo-pdf" accept=".pdf" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Fichier PDF (facultatif)</label>
+            <input type="file" id="exo-pdf" accept=".pdf" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
           </div>
 
-          <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2.5 rounded-lg shadow-sm transition">
+          <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2.5 rounded-lg shadow-sm transition">
             Publier l'exercice
           </button>
+        </form>
+      </div>
+
+      <!-- FORMULAIRE 3 : PUBLIER UNE VIDÉO -->
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <span>🎬</span> Publier une vidéo
+        </h2>
+        
+        <form id="form-add-video" class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Titre de la vidéo *</label>
+            <input type="text" id="video-titre" required placeholder="ex: Explication Théorème de Pythagore" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Lien ou ID YouTube *</label>
+            <input type="text" id="video-youtube" required placeholder="ex: https://youtube.com/watch?v=... ou ID" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600">
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Niveau *</label>
+              <select id="video-niveau" required class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600">
+                <option value="6e">6ème</option>
+                <option value="5e">5ème</option>
+                <option value="4e">4ème</option>
+                <option value="3e">3ème</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Domaine *</label>
+              <select id="video-domaine" required class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600">
+                <option value="algebre">Algèbre</option>
+                <option value="geometrie">Géométrie</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="pt-8">
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2.5 rounded-lg shadow-sm transition">
+              Publier la vidéo
+            </button>
+          </div>
         </form>
       </div>
 
@@ -173,7 +214,7 @@
       <div class="flex justify-between items-center border-b border-slate-100 pb-3">
         <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
           <i class="fa-solid fa-clock-rotate-left text-indigo-600"></i>
-          <span>Historique de mes Publications (Cours & Exercices)</span>
+          <span>Historique de mes Publications (Cours, Exercices & Vidéos)</span>
         </h2>
       </div>
       <div id="historique-publications-list" class="divide-y divide-slate-100 max-h-60 overflow-y-auto text-sm">

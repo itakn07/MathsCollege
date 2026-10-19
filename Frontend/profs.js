@@ -41,11 +41,10 @@ async function chargerStatsDashboard(professeurId) {
             const data = await response.json();
             
             if (data.success) {
-
-const schoolBadge = document.getElementById('school-name-badge');
-if (schoolBadge && data.ecoleNom) {
-    schoolBadge.textContent = data.ecoleNom;
-}
+                const schoolBadge = document.getElementById('school-name-badge');
+                if (schoolBadge && data.ecoleNom) {
+                    schoolBadge.textContent = data.ecoleNom;
+                }
 
                 dashboardProfData.classes = data.classes || [];
                 dashboardProfData.coursPublies = data.coursPublies || [];
@@ -173,7 +172,6 @@ function renderHistoriquePublications() {
 /**
  * Charge la liste des cours publiés par l'enseignant connecté
  */
-
 async function chargerListeCours() {
     try {
         const userStored = localStorage.getItem('user');
@@ -210,10 +208,10 @@ async function chargerListeCours() {
 }
 
 /**
- * Configure la soumission des formulaires (cours et exercices)
+ * Configure la soumission des formulaires (cours, exercices et vidéos)
  */
 function setupFormListeners(currentUser) {
-    // Formulaire de publication de cours
+    // 1. Formulaire de publication de cours
     const formCours = document.getElementById('form-add-cours');
     if (formCours) {
         formCours.addEventListener('submit', async (e) => {
@@ -243,7 +241,7 @@ function setupFormListeners(currentUser) {
                     alert("✅ " + resData.message);
                     formCours.reset();
                     chargerListeCours(); 
-                    chargerStatsDashboard(currentUser.id); // Recharge l'historique et les stats
+                    chargerStatsDashboard(currentUser.id);
                 } else {
                     alert("Erreur : " + (resData.error || "Impossible de publier le cours."));
                 }
@@ -254,7 +252,7 @@ function setupFormListeners(currentUser) {
         });
     }
 
-    // Formulaire de publication d'exercice
+    // 2. Formulaire de publication d'exercice
     const formExercice = document.getElementById('form-add-exercice');
     if (formExercice) {
         formExercice.addEventListener('submit', async (e) => {
@@ -287,6 +285,59 @@ function setupFormListeners(currentUser) {
             } catch (err) {
                 console.error("Erreur lors de la publication de l'exercice :", err);
                 alert("Une erreur réseau est survenue.");
+            }
+        });
+    }
+
+    // 3. Formulaire de publication de vidéo
+    const formVideo = document.getElementById('form-add-video');
+    if (formVideo) {
+        formVideo.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const ecoleId = currentUser.ecole_id || currentUser.ecole?.id || 1;
+            const profId = currentUser.id || null;
+
+            const titre = document.getElementById('video-titre').value;
+            const youtubeInput = document.getElementById('video-youtube').value;
+            const niveau = document.getElementById('video-niveau').value;
+            const domaine = document.getElementById('video-domaine').value;
+
+            // Extraction propre de l'ID YouTube si l'utilisateur saisit une URL complète
+            let youtubeId = youtubeInput.trim();
+            if (youtubeId.includes('watch?v=')) {
+                youtubeId = youtubeId.split('watch?v=')[1].split('&')[0];
+            } else if (youtubeId.includes('youtu.be/')) {
+                youtubeId = youtubeId.split('youtu.be/')[1].split('?')[0];
+            }
+
+            const payload = {
+                titre: titre,
+                youtube_id: youtubeId,
+                niveau_id: niveau,
+                domaine: domaine,
+                ecole_id: ecoleId,
+                prof_id: profId
+            };
+
+            try {
+                const response = await fetch('/api/videos', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erreur lors de la publication : ${response.statusText}`);
+                }
+
+                alert("✅ Vidéo publiée avec succès ! 🎬");
+                formVideo.reset();
+            } catch (error) {
+                console.error("Erreur d'envoi vidéo :", error);
+                alert("Impossible de publier la vidéo. Vérifie le serveur Node.js.");
             }
         });
     }

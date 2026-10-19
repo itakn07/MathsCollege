@@ -1250,6 +1250,24 @@ const classesList = classes.map(cls => {
     }
 });
 
+//profs_post_videos
+app.post('/api/videos', (req, res) => {
+    const { titre, youtube_id, niveau_id, domaine, ecole_id, prof_id } = req.body;
+
+    const sql = `
+        INSERT INTO videos (titre, youtube_id, niveau_id, domaine, ecole_id, prof_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `;
+
+    db.query(sql, [titre, youtube_id, niveau_id, domaine, ecole_id || 1, prof_id], (err, result) => {
+        if (err) {
+            console.error("Erreur SQL insertion vidéo :", err);
+            return res.status(500).send("Erreur serveur lors de l'enregistrement");
+        }
+        res.status(201).json({ message: "Vidéo ajoutée avec succès", id: result.insertId });
+    });
+});
+
 // ============= LANCEMENT DU SERVEUR =============
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
