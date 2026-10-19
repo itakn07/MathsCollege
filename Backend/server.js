@@ -735,23 +735,35 @@ app.get('/api/cours/:niveau/:domaine', (req, res) => {
 
 app.get('/api/exercices/:niveau/:domaine', (req, res) => {
     const { niveau, domaine } = req.params;
+    const ecoleId = req.query.ecole_id || 1;
+
+    // Si ecoleId === 1, on charge le tronc commun officiel.
+    // Si ecoleId > 1, on charge EXCLUSIVEMENT les exercices de cette école.
+    const conditionEcole = (parseInt(ecoleId) === 1) 
+        ? 'e.ecole_id = 1' 
+        : 'e.ecole_id = ?';
 
     const sql = `
         SELECT 
-            e.id, 
-            e.titre, 
-            e.enonce, 
-            e.reponse_correcte, 
-            e.pdf_path, 
-            c.titre AS cours_titre
+          e.id,
+          e.titre,
+          e.enonce,
+          e.reponse_correcte,
+          e.pdf_path,
+          c.titre AS cours_titre
         FROM exercices e
         JOIN cours c ON e.cours_id = c.id
         JOIN niveaux n ON c.niveau_id = n.id
         WHERE (c.niveau_id = ? OR LOWER(n.nom) = LOWER(?))
           AND LOWER(c.domaine) = LOWER(?)
+          AND ${conditionEcole}
     `;
 
-    db.query(sql, [niveau, niveau, domaine], (err, results) => {
+    const queryParams = (parseInt(ecoleId) === 1) 
+        ? [niveau, niveau, domaine] 
+        : [niveau, niveau, domaine, ecoleId];
+
+    db.query(sql, queryParams, (err, results) => {
         if (err) {
             console.error("Erreur SQL exercices :", err);
             return res.status(500).send("Erreur serveur");
