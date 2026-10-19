@@ -1251,18 +1251,23 @@ const classesList = classes.map(cls => {
 });
 
 //profs_post_videos
-app.post('/api/videos', (req, res) => {
-    const { titre, youtube_id, niveau_id, domaine, ecole_id, prof_id } = req.body;
+// Route POST pour l'ajout de vidéo avec gestion de fichier ou de lien YouTube
+app.post('/api/videos', upload.single('video_file'), (req, res) => {
+    const { titre, niveau_id, domaine, ecole_id, prof_id, youtube_id } = req.body;
+    
+    // Si un fichier a été téléversé, on enregistre son chemin, sinon on prend l'ID/lien YouTube
+    const videoPath = req.file ? `/uploads/${req.file.filename}` : null;
+    const finalYoutubeId = videoPath ? null : youtube_id;
 
     const sql = `
-        INSERT INTO videos (titre, youtube_id, niveau_id, domaine, ecole_id, prof_id)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO videos (titre, youtube_id, video_path, niveau_id, domaine, ecole_id, prof_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
-    db.query(sql, [titre, youtube_id, niveau_id, domaine, ecole_id || 1, prof_id], (err, result) => {
+    db.query(sql, [titre, finalYoutubeId, videoPath, niveau_id, domaine, ecole_id || 1, prof_id], (err, result) => {
         if (err) {
             console.error("Erreur SQL insertion vidéo :", err);
-            return res.status(500).send("Erreur serveur lors de l'enregistrement");
+            return res.status(500).send("Erreur serveur");
         }
         res.status(201).json({ message: "Vidéo ajoutée avec succès", id: result.insertId });
     });

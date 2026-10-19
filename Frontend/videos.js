@@ -147,21 +147,30 @@ async function chargerVideos() {
             return;
         }
 
-        grille.innerHTML = videos.map(video => {
-            const urlEmbed = corrigerUrlYoutube(video.youtube_id);
+       grille.innerHTML = videos.map(video => {
+            let lecteurHtml = '';
+            
+            if (video.video_path) {
+                // Vidéo téléversée depuis le téléphone/PC
+                lecteurHtml = `
+                    <video class="w-full h-full object-cover rounded-2xl" controls>
+                        <source src="${video.video_path}" type="video/mp4">
+                        Votre navigateur ne supporte pas la lecture de vidéos.
+                    </video>
+                `;
+            } else {
+                // Vidéo YouTube classique
+                const urlEmbed = corrigerUrlYoutube(video.youtube_id);
+                lecteurHtml = `
+                    <iframe class="w-full h-full" src="${urlEmbed}" title="${video.titre}" frameborder="0" allowfullscreen></iframe>
+                `;
+            }
 
             return `
                 <div class="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
                     <div>
                         <div class="aspect-video w-full rounded-2xl overflow-hidden bg-slate-900 mb-4 shadow-inner">
-                            <iframe 
-                                class="w-full h-full" 
-                                src="${urlEmbed}" 
-                                title="${video.titre}"
-                                frameborder="0" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                allowfullscreen>
-                            </iframe>
+                            ${lecteurHtml}
                         </div>
                         <h3 class="font-bold text-slate-900 text-base px-1 mb-1">${video.titre}</h3>
                     </div>

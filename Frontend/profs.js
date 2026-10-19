@@ -289,48 +289,43 @@ function setupFormListeners(currentUser) {
         });
     }
 
-    // 3. Formulaire de publication de vidéo
+    // 3. Formulaire de publication de vidéo (Supporte YouTube ou Téléversement de fichier)
     const formVideo = document.getElementById('form-add-video');
     if (formVideo) {
         formVideo.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const ecoleId = currentUser.ecole_id || currentUser.ecole?.id || 1;
-            const profId = currentUser.id || null;
+            const formData = new FormData();
+            formData.append('titre', document.getElementById('video-titre').value);
+            formData.append('niveau_id', document.getElementById('video-niveau').value);
+            formData.append('domaine', document.getElementById('video-domaine').value);
+            formData.append('ecole_id', currentUser.ecole_id || currentUser.ecole?.id || 1);
+            formData.append('prof_id', currentUser.id || null);
 
-            const titre = document.getElementById('video-titre').value;
-            const youtubeInput = document.getElementById('video-youtube').value;
-            const niveau = document.getElementById('video-niveau').value;
-            const domaine = document.getElementById('video-domaine').value;
-
-            // Extraction propre de l'ID YouTube si l'utilisateur saisit une URL complète
-            let youtubeId = youtubeInput.trim();
-            if (youtubeId.includes('watch?v=')) {
-                youtubeId = youtubeId.split('watch?v=')[1].split('&')[0];
-            } else if (youtubeId.includes('youtu.be/')) {
-                youtubeId = youtubeId.split('youtu.be/')[1].split('?')[0];
+            const youtubeInput = document.getElementById('video-youtube').value.trim();
+            if (youtubeInput) {
+                let youtubeId = youtubeInput;
+                if (youtubeId.includes('watch?v=')) {
+                    youtubeId = youtubeId.split('watch?v=')[1].split('&')[0];
+                } else if (youtubeId.includes('youtu.be/')) {
+                    youtubeId = youtubeId.split('youtu.be/')[1].split('?')[0];
+                }
+                formData.append('youtube_id', youtubeId);
             }
 
-            const payload = {
-                titre: titre,
-                youtube_id: youtubeId,
-                niveau_id: niveau,
-                domaine: domaine,
-                ecole_id: ecoleId,
-                prof_id: profId
-            };
+            const fileInput = document.getElementById('video-file');
+            if (fileInput && fileInput.files[0]) {
+                formData.append('video_file', fileInput.files[0]);
+            }
 
             try {
                 const response = await fetch('/api/videos', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
+                    body: formData
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Erreur lors de la publication : ${response.statusText}`);
+                    throw new Error("Erreur lors de la publication de la vidéo");
                 }
 
                 alert("✅ Vidéo publiée avec succès ! 🎬");

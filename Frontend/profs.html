@@ -164,48 +164,53 @@
       </div>
 
       <!-- FORMULAIRE 3 : PUBLIER UNE VIDÉO -->
-      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
-          <span>🎬</span> Publier une vidéo
-        </h2>
-        
-        <form id="form-add-video" class="space-y-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Titre de la vidéo *</label>
-            <input type="text" id="video-titre" required placeholder="ex: Explication Théorème de Pythagore" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600">
-          </div>
+<div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+  <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+    <span>🎬</span> Publier une vidéo
+  </h2>
+  
+  <form id="form-add-video" enctype="multipart/form-data" class="space-y-3">
+    <div>
+      <label class="block text-xs font-semibold text-slate-600 mb-1">Titre de la vidéo *</label>
+      <input type="text" id="video-titre" required placeholder="ex: Chapitre 1 - Introduction" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600">
+    </div>
 
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Lien ou ID YouTube *</label>
-            <input type="text" id="video-youtube" required placeholder="ex: https://youtube.com/watch?v=... ou ID" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600">
-          </div>
-
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">Niveau *</label>
-              <select id="video-niveau" required class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600">
-                <option value="6e">6ème</option>
-                <option value="5e">5ème</option>
-                <option value="4e">4ème</option>
-                <option value="3e">3ème</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">Domaine *</label>
-              <select id="video-domaine" required class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600">
-                <option value="algebre">Algèbre</option>
-                <option value="geometrie">Géométrie</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="pt-8">
-            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2.5 rounded-lg shadow-sm transition">
-              Publier la vidéo
-            </button>
-          </div>
-        </form>
+    <div class="grid grid-cols-2 gap-2">
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Niveau *</label>
+        <select id="video-niveau" required class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600">
+          <option value="6e">6ème</option>
+          <option value="5e">5ème</option>
+          <option value="4e">4ème</option>
+          <option value="3e">3ème</option>
+        </select>
       </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Domaine *</label>
+        <select id="video-domaine" required class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600">
+          <option value="algebre">Algèbre</option>
+          <option value="geometrie">Géométrie</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-xs font-semibold text-slate-600 mb-1">Option A : Lien YouTube</label>
+      <input type="text" id="video-youtube" placeholder="https://youtube.com/watch?v=..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-600">
+    </div>
+
+    <div>
+      <label class="block text-xs font-semibold text-slate-600 mb-1">OU Option B : Téléverser un fichier vidéo (MP4, etc.)</label>
+      <input type="file" id="video-file" accept="video/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+    </div>
+
+    <div class="pt-4">
+      <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2.5 rounded-lg shadow-sm transition">
+        Publier la vidéo
+      </button>
+    </div>
+  </form>
+</div>
 
     </div>
 
