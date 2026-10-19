@@ -88,7 +88,7 @@ async function chargerExercices() {
     `;
 
     try {
-        // Ajout de l'ecole_id en paramètre pour respecter l'isolation des données par école
+        // Attention au '?' obligatoire avant ecole_id
         const response = await fetch(`/api/exercices/${niveauChoisiExo}/${domaineActuelExo}?ecole_id=${ecoleId}`);
         
         if (!response.ok) throw new Error(`Erreur HTTP : ${response.status}`);

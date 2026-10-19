@@ -737,11 +737,11 @@ app.get('/api/exercices/:niveau/:domaine', (req, res) => {
     const { niveau, domaine } = req.params;
     const ecoleId = req.query.ecole_id || 1;
 
-    // Si ecoleId === 1, on charge le tronc commun officiel.
-    // Si ecoleId > 1, on charge EXCLUSIVEMENT les exercices de cette école.
+    // Filtrage sur l'école : si ecoleId == 1, on autorise le tronc commun (1) ou l'école 1.
+    // Sinon, on filtre sur l'école demandée.
     const conditionEcole = (parseInt(ecoleId) === 1) 
-        ? 'e.ecole_id = 1' 
-        : 'e.ecole_id = ?';
+        ? '(c.ecole_id = 1 OR c.ecole_id IS NULL)' 
+        : 'c.ecole_id = ?';
 
     const sql = `
         SELECT 
@@ -753,7 +753,7 @@ app.get('/api/exercices/:niveau/:domaine', (req, res) => {
           c.titre AS cours_titre
         FROM exercices e
         JOIN cours c ON e.cours_id = c.id
-        JOIN niveaux n ON c.niveau_id = n.id
+        LEFT JOIN niveaux n ON c.niveau_id = n.id
         WHERE (c.niveau_id = ? OR LOWER(n.nom) = LOWER(?))
           AND LOWER(c.domaine) = LOWER(?)
           AND ${conditionEcole}
