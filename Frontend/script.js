@@ -69,13 +69,13 @@ async function gererInscriptionSurPage(event) {
         
         if (response.ok && data.success) {
             if (role === 'eleve') {
-                // 1. Affiche la modale de succès / attente de validation
+                // 1. Affiche la modale d'information
                 afficherModalValidation(
                     "Inscription réussie ! 🎒",
                     "Votre compte élève a bien été créé. Il sera actif une fois validé par l'administrateur de votre école."
                 );
                 
-                // 2. Vide proprement le formulaire grâce à l'événement
+                // 2. Vide proprement le formulaire
                 event.target.reset();
             } else {
                 localStorage.setItem('user', JSON.stringify(data.user));
@@ -92,7 +92,6 @@ async function gererInscriptionSurPage(event) {
         alert("Le serveur ne répond pas."); 
     }
 }
-
 async function login() {
     const emailEl = document.getElementById('login-email');
     const passwordEl = document.getElementById('login-pass');
