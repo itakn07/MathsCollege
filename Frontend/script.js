@@ -32,6 +32,9 @@ function chargerClassesSignup() {
 }
 
 async function signup() {
+
+ console.log("➡️ La fonction signup a bien été déclenchée !");
+
     const usernameEl = document.getElementById('signup-name') || document.getElementById('signup-user');
     const emailEl = document.getElementById('signup-email');
     const passwordEl = document.getElementById('signup-pass');
