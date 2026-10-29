@@ -284,23 +284,31 @@ app.post('/api/signup', async (req, res) => {
         
         const userNiveau = userRole === 'professeur' ? 'Enseignant' : (niveau || '6ème');
 
-        const sql = "INSERT INTO users (username, email, password, role, niveau, ecole_id) VALUES (?, ?, ?, ?, ?, ?)";
-        db.query(sql, [username, email, hashedPassword, userRole, userNiveau, targetEcoleId], (err, result) => {
+        // Définition du statut : les élèves commencent 'en_attente', les autres sont 'actif'
+        const statutInitial = (userRole === 'eleve') ? 'en_attente' : 'actif';
+
+        const sql = "INSERT INTO users (username, email, password, role, niveau, ecole_id, statut) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        db.query(sql, [username, email, hashedPassword, userRole, userNiveau, targetEcoleId, statutInitial], (err, result) => {
             if (err) {
                 console.error("Erreur BDD :", err);
                 return res.status(400).json({ success: false, message: "Pseudo ou Email déjà utilisé." });
             }
 
+            const messageSucces = (userRole === 'eleve')
+                ? "Inscription réussie ! Votre compte est en attente de validation par l'administrateur de votre école."
+                : "Inscription réussie !";
+
             return res.status(201).json({ 
                 success: true, 
-                message: "Inscription réussie !",
+                message: messageSucces,
                 user: {
                     id: result.insertId,
                     username: username,
                     email: email,
                     role: userRole,
                     niveau: userNiveau,
-                    ecole_id: targetEcoleId
+                    ecole_id: targetEcoleId,
+                    statut: statutInitial
                 }
             });
         });
@@ -309,6 +317,7 @@ app.post('/api/signup', async (req, res) => {
         return res.status(500).json({ success: false, message: "Erreur serveur." });
     }
 });
+
 
 // Route pour charger la liste des écoles dans le formulaire d'inscription
 app.get('/api/ecoles/liste', (req, res) => {
@@ -353,6 +362,14 @@ app.post('/login', (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (isMatch) {
+            // 🛑 Vérification du statut de validation pour les élèves
+            if (user.role === 'eleve' && user.statut !== 'actif') {
+                return res.status(403).json({ 
+                    success: false, 
+                    message: "Votre compte est en attente de validation par l'administrateur de l'école." 
+                });
+            }
+
             // Vérification du statut de l'abonnement de l'école
             if (user.role !== 'super_admin' && user.ecole_id && user.ecole_id !== 1) {
                 const estInactif = user.statut_abonnement === 'inactif';
@@ -389,6 +406,7 @@ app.post('/login', (req, res) => {
                     email: user.email,
                     niveau: user.niveau,
                     role: user.role,
+                    statut: user.statut,
                     ecole: {
                         id: user.ecole_id,
                         nom: user.ecole_nom || 'MathsCollege Officiel',
@@ -406,6 +424,8 @@ app.post('/login', (req, res) => {
         }
     });
 });
+
+
 
 // ============= ROUTES PROFESSEUR =============
 
@@ -691,6 +711,42 @@ app.delete('/api/admin-ecole/teacher/:id', async (req, res) => {
     } catch (err) {
         console.error("Erreur suppression professeur :", err);
         res.status(500).json({ error: "Erreur lors de la suppression." });
+    }
+});
+
+// 1. Récupérer les demandes en attente pour une école précise
+app.get('/api/admin/demandes-eleves/:ecoleId', (req, res) => {
+    const ecoleId = req.params.ecoleId;
+    const sql = `
+        SELECT u.id, u.nom, u.email, c.nom AS classe_nom 
+        FROM users u 
+        LEFT JOIN classes c ON u.classe_id = c.id 
+        WHERE u.ecole_id = ? AND u.role = 'eleve' AND u.statut = 'en_attente'
+    `;
+    db.query(sql, [ecoleId], (err, results) => {
+        if (err) return res.status(500).send("Erreur serveur");
+        res.json(results);
+    });
+});
+
+// 2. Accepter ou Refuser une demande
+app.put('/api/admin/traiter-demande/:id', (req, res) => {
+    const eleveId = req.params.id;
+    const { action } = req.body; // 'accepter' ou 'refuser'
+
+    if (action === 'accepter') {
+        db.query(`UPDATE users SET statut = 'actif' WHERE id = ?`, [eleveId], (err) => {
+            if (err) return res.status(500).send("Erreur serveur");
+            res.json({ message: "Compte activé avec succès !" });
+        });
+    } else if (action === 'refuser') {
+        // On supprime la demande ou on la marque comme refusée
+        db.query(`DELETE FROM users WHERE id = ?`, [eleveId], (err) => {
+            if (err) return res.status(500).send("Erreur serveur");
+            res.json({ message: "Demande refusée et supprimée." });
+        });
+    } else {
+        res.status(400).json({ error: "Action non reconnue" });
     }
 });
 
