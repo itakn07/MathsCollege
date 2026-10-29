@@ -325,3 +325,45 @@ function fermerModalValidation() {
         modal.classList.add('hidden');
     }
 }
+
+async function envoyerQuestionIA() {
+    const inputEl = document.getElementById('input-question-ia') || document.getElementById('question-ia');
+    const reponseIA = document.getElementById('reponseIA');
+    
+    if (!inputEl) return;
+    const question = inputEl.value.trim();
+    if (!question) return;
+
+    if (reponseIA) {
+        reponseIA.innerHTML += `
+            <div class="user-msg bg-slate-100 p-3 rounded-2xl text-sm text-slate-700 my-2 text-right">
+                <strong>Toi :</strong> ${question}
+            </div>`;
+    }
+    inputEl.value = '';
+
+    try {
+        const response = await fetch('/api/ia/demander', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question })
+        });
+        const data = await response.json();
+
+        if (reponseIA) {
+            reponseIA.innerHTML += `
+                <div class="bot-msg bg-brand-50/80 p-3 rounded-2xl border-l-4 border-brand-500 text-sm text-slate-700 my-2">
+                    <strong>Sylvie :</strong> ${data.reponse || "Je n'ai pas de réponse pour le moment."}
+                </div>`;
+            reponseIA.scrollTop = reponseIA.scrollHeight;
+        }
+    } catch (e) {
+        console.error(e);
+        if (reponseIA) {
+            reponseIA.innerHTML += `
+                <div class="bot-msg bg-rose-50 p-3 rounded-2xl text-sm text-rose-700 my-2">
+                    <strong>Sylvie :</strong> Oups, une erreur est survenue.
+                </div>`;
+        }
+    }
+}
