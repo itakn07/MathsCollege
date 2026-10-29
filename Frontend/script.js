@@ -23,10 +23,10 @@ function chargerClassesSignup() {
         .catch(err => {
             niveauEl.innerHTML = `
                 <option value="">-- Sélectionne ta classe --</option>
-                <option value="6e">6ème</option>
-                <option value="5e">5ème</option>
-                <option value="4e">4ème</option>
-                <option value="3e">3ème</option>
+                <option value="6ème">6ème</option>
+                <option value="5ème">5ème</option>
+                <option value="4ème">4ème</option>
+                <option value="3ème">3ème</option>
             `;
         });
 }
@@ -35,11 +35,12 @@ async function gererInscriptionSurPage(event) {
     event.preventDefault(); // Empêche le rechargement de la page
     console.log("➡️ La fonction d'inscription a bien été déclenchée !");
 
-    const usernameEl = document.getElementById('signup-name');
+    const usernameEl = document.getElementById('signup-name') || document.getElementById('signup-user');
     const emailEl = document.getElementById('signup-email');
     const passwordEl = document.getElementById('signup-pass');
     const roleEl = document.getElementById('signup-role');
-    const niveauEl = document.getElementById('signup-level');
+    // Correction ici : on cherche tous les ID possibles pour la classe
+    const niveauEl = document.getElementById('signup-level') || document.getElementById('signup-niveau') || document.getElementById('classe-select');
     const ecoleEl = document.getElementById('signup-ecole');
 
     const username = usernameEl ? usernameEl.value.trim() : '';
@@ -69,7 +70,7 @@ async function gererInscriptionSurPage(event) {
         
         if (response.ok && data.success) {
             if (role === 'eleve') {
-                // 1. Affiche la modale d'information
+                // 1. Affiche la modale d'information de compte en attente
                 afficherModalValidation(
                     "Inscription réussie ! 🎒",
                     "Votre compte élève a bien été créé. Il sera actif une fois validé par l'administrateur de votre école."
@@ -92,6 +93,7 @@ async function gererInscriptionSurPage(event) {
         alert("Le serveur ne répond pas."); 
     }
 }
+
 async function login() {
     const emailEl = document.getElementById('login-email');
     const passwordEl = document.getElementById('login-pass');
@@ -101,7 +103,6 @@ async function login() {
     const password = passwordEl ? passwordEl.value.trim() : '';
     const role = roleEl ? roleEl.value : 'eleve';
 
-    // Correction de la condition : si l'un des deux champs est vide, on bloque
     if (!email || !password) {
         alert("Veuillez saisir votre email et votre mot de passe.");
         return;
@@ -121,7 +122,7 @@ async function login() {
             window.location.href = data.redirectUrl || "index.html";
 
         } else {
-            // Remplace l'alerte par la modale d'information
+            // Affiche la modale si le compte est en attente (statut bloqué)
             afficherModalValidation(
                 "Connexion suspendue ⚠️",
                 data.message || "Erreur lors de la connexion."
@@ -306,7 +307,6 @@ function revenirDashboard() {
     document.getElementById('content-page')?.classList.add('hidden');
     document.getElementById('dashboard')?.classList.remove('hidden');
 }
-
 
 function afficherModalValidation(titre, texte) {
     const modal = document.getElementById('modal-validation');
