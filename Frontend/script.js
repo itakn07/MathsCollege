@@ -327,7 +327,7 @@ function fermerModalValidation() {
 }
 
 async function envoyerQuestionIA() {
-    const inputEl = document.getElementById('input-question-ia') || document.getElementById('question-ia');
+    const inputEl = document.getElementById('inputInputIA') || document.getElementById('input-question-ia') || document.getElementById('question-ia');
     const reponseIA = document.getElementById('reponseIA');
     
     if (!inputEl) return;
