@@ -717,11 +717,13 @@ app.delete('/api/admin-ecole/teacher/:id', async (req, res) => {
 // 1. Récupérer les demandes en attente pour une école précise
 app.get('/api/admin/demandes-eleves/:ecoleId', (req, res) => {
     const ecoleId = req.params.ecoleId;
+
     const sql = `
         SELECT id, username, email, niveau 
         FROM users 
         WHERE ecole_id = ? AND role = 'eleve' AND statut = 'en_attente'
     `;
+    
     db.query(sql, [ecoleId], (err, results) => {
         if (err) {
             console.error("Erreur SQL demandes élèves :", err);

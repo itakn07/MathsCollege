@@ -387,31 +387,39 @@ async function supprimerProfesseurBDD(teacherId) {
 async function chargerDemandesEleves() {
     const userStored = localStorage.getItem('user');
     const currentUser = userStored ? JSON.parse(userStored) : null;
-    const ecoleId = currentUser?.ecole_id || 1;
+    
+    // Récupération sécurisée de l'ID de l'école de l'admin connecté
+    const ecoleId = currentUser?.ecole?.id || currentUser?.ecole_id;
+
+    if (!ecoleId) {
+        console.warn("⚠️ Aucune école associée à cet administrateur.");
+        return;
+    }
 
     const conteneur = document.getElementById('liste-demandes');
     if (!conteneur) return;
 
     try {
+        // Appel ciblé avec l'ID de l'école de l'admin connecté
         const response = await fetch(`/api/admin/demandes-eleves/${ecoleId}`);
         const demandes = await response.json();
 
         if (demandes.length === 0) {
-            conteneur.innerHTML = `<p class="text-xs text-slate-400 py-3 italic">Aucune demande en attente pour le moment.</p>`;
+            conteneur.innerHTML = `<p class="text-xs text-slate-400 py-3 italic">Aucune demande en attente pour votre établissement.</p>`;
             return;
         }
 
         conteneur.innerHTML = demandes.map(eleve => `
-            <div class="py-3 flex items-center justify-between">
+            <div class="py-3 flex items-center justify-between border-b border-slate-100 last:border-none">
                 <div>
-                    <p class="font-bold text-sm text-slate-900">${eleve.nom}</p>
-                    <p class="text-xs text-slate-500">Classe : <span class="font-semibold text-indigo-600">${eleve.classe_nom || 'Non assignée'}</span> • Email : ${eleve.email}</p>
+                    <p class="font-bold text-sm text-slate-900">${eleve.username || 'Élève'}</p>
+                    <p class="text-xs text-slate-500">Niveau : <span class="font-semibold text-indigo-600">${eleve.niveau || '6ème'}</span> • Email : ${eleve.email}</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="traiterDemande(${eleve.id}, 'accepter')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition">
+                    <button onclick="traiterDemande(${eleve.id}, 'accepter')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition cursor-pointer">
                         Accepter
                     </button>
-                    <button onclick="traiterDemande(${eleve.id}, 'refuser')" class="px-3 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs font-semibold rounded-xl transition">
+                    <button onclick="traiterDemande(${eleve.id}, 'refuser')" class="px-3 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs font-semibold rounded-xl transition cursor-pointer">
                         Refuser
                     </button>
                 </div>
