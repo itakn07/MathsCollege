@@ -75,7 +75,11 @@ async function login() {
     const password = passwordEl ? passwordEl.value.trim() : '';
     const role = roleEl ? roleEl.value : 'eleve';
 
-    if (!email || !password) { alert("Veuillez saisir votre email et votre mot de passe."); return; }
+    // Correction de la condition : si l'un des deux champs est vide, on bloque
+    if (!email || !password) {
+        alert("Veuillez saisir votre email et votre mot de passe.");
+        return;
+    }
 
     try {
         const response = await fetch('/login', {
@@ -83,12 +87,20 @@ async function login() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password, role })
         });
+
         const data = await response.json();
+
         if (response.ok && data.success) {
             localStorage.setItem('user', JSON.stringify(data.user));
             window.location.href = data.redirectUrl || "index.html";
-        } else { alert(data.message || "Erreur lors de la connexion."); }
-    } catch (e) { alert("Erreur serveur lors de la connexion."); }
+        } else {
+            // Affiche proprement le message du serveur (ex: compte en attente de validation)
+            alert(data.message || "Erreur lors de la connexion.");
+        }
+    } catch (e) {
+        console.error("Erreur connexion :", e);
+        alert("Erreur serveur lors de la connexion.");
+    }
 }
 
 function logout() {
