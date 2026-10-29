@@ -31,26 +31,32 @@ function chargerClassesSignup() {
         });
 }
 
-async function signup() {
+async function gererInscriptionSurPage(event) {
+    event.preventDefault(); // Empêche le rechargement de la page
+    console.log("➡️ La fonction d'inscription a bien été déclenchée !");
 
- console.log("➡️ La fonction signup a bien été déclenchée !");
-
-    const usernameEl = document.getElementById('signup-name') || document.getElementById('signup-user');
+    const usernameEl = document.getElementById('signup-name');
     const emailEl = document.getElementById('signup-email');
     const passwordEl = document.getElementById('signup-pass');
     const roleEl = document.getElementById('signup-role');
-    const niveauEl = document.getElementById('signup-level') || document.getElementById('signup-niveau') || document.getElementById('classe-select');
+    const niveauEl = document.getElementById('signup-level');
     const ecoleEl = document.getElementById('signup-ecole');
 
     const username = usernameEl ? usernameEl.value.trim() : '';
     const email = emailEl ? emailEl.value.trim() : '';
     const password = passwordEl ? passwordEl.value.trim() : '';
     const role = roleEl ? roleEl.value : 'eleve';
-    const niveau = (role === 'professeur') ? 'Enseignant' : (niveauEl ? niveauEl.value : '');
-    const ecole_id = ecoleEl && ecoleEl.value ? ecoleEl.value : 1;
+    const niveau = niveauEl ? niveauEl.value : '';
+    const ecole_id = ecoleEl ? ecoleEl.value : '';
 
-    if (!username || !email || !password) { alert("Remplis tous les champs obligatoires !"); return; }
-    if (role === 'eleve' && !niveau) { alert("Veuillez sélectionner votre classe !"); return; }
+    if (!username || !email || !password || !ecole_id) { 
+        alert("Remplis tous les champs obligatoires !"); 
+        return; 
+    }
+    if (role === 'eleve' && !niveau) { 
+        alert("Veuillez sélectionner votre classe !"); 
+        return; 
+    }
 
     try {
         const response = await fetch('/api/signup', {
@@ -58,14 +64,19 @@ async function signup() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, email, password, role, niveau, ecole_id })
         });
+        
         const data = await response.json();
+        
         if (response.ok && data.success) {
-           if (role === 'eleve') {
+            if (role === 'eleve') {
+                // 1. Affiche la modale de succès / attente de validation
                 afficherModalValidation(
-                    "Inscription réussie !",
+                    "Inscription réussie ! 🎒",
                     "Votre compte élève a bien été créé. Il sera actif une fois validé par l'administrateur de votre école."
                 );
-                document.getElementById('form-signup')?.reset();
+                
+                // 2. Vide proprement le formulaire grâce à l'événement
+                event.target.reset();
             } else {
                 localStorage.setItem('user', JSON.stringify(data.user));
                 if (data.user.role === 'professeur') window.location.href = "profs.html";
@@ -73,8 +84,13 @@ async function signup() {
                 else if (data.user.role === 'sudo_admin') window.location.href = "super_admin.html";
                 else window.location.href = "index.html";
             }
-        } else { alert("Erreur : " + (data.message || "Impossible de créer le compte.")); }
-    } catch (e) { alert("Le serveur ne répond pas."); }
+        } else { 
+            alert("Erreur : " + (data.message || "Impossible de créer le compte.")); 
+        }
+    } catch (e) { 
+        console.error(e);
+        alert("Le serveur ne répond pas."); 
+    }
 }
 
 async function login() {
