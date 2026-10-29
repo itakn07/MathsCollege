@@ -147,6 +147,22 @@
 
   </div>
 
+<!-- Modale d'information de validation -->
+<div id="modal-validation" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 text-center space-y-4 shadow-xl border border-slate-100">
+        <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
+            ⏳
+        </div>
+        <h3 id="modal-titre" class="text-lg font-bold text-slate-900">Compte en attente</h3>
+        <p id="modal-texte" class="text-sm text-slate-600 leading-relaxed">
+            Votre compte a bien été créé. Il sera activé dès que l'administrateur de votre école l'aura validé.
+        </p>
+        <button onclick="fermerModalValidation()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs py-2.5 rounded-xl transition cursor-pointer">
+            Compris
+        </button>
+    </div>
+</div>
+
   <!-- Script JS lié -->
   <script src="script.js"></script>
   <script>

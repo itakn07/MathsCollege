@@ -57,11 +57,19 @@ async function signup() {
         });
         const data = await response.json();
         if (response.ok && data.success) {
-            localStorage.setItem('user', JSON.stringify(data.user));
-            if (data.user.role === 'professeur') window.location.href = "profs.html";
-            else if (data.user.role === 'admin_ecole') window.location.href = "admin_ecole.html";
-            else if (data.user.role === 'sudo_admin') window.location.href = "super_admin.html";
-            else window.location.href = "index.html";
+           if (role === 'eleve') {
+                afficherModalValidation(
+                    "Inscription réussie !",
+                    "Votre compte élève a bien été créé. Il sera actif une fois validé par l'administrateur de votre école."
+                );
+                document.getElementById('form-signup')?.reset();
+            } else {
+                localStorage.setItem('user', JSON.stringify(data.user));
+                if (data.user.role === 'professeur') window.location.href = "profs.html";
+                else if (data.user.role === 'admin_ecole') window.location.href = "admin_ecole.html";
+                else if (data.user.role === 'sudo_admin') window.location.href = "super_admin.html";
+                else window.location.href = "index.html";
+            }
         } else { alert("Erreur : " + (data.message || "Impossible de créer le compte.")); }
     } catch (e) { alert("Le serveur ne répond pas."); }
 }
@@ -93,9 +101,13 @@ async function login() {
         if (response.ok && data.success) {
             localStorage.setItem('user', JSON.stringify(data.user));
             window.location.href = data.redirectUrl || "index.html";
+
         } else {
-            // Affiche proprement le message du serveur (ex: compte en attente de validation)
-            alert(data.message || "Erreur lors de la connexion.");
+            // Remplace l'alerte par la modale d'information
+            afficherModalValidation(
+                "Connexion suspendue ⚠️",
+                data.message || "Erreur lors de la connexion."
+            );
         }
     } catch (e) {
         console.error("Erreur connexion :", e);
@@ -275,4 +287,23 @@ function revenirAccueil() {
 function revenirDashboard() {
     document.getElementById('content-page')?.classList.add('hidden');
     document.getElementById('dashboard')?.classList.remove('hidden');
+}
+
+
+function afficherModalValidation(titre, texte) {
+    const modal = document.getElementById('modal-validation');
+    if (modal) {
+        if (titre) document.getElementById('modal-titre').textContent = titre;
+        if (texte) document.getElementById('modal-texte').textContent = texte;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+}
+
+function fermerModalValidation() {
+    const modal = document.getElementById('modal-validation');
+    if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+    }
 }
