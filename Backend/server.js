@@ -718,13 +718,15 @@ app.delete('/api/admin-ecole/teacher/:id', async (req, res) => {
 app.get('/api/admin/demandes-eleves/:ecoleId', (req, res) => {
     const ecoleId = req.params.ecoleId;
     const sql = `
-        SELECT u.id, u.nom, u.email, c.nom AS classe_nom 
-        FROM users u 
-        LEFT JOIN classes c ON u.classe_id = c.id 
-        WHERE u.ecole_id = ? AND u.role = 'eleve' AND u.statut = 'en_attente'
+        SELECT id, username, email, niveau 
+        FROM users 
+        WHERE ecole_id = ? AND role = 'eleve' AND statut = 'en_attente'
     `;
     db.query(sql, [ecoleId], (err, results) => {
-        if (err) return res.status(500).send("Erreur serveur");
+        if (err) {
+            console.error("Erreur SQL demandes élèves :", err);
+            return res.status(500).json({ success: false, message: "Erreur serveur" });
+        }
         res.json(results);
     });
 });
