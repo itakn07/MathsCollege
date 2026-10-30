@@ -373,13 +373,24 @@ async function envoyerQuestionIA() {
     const inputEl = document.getElementById('monInputIA');
     const reponseIA = document.getElementById('reponseIA');
     
-    if (!inputEl) {
-        console.error("❌ Impossible de trouver l'élément monInputIA !");
-        return;
-    }
-    
+    if (!inputEl) return;
     const prompt = inputEl.value.trim();
     if (!prompt) return;
+
+    // Récupération de l'utilisateur connecté dans le localStorage
+    const userStocke = localStorage.getItem('user');
+    let userId = null;
+    let ecoleId = 1; // Valeur par défaut
+
+    if (userStocke) {
+        try {
+            const userData = JSON.parse(userStocke);
+            userId = userData.id || userData.user_id;
+            ecoleId = userData.ecole_id || 1;
+        } catch (e) {
+            console.error("Erreur parsing user localStorage", e);
+        }
+    }
 
     if (reponseIA) {
         reponseIA.innerHTML += `
@@ -393,7 +404,8 @@ async function envoyerQuestionIA() {
         const response = await fetch('/ask-ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt })
+            // On envoie le prompt MAIS AUSSI le userId et ecoleId pour que le serveur valide l'accès illimité !
+            body: JSON.stringify({ prompt, userId, ecoleId })
         });
         const data = await response.json();
 
