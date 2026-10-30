@@ -2,7 +2,7 @@
 require('dotenv').config();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const express = require('express');
-const mysql = require('mysql2');
+//const mysql = require('mysql2');
 const cors = require('cors');
 const { evaluate } = require('mathjs');
 const nodemailer = require('nodemailer');
