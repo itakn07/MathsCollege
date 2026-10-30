@@ -67,6 +67,8 @@ const transporter = nodemailer.createTransport({
 });
 
 // ============= CONNEXION MYSQL =============
+const mysql = require('mysql2/promise'); // Utilise directement /promise
+
 const db = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -81,7 +83,10 @@ const db = mysql.createPool({
         minVersion: 'TLSv1.2',
         rejectUnauthorized: true
     } : undefined
-}) .promise();
+});
+
+// Export si c'est dans un autre fichier, ou garde juste 'db' si tout est dans server.js
+module.exports = db;
 
 // ============= TÂCHE AUTOMATIQUE : VÉRIFICATION ABONNEMENTS EXPIRÉS =============
 function verifierAbonnementsExpires() {
