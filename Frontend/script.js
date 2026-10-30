@@ -343,7 +343,7 @@ async function envoyerQuestionIA() {
     inputEl.value = '';
 
     try {
-        const response = await fetch('/api/ia/demander', {
+        const response = await fetch('/ask/ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ question })
