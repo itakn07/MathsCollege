@@ -326,12 +326,59 @@ function fermerModalValidation() {
     }
 }
 
+
+
+async function resoudre() {
+    const inputEl = document.getElementById('equation-input');
+    const resultatEl = document.getElementById('resultat-solveur');
+    
+    if (!inputEl || !resultatEl) return;
+    const expression = inputEl.value.trim();
+    if (!expression) {
+        alert("Veuillez saisir une expression ou une équation !");
+        return;
+    }
+
+    resultatEl.innerHTML = "<span class='text-slate-400'>Résolution en cours...</span>";
+
+    try {
+        const response = await fetch('/api/calculateur', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ expression })
+        });
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            resultatEl.innerHTML = `<div class="text-slate-800 font-semibold p-2 bg-brand-50 rounded-xl">${data.resultat || data.answer}</div>`;
+        } else {
+            resultatEl.innerHTML = `<span class="text-rose-500">${data.message || "Impossible de résoudre cette expression."}</span>`;
+        }
+    } catch (e) {
+        console.error("Erreur solveur :", e);
+        resultatEl.innerHTML = `<span class="text-rose-500">Erreur de communication avec le serveur.</span>`;
+    }
+}
+
+function effacersolveur() {
+    const inputEl = document.getElementById('equation-input');
+    const resultatEl = document.getElementById('resultat-solveur');
+    
+    if (inputEl) inputEl.value = '';
+    if (resultatEl) resultatEl.innerHTML = '';
+}
+
+
 async function envoyerQuestionIA() {
-    const inputEl = document.getElementById('inputInputIA') || document.getElementById('input-question-ia') || document.getElementById('question-ia');
+    const inputEl = document.getElementById('monInputIA');
     const reponseIA = document.getElementById('reponseIA');
     
-    if (!inputEl) return;
-    const prompt = inputEl.value.trim(); // Utilise "prompt" pour correspondre au req.body.prompt du serveur
+    if (!inputEl) {
+        console.error("❌ Impossible de trouver l'élément monInputIA !");
+        return;
+    }
+    
+    const prompt = inputEl.value.trim();
     if (!prompt) return;
 
     if (reponseIA) {
@@ -343,15 +390,14 @@ async function envoyerQuestionIA() {
     inputEl.value = '';
 
     try {
-        const response = await fetch('/ask-ai', { // <-- Utilisation de la bonne route ici !
+        const response = await fetch('/ask-ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt }) // <-- Envoi de "prompt" attendu par req.body.prompt
+            body: JSON.stringify({ prompt })
         });
         const data = await response.json();
 
         if (reponseIA) {
-            // Le serveur renvoie { answer: "..." }
             reponseIA.innerHTML += `
                 <div class="bot-msg bg-brand-50/80 p-3 rounded-2xl border-l-4 border-brand-500 text-sm text-slate-700 my-2">
                     <strong>Sylvie :</strong> ${data.answer || data.reponse || "Je n'ai pas de réponse pour le moment."}
@@ -359,7 +405,7 @@ async function envoyerQuestionIA() {
             reponseIA.scrollTop = reponseIA.scrollHeight;
         }
     } catch (e) {
-        console.error(e);
+        console.error("Erreur IA :", e);
         if (reponseIA) {
             reponseIA.innerHTML += `
                 <div class="bot-msg bg-rose-50 p-3 rounded-2xl text-sm text-rose-700 my-2">
