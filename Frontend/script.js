@@ -365,7 +365,7 @@ async function resoudre() {
     }
 }
 
-function effacersolveur() {
+function effacerSolveur() {
     const inputEl = document.getElementById('equation-input');
     const resultatEl = document.getElementById('resultat-solveur');
     
