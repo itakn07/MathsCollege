@@ -339,17 +339,32 @@ async function resoudre() {
         return;
     }
 
+    // Récupération de l'utilisateur connecté dans le localStorage
+    const userStocke = localStorage.getItem('user');
+    let userId = null;
+    let ecoleId = 1;
+
+    if (userStocke) {
+        try {
+            const userData = JSON.parse(userStocke);
+            userId = userData.id || userData.user_id;
+            ecoleId = userData.ecole_id || 1;
+        } catch (e) {
+            console.error("Erreur parsing user localStorage", e);
+        }
+    }
+
     resultatEl.innerHTML = "<span class='text-slate-400'>Résolution en cours...</span>";
 
     try {
         const response = await fetch('/api/calculateur', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ expression })
+            body: JSON.stringify({ expression, userId, ecoleId })
         });
         const data = await response.json();
 
-        if (response.ok && data.success) {
+        if (response.ok && (data.success || data.resultat || data.answer)) {
             resultatEl.innerHTML = `<div class="text-slate-800 font-semibold p-2 bg-brand-50 rounded-xl">${data.resultat || data.answer}</div>`;
         } else {
             resultatEl.innerHTML = `<span class="text-rose-500">${data.message || "Impossible de résoudre cette expression."}</span>`;
