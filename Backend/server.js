@@ -81,7 +81,7 @@ const db = mysql.createPool({
         minVersion: 'TLSv1.2',
         rejectUnauthorized: true
     } : undefined
-});
+}) .promise();
 
 // ============= TÂCHE AUTOMATIQUE : VÉRIFICATION ABONNEMENTS EXPIRÉS =============
 function verifierAbonnementsExpires() {
