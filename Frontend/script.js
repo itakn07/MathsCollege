@@ -369,8 +369,12 @@ function effacersolveur() {
     const inputEl = document.getElementById('equation-input');
     const resultatEl = document.getElementById('resultat-solveur');
     
-    if (inputEl) inputEl.value = '';
-    if (resultatEl) resultatEl.innerHTML = '';
+    if (inputEl) {
+        inputEl.value = '';
+    }
+    if (resultatEl) {
+        resultatEl.innerHTML = '';
+    }
 }
 
 
