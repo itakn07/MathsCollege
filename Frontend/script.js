@@ -389,7 +389,7 @@ async function envoyerQuestionIA() {
     // Récupération de l'utilisateur connecté dans le localStorage
     const userStocke = localStorage.getItem('user');
     let userId = null;
-    let ecoleId = 1; // Valeur par défaut
+    let ecoleId = 1;
 
     if (userStocke) {
         try {
@@ -397,7 +397,7 @@ async function envoyerQuestionIA() {
             userId = userData.id || userData.user_id;
             ecoleId = userData.ecole_id || 1;
         } catch (e) {
-            console.error("Erreur parsing user localStorage", e);
+            console.error("Erreur parsing user", e);
         }
     }
 
@@ -413,25 +413,18 @@ async function envoyerQuestionIA() {
         const response = await fetch('/ask-ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            // On envoie le prompt MAIS AUSSI le userId et ecoleId pour que le serveur valide l'accès illimité !
-            body: JSON.stringify({ prompt, userId, ecoleId })
+            body: JSON.stringify({ prompt, userId, ecoleId }) // Envoi de l'ID utilisateur
         });
         const data = await response.json();
 
         if (reponseIA) {
             reponseIA.innerHTML += `
                 <div class="bot-msg bg-brand-50/80 p-3 rounded-2xl border-l-4 border-brand-500 text-sm text-slate-700 my-2">
-                    <strong>Sylvie :</strong> ${data.answer || data.reponse || "Je n'ai pas de réponse pour le moment."}
+                    <strong>Sylvie :</strong> ${data.answer || "Je n'ai pas de réponse pour le moment."}
                 </div>`;
             reponseIA.scrollTop = reponseIA.scrollHeight;
         }
     } catch (e) {
         console.error("Erreur IA :", e);
-        if (reponseIA) {
-            reponseIA.innerHTML += `
-                <div class="bot-msg bg-rose-50 p-3 rounded-2xl text-sm text-rose-700 my-2">
-                    <strong>Sylvie :</strong> Oups, une erreur est survenue.
-                </div>`;
-        }
     }
 }

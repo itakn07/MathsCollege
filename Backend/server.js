@@ -228,41 +228,73 @@ async function callGeminiWithRetry(model, prompt, retries = 2, delay = 1000) {
     }
 }
 
+// --- COACH SYLVIE INTELLIGENTE ---
 app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
     try {
-        const { prompt } = req.body;
-        const { userId, ecoleId } = req.userContext || { userId: null, ecoleId: 1 };
+        const { prompt, userId, ecoleId } = req.body;
 
         if (!prompt) {
             return res.status(400).json({ answer: "Le serveur n'a pas reçu de texte." });
         }
 
+        // 1. Récupérer les informations de l'élève (Nom, Classe/Niveau) depuis la base de données
+        let eleveNom = "Élève";
+        let niveauEleve = "6e"; // Par défaut
+
+        if (userId) {
+            const [users] = await db.query("SELECT username, niveau FROM users WHERE id = ?", [userId]);
+            if (users.length > 0) {
+                eleveNom = users[0].username;
+                niveauEleve = users[0].niveau || "6e";
+            }
+        }
+
+        // 2. Récupérer les cours de la plateforme correspondant à la classe de l'élève pour enrichir Sylvie
+        let coursContexte = "";
+        try {
+            const [coursList] = await db.query("SELECT titre, contenu FROM cours WHERE niveau = ? LIMIT 5", [niveauEleve]);
+            if (coursList.length > 0) {
+                coursContexte = coursList.map(c => `- Titre : ${c.titre}\nContenu : ${c.contenu}`).join("\n\n");
+            }
+        } catch (err) {
+            console.error("Erreur lors de la récupération des cours pour l'IA :", err);
+        }
+
+        // 3. Construire une consigne système ultra-intelligente pour Sylvie
+        const systemInstruction = `
+            Tu es Sylvie, une coach et tutrice de mathématiques bienveillante et pédagogique.
+            Tu t'adresses à ${eleveNom}, qui est en classe de ${niveauEleve}.
+            Voici quelques cours disponibles sur la plateforme pour sa classe sur lesquels tu peux t'appuyer pour lui expliquer les notions :
+            ${coursContexte ? coursContexte : "Aucun cours spécifique chargé pour le moment, aide-toi de tes connaissances générales de collège."}
+
+            Règles :
+            - Adapte ton niveau de langage et tes explications à un élève de ${niveauEleve}.
+            - Si l'élève te demande de résumer un cours ou de lui réexpliquer une notion, utilise les informations ci-dessus.
+            - Sois encourageante, claire, utilise des exemples simples et tutoie l'élève.
+        `;
+
+        // 4. Appel au modèle Gemini avec l'instruction personnalisée
         const model = genAI.getGenerativeModel({
-            model: "gemini-3.6-flash",
-            systemInstruction: "Tu es Sylvie, une coach et tutrice de mathématiques pour les élèves du collège uniquement après la première quesion ou le premier message de l'utilisateur, pense toujours à lui demander sa classe et souvient toi de lui.Ton rôle et tes règles strictes :1. FOCALISATION EXCLUSIVE SUR LES MATHS DU COLLÈGE :Tu réponds UNIQUEMENT aux questions relatives au programme de mathématiques du collège (Nombres et calculs, Géométrie, Organisation et gestion de données, Grandeur et mesures, Algorithmique/Scratch).Si un élève te pose une question hors sujet (autre matière, culture générale, discussions personnelles, etc.), refuse poliment avec gentillesse et ramène-le doucement vers les mathématiques (ex: Je suis là uniquement pour t'aider à devenir un champion en maths du collège ! Pose-moi une question sur tes cours ou tes exercices !).Si une question concerne des mathématiques de niveau lycée ou supérieur (ex: dérivées, intégrales, matrices), explique gentiment que cela dépasse le programme du collège et propose de revoir les bases utiles du collège.2. STYLE ET PEDAGOGIE :Sois extrêmement bienveillante, enthousiaste, bienveillante et encourageante.Adapte tes explications à l'âge d'un collégien : utilise des phrases claires, des exemples simples de la vie quotidienne et des étapes détaillées pas à pas.Ne donne pas juste la réponse brute : guide l'élève pour qu'il comprenne la méthode et le raisonnement."
+            model: "gemini-3.6-flash", // ou ton modèle habituel
+            systemInstruction: systemInstruction
         });
 
         const result = await callGeminiWithRetry(model, prompt);
         const text = result.response.text();
 
-        const saveSql = "INSERT INTO conversations_ia (user_id, ecole_id, question, reponse) VALUES (?, ?, ?, ?)";
-        db.query(saveSql, [userId, ecoleId, prompt, text], (err) => {
-            if (err) console.error("Erreur lors du stockage de la conversation IA :", err);
-        });
+        // 5. Stockage de la conversation en BD (optionnel)
+        if (userId) {
+            await db.query("INSERT INTO conversations_ia (user_id, ecole_id, question, reponse) VALUES (?, ?, ?, ?)", 
+                [userId, ecoleId || 1, prompt, text]
+            ).catch(err => console.error("Erreur stockage conversation :", err));
+        }
 
         res.json({ answer: text });
 
     } catch (error) {
-        console.error("Erreur technique IA:", error);
-
-        if (error.status === 503 || (error.message && error.message.includes('503'))) {
-            return res.status(503).json({ 
-                answer: "Coach Sylvie est très sollicitée par d'autres élèves en ce moment ! 😅 Réessaye dans quelques secondes." 
-            });
-        }
-
-        res.status(500).json({ 
-            answer: "Désolé, une erreur technique est survenue. Réessaye plus tard !" 
+        console.error("Erreur technique IA :", error);
+        res.status(500).json({
+            answer: "Désolé, une erreur technique est survenue. Réessaie plus tard !"
         });
     }
 });
