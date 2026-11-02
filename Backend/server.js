@@ -792,12 +792,14 @@ app.put('/api/admin/traiter-demande/:id', (req, res) => {
 });
 
 // ============= ROUTES API ÉLÈVES & CONTENUS =============
-app.get('/niveaux', (req, res) => {
-    const sql = "SELECT * FROM niveaux";
-    db.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results); 
-    });
+app.get('/niveaux', async (req, res) => {
+    try {
+        const [results] = await db.query("SELECT * FROM niveaux");
+        res.json(results);
+    } catch (err) {
+        console.error("Erreur /niveaux :", err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.get('/api/cours/:niveau/:domaine', (req, res) => {
