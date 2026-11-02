@@ -2,7 +2,6 @@
 require('dotenv').config();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const express = require('express');
-//const mysql = require('mysql2');
 const cors = require('cors');
 const { evaluate } = require('mathjs');
 const nodemailer = require('nodemailer');
@@ -85,67 +84,61 @@ const db = mysql.createPool({
     } : undefined
 });
 
-// Export si c'est dans un autre fichier, ou garde juste 'db' si tout est dans server.js
 module.exports = db;
 
 // ============= TÂCHE AUTOMATIQUE : VÉRIFICATION ABONNEMENTS EXPIRÉS =============
-function verifierAbonnementsExpires() {
-    const updateExpiredSql = `
-        UPDATE ecoles 
-        SET statut_abonnement = 'inactif' 
-        WHERE date_fin_abonnement IS NOT NULL 
-          AND date_fin_abonnement < NOW() 
-          AND statut_abonnement = 'actif'
-    `;
-    db.query(updateExpiredSql, (err, result) => {
-        if (err) {
-            if (err.code === 'ER_NO_SUCH_TABLE') {
-                console.error(
-                    `[CRON Abonnements] La table 'ecoles' est introuvable sur le serveur MySQL ` +
-                    `${process.env.DB_HOST}:${process.env.DB_PORT || 3306}, base '${process.env.DB_NAME}'. ` +
-                    `Vérifie que le .env pointe vers le même serveur que MySQL Workbench.`
-                );
-            } else {
-                console.error("[CRON Abonnements] Erreur mise à jour statut :", err);
-            }
-        } else if (result.affectedRows > 0) {
+async function verifierAbonnementsExpires() {
+    try {
+        const updateExpiredSql = `
+            UPDATE ecoles 
+            SET statut_abonnement = 'inactif' 
+            WHERE date_fin_abonnement IS NOT NULL 
+              AND date_fin_abonnement < NOW() 
+              AND statut_abonnement = 'actif'
+        `;
+        const [result] = await db.query(updateExpiredSql);
+        if (result.affectedRows > 0) {
             console.log(`[CRON Abonnements] ${result.affectedRows} école(s) passée(s) en statut inactif/expiré.`);
         }
-    });
+    } catch (err) {
+        if (err.code === 'ER_NO_SUCH_TABLE') {
+            console.error(
+                `[CRON Abonnements] La table 'ecoles' est introuvable sur le serveur MySQL ` +
+                `${process.env.DB_HOST}:${process.env.DB_PORT || 3306}, base '${process.env.DB_NAME}'.`
+            );
+        } else {
+            console.error("[CRON Abonnements] Erreur mise à jour statut :", err);
+        }
+    }
 }
 
-// Test de connexion + diagnostic (serveur, base, table ecoles), puis lancement de la tâche
-db.getConnection((err, connection) => {
-    if (err) {
-        console.log('Erreur MySQL:', err);
-        return;
-    }
+// Test de connexion asynchrone au démarrage
+(async () => {
+    try {
+        const connection = await db.getConnection();
+        console.log('Connecté à MySQL');
+        console.log(`[DB] Hôte : ${process.env.DB_HOST} | Port : ${process.env.DB_PORT || 3306} | Base demandée : ${process.env.DB_NAME}`);
 
-    console.log('Connecté à MySQL');
-    console.log(`[DB] Hôte : ${process.env.DB_HOST} | Port : ${process.env.DB_PORT || 3306} | Base demandée : ${process.env.DB_NAME}`);
-
-    connection.query('SELECT DATABASE() AS base, @@hostname AS serveur, @@port AS port', (e1, r1) => {
-        if (!e1 && r1 && r1[0]) {
+        const [r1] = await connection.query('SELECT DATABASE() AS base, @@hostname AS serveur, @@port AS port');
+        if (r1 && r1[0]) {
             console.log(`[DB] Base active : ${r1[0].base} | Serveur MySQL : ${r1[0].serveur} | Port : ${r1[0].port}`);
         }
 
-        connection.query("SHOW TABLES LIKE 'ecoles'", (e2, r2) => {
-            connection.release();
+        const [r2] = await connection.query("SHOW TABLES LIKE 'ecoles'");
+        connection.release();
 
-            if (e2) {
-                console.error('[DB] Impossible de vérifier la table ecoles :', e2.message);
-            } else if (!r2 || r2.length === 0) {
-                console.error("[DB] ATTENTION : la table 'ecoles' n'existe pas sur CE serveur MySQL.");
-            } else {
-                console.log("[DB] Table 'ecoles' trouvée.");
-            }
+        if (!r2 || r2.length === 0) {
+            console.error("[DB] ATTENTION : la table 'ecoles' n'existe pas sur CE serveur MySQL.");
+        } else {
+            console.log("[DB] Table 'ecoles' trouvée.");
+        }
 
-            // Lancement de la vérification au démarrage puis toutes les heures
-            verifierAbonnementsExpires();
-            setInterval(verifierAbonnementsExpires, 1000 * 60 * 60);
-        });
-    });
-});
+        verifierAbonnementsExpires();
+        setInterval(verifierAbonnementsExpires, 1000 * 60 * 60);
+    } catch (err) {
+        console.log('Erreur MySQL au démarrage:', err);
+    }
+})();
 
 // ============= FONCTIONS UTILITAIRES =============
 function genererMotDePasseTemp() {
@@ -169,48 +162,42 @@ async function verifierQuotaIA(req, res, next) {
 
     try {
         const sql = "SELECT id, ecole_id, questions_posees_aujourdhui, date_derniere_question FROM users WHERE id = ?";
-        db.query(sql, [userId], (err, results) => {
-            if (err) {
-                console.error("Erreur vérification quota :", err);
-                return res.status(500).json({ answer: "Erreur serveur lors de la vérification de vos quotas." });
-            }
+        const [results] = await db.query(sql, [userId]);
 
-            if (results.length === 0) {
-                return res.status(404).json({ answer: "Utilisateur non trouvé." });
-            }
+        if (results.length === 0) {
+            return res.status(404).json({ answer: "Utilisateur non trouvé." });
+        }
 
-            const user = results[0];
-            const ecoleId = user.ecole_id || 1;
+        const user = results[0];
+        const ecoleId = user.ecole_id || 1;
 
-            if (ecoleId !== 1) {
-                req.userContext = { userId: user.id, ecoleId: ecoleId };
-                return next();
-            }
+        if (ecoleId !== 1) {
+            req.userContext = { userId: user.id, ecoleId: ecoleId };
+            return next();
+        }
 
-            const aujourdhui = new Date().toISOString().split('T')[0];
-            const dateDerniere = user.date_derniere_question ? new Date(user.date_derniere_question).toISOString().split('T')[0] : null;
+        const aujourdhui = new Date().toISOString().split('T')[0];
+        const dateDerniere = user.date_derniere_question ? new Date(user.date_derniere_question).toISOString().split('T')[0] : null;
 
-            let questionsAujourdhui = user.questions_posees_aujourdhui || 0;
+        let questionsAujourdhui = user.questions_posees_aujourdhui || 0;
 
-            if (dateDerniere !== aujourdhui) {
-                questionsAujourdhui = 0;
-            }
+        if (dateDerniere !== aujourdhui) {
+            questionsAujourdhui = 0;
+        }
 
-            if (questionsAujourdhui >= 3) {
-                return res.status(429).json({ 
-                    answer: "Limite atteinte ! Vous avez posé vos 3 questions gratuites aujourd'hui. Demandez à votre établissement de rejoindre MathsCollege pour débloquer l'accès illimité !" 
-                });
-            }
-
-            const updateSql = "UPDATE users SET questions_posees_aujourdhui = ?, date_derniere_question = ? WHERE id = ?";
-            db.query(updateSql, [questionsAujourdhui + 1, aujourdhui, user.id], (updateErr) => {
-                if (updateErr) console.error("Erreur mise à jour quota :", updateErr);
-                req.userContext = { userId: user.id, ecoleId: ecoleId };
-                next();
+        if (questionsAujourdhui >= 3) {
+            return res.status(429).json({ 
+                answer: "Limite atteinte ! Vous avez posé vos 3 questions gratuites aujourd'hui. Demandez à votre établissement de rejoindre MathsCollege pour débloquer l'accès illimité !" 
             });
-        });
+        }
+
+        const updateSql = "UPDATE users SET questions_posees_aujourdhui = ?, date_derniere_question = ? WHERE id = ?";
+        await db.query(updateSql, [questionsAujourdhui + 1, aujourdhui, user.id]);
+        
+        req.userContext = { userId: user.id, ecoleId: ecoleId };
+        next();
     } catch (error) {
-        console.error("Erreur serveur :", error);
+        console.error("Erreur serveur quotas :", error);
         res.status(500).json({ answer: "Erreur lors du traitement des quotas." });
     }
 }
@@ -242,9 +229,8 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
             return res.status(400).json({ answer: "Le serveur n'a pas reçu de texte." });
         }
 
-        // 1. Récupérer les informations de l'élève (Nom, Classe/Niveau) depuis la base de données
         let eleveNom = "Élève";
-        let niveauEleve = "6e"; // Par défaut
+        let niveauEleve = "6e";
 
         if (userId) {
             const [users] = await db.query("SELECT username, niveau FROM users WHERE id = ?", [userId]);
@@ -254,7 +240,6 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
             }
         }
 
-        // 2. Récupérer les cours de la plateforme correspondant à la classe de l'élève pour enrichir Sylvie
         let coursContexte = "";
         try {
             const [coursList] = await db.query("SELECT titre, contenu FROM cours WHERE niveau = ? LIMIT 5", [niveauEleve]);
@@ -265,7 +250,6 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
             console.error("Erreur lors de la récupération des cours pour l'IA :", err);
         }
 
-        // 3. Construire une consigne système ultra-intelligente pour Sylvie
         const systemInstruction = `
             Tu es Sylvie, une coach et tutrice de mathématiques bienveillante et pédagogique.
             Tu t'adresses à ${eleveNom}, qui est en classe de ${niveauEleve}.
@@ -278,16 +262,14 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
             - Sois encourageante, claire, utilise des exemples simples et tutoie l'élève.
         `;
 
-        // 4. Appel au modèle Gemini avec l'instruction personnalisée
         const model = genAI.getGenerativeModel({
-            model: "gemini-3.6-flash", // ou ton modèle habituel
+            model: "gemini-1.5-flash",
             systemInstruction: systemInstruction
         });
 
         const result = await callGeminiWithRetry(model, prompt);
         const text = result.response.text();
 
-        // 5. Stockage de la conversation en BD (optionnel)
         if (userId) {
             await db.query("INSERT INTO conversations_ia (user_id, ecole_id, question, reponse) VALUES (?, ?, ?, ?)", 
                 [userId, ecoleId || 1, prompt, text]
@@ -320,77 +302,67 @@ app.post('/api/signup', async (req, res) => {
         const userRole = validRoles.includes(role) ? role : 'eleve';
         
         const userNiveau = userRole === 'professeur' ? 'Enseignant' : (niveau || '6ème');
-
-        // Définition du statut : les élèves commencent 'en_attente', les autres sont 'actif'
         const statutInitial = (userRole === 'eleve') ? 'en_attente' : 'actif';
 
         const sql = "INSERT INTO users (username, email, password, role, niveau, ecole_id, statut) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        db.query(sql, [username, email, hashedPassword, userRole, userNiveau, targetEcoleId, statutInitial], (err, result) => {
-            if (err) {
-                console.error("Erreur BDD :", err);
-                return res.status(400).json({ success: false, message: "Pseudo ou Email déjà utilisé." });
+        const [result] = await db.query(sql, [username, email, hashedPassword, userRole, userNiveau, targetEcoleId, statutInitial]);
+
+        const messageSucces = (userRole === 'eleve')
+            ? "Inscription réussie ! Votre compte est en attente de validation par l'administrateur de votre école."
+            : "Inscription réussie !";
+
+        return res.status(201).json({ 
+            success: true, 
+            message: messageSucces,
+            user: {
+                id: result.insertId,
+                username: username,
+                email: email,
+                role: userRole,
+                niveau: userNiveau,
+                ecole_id: targetEcoleId,
+                statut: statutInitial
             }
-
-            const messageSucces = (userRole === 'eleve')
-                ? "Inscription réussie ! Votre compte est en attente de validation par l'administrateur de votre école."
-                : "Inscription réussie !";
-
-            return res.status(201).json({ 
-                success: true, 
-                message: messageSucces,
-                user: {
-                    id: result.insertId,
-                    username: username,
-                    email: email,
-                    role: userRole,
-                    niveau: userNiveau,
-                    ecole_id: targetEcoleId,
-                    statut: statutInitial
-                }
-            });
         });
     } catch (e) {
-        console.error("Erreur serveur :", e);
-        return res.status(500).json({ success: false, message: "Erreur serveur." });
+        console.error("Erreur BDD Signup :", e);
+        return res.status(400).json({ success: false, message: "Pseudo ou Email déjà utilisé." });
     }
 });
 
-
-// Route pour charger la liste des écoles dans le formulaire d'inscription
-app.get('/api/ecoles/liste', (req, res) => {
-    const sql = "SELECT id, nom FROM ecoles WHERE statut_abonnement = 'actif' ORDER BY nom ASC";
-    db.query(sql, (err, results) => {
-        if (err) {
-            console.error("Erreur chargement écoles :", err);
-            return res.status(500).json({ success: false, message: "Impossible de charger la liste des écoles." });
-        }
+app.get('/api/ecoles/liste', async (req, res) => {
+    try {
+        const sql = "SELECT id, nom FROM ecoles WHERE statut_abonnement = 'actif' ORDER BY nom ASC";
+        const [results] = await db.query(sql);
         res.json({ success: true, ecoles: results });
-    });
+    } catch (err) {
+        console.error("Erreur chargement écoles :", err);
+        res.status(500).json({ success: false, message: "Impossible de charger la liste des écoles." });
+    }
 });
 
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
     const { email, password } = req.body; 
 
-    const sql = `
-        SELECT u.*, 
-               e.nom AS ecole_nom, 
-               e.logo_url, 
-               e.couleur_primaire, 
-               e.ville AS ecole_ville,
-               e.quartier AS ecole_quartier,
-               e.arrondissement AS ecole_arrondissement,
-               e.telephone AS ecole_telephone, 
-               e.email_contact AS ecole_email,
-               e.statut_abonnement, 
-               e.date_fin_abonnement
-        FROM users u
-        LEFT JOIN ecoles e ON u.ecole_id = e.id
-        WHERE u.email = ?
-    `;
+    try {
+        const sql = `
+            SELECT u.*, 
+                   e.nom AS ecole_nom, 
+                   e.logo_url, 
+                   e.couleur_primaire, 
+                   e.ville AS ecole_ville,
+                   e.quartier AS ecole_quartier,
+                   e.arrondissement AS ecole_arrondissement,
+                   e.telephone AS ecole_telephone, 
+                   e.email_contact AS ecole_email,
+                   e.statut_abonnement, 
+                   e.date_fin_abonnement
+            FROM users u
+            LEFT JOIN ecoles e ON u.ecole_id = e.id
+            WHERE u.email = ?
+        `;
 
-    db.query(sql, [email], async (err, result) => {
-        if (err) return res.status(500).json({ success: false, message: "Erreur serveur" });
-
+        const [result] = await db.query(sql, [email]);
         if (result.length === 0) {
             return res.status(401).json({ success: false, message: "Email ou mot de passe incorrect" });
         }
@@ -399,7 +371,6 @@ app.post('/login', (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (isMatch) {
-            // 🛑 Vérification du statut de validation pour les élèves
             if (user.role === 'eleve' && user.statut !== 'actif') {
                 return res.status(403).json({ 
                     success: false, 
@@ -407,7 +378,6 @@ app.post('/login', (req, res) => {
                 });
             }
 
-            // Vérification du statut de l'abonnement de l'école
             if (user.role !== 'super_admin' && user.ecole_id && user.ecole_id !== 1) {
                 const estInactif = user.statut_abonnement === 'inactif';
                 const estExpire = user.date_fin_abonnement && new Date(user.date_fin_abonnement) < new Date();
@@ -429,7 +399,6 @@ app.post('/login', (req, res) => {
                 redirectUrl = "super_admin.html";
             }
 
-            // Formattage propre de l'adresse (ex: "Moungali, Arr. 3, Brazzaville")
             const elementsAdresse = [user.ecole_quartier, user.ecole_arrondissement, user.ecole_ville].filter(Boolean);
             const adresseFormatee = elementsAdresse.length > 0 ? elementsAdresse.join(', ') : null;
 
@@ -459,14 +428,13 @@ app.post('/login', (req, res) => {
         } else {
             res.status(401).json({ success: false, message: "Email ou mot de passe incorrect" });
         }
-    });
+    } catch (err) {
+        console.error("Erreur serveur Login:", err);
+        res.status(500).json({ success: false, message: "Erreur serveur" });
+    }
 });
 
-
-
 // ============= ROUTES PROFESSEUR =============
-
-// ROUTE : Dashboard Enseignant - Données filtrées par classe et par école
 app.get('/api/prof/dashboard-stats', async (req, res) => {
     const professeurId = req.query.professeur_id;
 
@@ -475,8 +443,7 @@ app.get('/api/prof/dashboard-stats', async (req, res) => {
     }
 
     try {
-        // 1. Récupérer l'école du professeur ET son nom
-        const [profInfo] = await db.promise().query(`
+        const [profInfo] = await db.query(`
             SELECT u.ecole_id, e.nom AS ecole_nom 
             FROM users u
             LEFT JOIN ecoles e ON u.ecole_id = e.id
@@ -486,8 +453,7 @@ app.get('/api/prof/dashboard-stats', async (req, res) => {
         const ecoleId = profInfo[0]?.ecole_id || 1;
         const ecoleNom = profInfo[0]?.ecole_nom || "Établissement";
 
-        // 2. Récupérer les classes gérées par ce professeur
-        const [classesProf] = await db.promise().query(`
+        const [classesProf] = await db.query(`
             SELECT c.id, c.nom, c.niveau_nom 
             FROM class_teachers ct
             JOIN classes c ON ct.class_id = c.id
@@ -495,19 +461,16 @@ app.get('/api/prof/dashboard-stats', async (req, res) => {
             ORDER BY c.nom ASC
         `, [professeurId]);
 
-        // 3. Pour chaque classe, récupérer l'effectif et le top 10 IA
         const classesData = [];
 
         for (const cls of classesProf) {
-            // Effectif de la classe
-            const [elevesCount] = await db.promise().query(`
+            const [elevesCount] = await db.query(`
                 SELECT COUNT(*) AS total 
                 FROM users 
                 WHERE role = 'eleve' AND (class_id = ? OR niveau = ?)
             `, [cls.id, cls.nom]);
 
-            // Top questions IA posées par les élèves de cette classe
-            const [topQuestions] = await db.promise().query(`
+            const [topQuestions] = await db.query(`
                 SELECT ci.question, COUNT(*) as frequence 
                 FROM conversations_ia ci
                 JOIN users u ON ci.user_id = u.id
@@ -525,8 +488,7 @@ app.get('/api/prof/dashboard-stats', async (req, res) => {
             });
         }
 
-        // 4. Historique des cours & exercices publiés par ce professeur dans son école
-        const [coursPublies] = await db.promise().query(`
+        const [coursPublies] = await db.query(`
             SELECT id, titre, domaine, 'cours' AS type
             FROM cours
             WHERE professeur_id = ? OR ecole_id = ?
@@ -535,7 +497,7 @@ app.get('/api/prof/dashboard-stats', async (req, res) => {
 
         res.json({
             success: true,
-            ecoleNom: ecoleNom, // <--- On transmet le nom de l'école ici
+            ecoleNom: ecoleNom,
             classes: classesData,
             coursPublies: coursPublies
         });
@@ -549,7 +511,6 @@ app.get('/api/prof/dashboard-stats', async (req, res) => {
 app.post('/api/prof/cours', upload.single('pdf_file'), async (req, res) => {
     try {
         const { titre, contenu, niveau_id, domaine, ecole_id, professeur_id, est_public } = req.body;
-        // Cloudinary renvoie l'URL HTTPS dans req.file.path
         const pdf_path = req.file ? req.file.path : null;
 
         const sql = `
@@ -557,7 +518,7 @@ app.post('/api/prof/cours', upload.single('pdf_file'), async (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
-        await db.promise().query(sql, [
+        await db.query(sql, [
             titre, 
             contenu || '', 
             niveau_id, 
@@ -591,19 +552,17 @@ app.get('/api/prof/liste-cours', async (req, res) => {
             ORDER BY titre ASC
         `;
         
-        const [cours] = await db.promise().query(sql, [professeur_id, ecole_id]);
+        const [cours] = await db.query(sql, [professeur_id, ecole_id]);
         res.json(cours);
     } catch (err) {
-        console.error("Erreur lors de la récupération des cours du prof:", err);
+        console.error("Erreur liste cours prof:", err);
         res.status(500).json({ error: "Erreur serveur" });
     }
 });
 
-
 app.post('/api/prof/exercices', upload.single('pdf_file'), async (req, res) => {
     try {
         const { cours_id, titre, enonce, reponse_correcte } = req.body;
-        // Cloudinary renvoie l'URL HTTPS dans req.file.path
         const pdf_path = req.file ? req.file.path : null;
 
         const sql = `
@@ -611,7 +570,7 @@ app.post('/api/prof/exercices', upload.single('pdf_file'), async (req, res) => {
             VALUES (?, ?, ?, ?, ?)
         `;
 
-        await db.promise().query(sql, [
+        await db.query(sql, [
             cours_id, 
             titre, 
             enonce || '', 
@@ -631,7 +590,7 @@ app.get('/api/admin-ecole/dashboard/:ecoleId', async (req, res) => {
     const { ecoleId } = req.params;
 
     try {
-        const [teachers] = await db.promise().query(`
+        const [teachers] = await db.query(`
             SELECT 
                 u.id, 
                 u.username AS name, 
@@ -644,55 +603,56 @@ app.get('/api/admin-ecole/dashboard/:ecoleId', async (req, res) => {
             GROUP BY u.id
         `, [ecoleId]);
 
-        const [classes] = await db.promise().query(`
-            SELECT id, nom AS name 
+        const [classes] = await db.query(`
+            SELECT id, nom AS name, niveau_nom 
             FROM classes 
             WHERE ecole_id = ?
         `, [ecoleId]);
 
-        const [eleves] = await db.promise().query(`
-            SELECT id, username, niveau, class_id 
+        const [eleves] = await db.query(`
+            SELECT id, username, niveau, class_id, questions_posees_aujourdhui 
             FROM users 
             WHERE role = 'eleve' AND ecole_id = ?
         `, [ecoleId]);
 
+        const [coursPublies] = await db.query(`
+            SELECT c.id, c.titre, c.domaine, u.username AS professeur_nom
+            FROM cours c
+            LEFT JOIN users u ON c.professeur_id = u.id
+            WHERE c.ecole_id = ? OR c.est_public = TRUE
+        `, [ecoleId]);
+
+        const [iaStats] = await db.query(`
+            SELECT COUNT(*) AS total_questions_ia 
+            FROM conversations_ia ci
+            JOIN users u ON ci.user_id = u.id
+            WHERE u.ecole_id = ?
+        `, [ecoleId]);
+
         const classesList = classes.map(cls => {
             const classStudents = eleves
-                .filter(e => e.class_id === cls.id || e.niveau === cls.name)
-                .map(e => e.username);
+                .filter(e => e.class_id === cls.id || e.niveau === cls.name || e.niveau === cls.niveau_nom)
+                .map(e => ({
+                    id: e.id,
+                    username: e.username || "Élève",
+                    progression: e.questions_posees_aujourdhui 
+                        ? `${Math.min(e.questions_posees_aujourdhui * 25, 100)}%` 
+                        : "0%"
+                }));
 
             return {
                 id: cls.id,
                 name: cls.name,
-                teacher: 'Professeur attribué',
                 students: classStudents
             };
         });
 
-        // 1. Récupérer les questions IA posées par les élèves de cette école
-        const [topQuestions] = await db.promise().query(`
-            SELECT ci.question, COUNT(*) as frequence 
-            FROM conversations_ia ci
-            JOIN users u ON ci.user_id = u.id
-            WHERE u.ecole_id = ?
-            GROUP BY ci.question 
-            ORDER BY frequence DESC 
-            LIMIT 10
-        `, [ecoleId]);
-
-        // 2. Récupérer l'historique des cours publiés dans cette école
-        const [coursPublies] = await db.promise().query(`
-            SELECT id, titre, domaine, 'cours' AS type
-            FROM cours
-            WHERE ecole_id = ?
-            ORDER BY id DESC
-        `, [ecoleId]);
-
         res.json({
+            success: true,
             classes: classesList,
             teachers: teachers,
-            topQuestions: topQuestions,
-            coursPublies: coursPublies
+            cours: coursPublies,
+            totalQuestionsIA: iaStats[0]?.total_questions_ia || 0
         });
 
     } catch (err) {
@@ -702,7 +662,6 @@ app.get('/api/admin-ecole/dashboard/:ecoleId', async (req, res) => {
 });
 
 app.post('/api/admin-ecole/add-teacher', async (req, res) => {
-    // 1. On récupère aussi le champ 'password' envoyé par le formulaire
     const { username, email, password, ecole_id, class_ids } = req.body;
 
     if (!username || !email || !ecole_id) {
@@ -710,12 +669,10 @@ app.post('/api/admin-ecole/add-teacher', async (req, res) => {
     }
 
     try {
-        // 2. Si l'admin a saisi un mot de passe dans la modale, on l'utilise.
-        // Sinon, on génère un mot de passe temporaire par sécurité.
         const passwordToHash = (password && password.trim() !== '') ? password : genererMotDePasseTemp();
         const hashedPassword = await bcrypt.hash(passwordToHash, 10);
 
-        const [result] = await db.promise().query(`
+        const [result] = await db.query(`
             INSERT INTO users (username, email, password, role, ecole_id)
             VALUES (?, ?, ?, 'professeur', ?)
         `, [username, email, hashedPassword, ecole_id]);
@@ -724,7 +681,7 @@ app.post('/api/admin-ecole/add-teacher', async (req, res) => {
 
         if (class_ids && Array.isArray(class_ids) && class_ids.length > 0) {
             const values = class_ids.map(classId => [teacherId, classId]);
-            await db.promise().query(`
+            await db.query(`
                 INSERT INTO class_teachers (teacher_id, class_id) VALUES ?
             `, [values]);
         }
@@ -735,7 +692,7 @@ app.post('/api/admin-ecole/add-teacher', async (req, res) => {
         });
 
     } catch (err) {
-        console.error("Erreur lors de la création du professeur :", err);
+        console.error("Erreur création professeur :", err);
         res.status(500).json({ error: "Erreur serveur lors de la création du compte." });
     }
 });
@@ -743,7 +700,7 @@ app.post('/api/admin-ecole/add-teacher', async (req, res) => {
 app.delete('/api/admin-ecole/teacher/:id', async (req, res) => {
     const teacherId = req.params.id;
     try {
-        await db.promise().query("DELETE FROM users WHERE id = ? AND role = 'professeur'", [teacherId]);
+        await db.query("DELETE FROM users WHERE id = ? AND role = 'professeur'", [teacherId]);
         res.json({ success: true, message: "Professeur retiré avec succès." });
     } catch (err) {
         console.error("Erreur suppression professeur :", err);
@@ -751,43 +708,39 @@ app.delete('/api/admin-ecole/teacher/:id', async (req, res) => {
     }
 });
 
-// 1. Récupérer les demandes en attente pour une école précise
-app.get('/api/admin/demandes-eleves/:ecoleId', (req, res) => {
+app.get('/api/admin/demandes-eleves/:ecoleId', async (req, res) => {
     const ecoleId = req.params.ecoleId;
-
-    const sql = `
-        SELECT id, username, email, niveau 
-        FROM users 
-        WHERE ecole_id = ? AND role = 'eleve' AND statut = 'en_attente'
-    `;
-    
-    db.query(sql, [ecoleId], (err, results) => {
-        if (err) {
-            console.error("Erreur SQL demandes élèves :", err);
-            return res.status(500).json({ success: false, message: "Erreur serveur" });
-        }
+    try {
+        const sql = `
+            SELECT id, username, email, niveau 
+            FROM users 
+            WHERE ecole_id = ? AND role = 'eleve' AND statut = 'en_attente'
+        `;
+        const [results] = await db.query(sql, [ecoleId]);
         res.json(results);
-    });
+    } catch (err) {
+        console.error("Erreur SQL demandes élèves :", err);
+        res.status(500).json({ success: false, message: "Erreur serveur" });
+    }
 });
 
-// 2. Accepter ou Refuser une demande
-app.put('/api/admin/traiter-demande/:id', (req, res) => {
+app.put('/api/admin/traiter-demande/:id', async (req, res) => {
     const eleveId = req.params.id;
-    const { action } = req.body; // 'accepter' ou 'refuser'
+    const { action } = req.body;
 
-    if (action === 'accepter') {
-        db.query(`UPDATE users SET statut = 'actif' WHERE id = ?`, [eleveId], (err) => {
-            if (err) return res.status(500).send("Erreur serveur");
+    try {
+        if (action === 'accepter') {
+            await db.query(`UPDATE users SET statut = 'actif' WHERE id = ?`, [eleveId]);
             res.json({ message: "Compte activé avec succès !" });
-        });
-    } else if (action === 'refuser') {
-        // On supprime la demande ou on la marque comme refusée
-        db.query(`DELETE FROM users WHERE id = ?`, [eleveId], (err) => {
-            if (err) return res.status(500).send("Erreur serveur");
+        } else if (action === 'refuser') {
+            await db.query(`DELETE FROM users WHERE id = ?`, [eleveId]);
             res.json({ message: "Demande refusée et supprimée." });
-        });
-    } else {
-        res.status(400).json({ error: "Action non reconnue" });
+        } else {
+            res.status(400).json({ error: "Action non reconnue" });
+        }
+    } catch (err) {
+        console.error("Erreur traiter demande :", err);
+        res.status(500).send("Erreur serveur");
     }
 });
 
@@ -802,7 +755,7 @@ app.get('/niveaux', async (req, res) => {
     }
 });
 
-app.get('/api/cours/:niveau/:domaine', (req, res) => {
+app.get('/api/cours/:niveau/:domaine', async (req, res) => {
     const { niveau, domaine } = req.params;
     const ecoleId = parseInt(req.query.ecole_id, 10) || 1;
 
@@ -811,33 +764,28 @@ app.get('/api/cours/:niveau/:domaine', (req, res) => {
         .replace(/[èe]me/g, 'e');
     const niveauId = /^\d+$/.test(niveau) ? parseInt(niveau, 10) : 0;
 
-    console.log(`🔍 niveau="${niveau}" → "${niveauClean}" | id=${niveauId} | domaine="${domaine}" | école=${ecoleId}`);
+    try {
+        const sql = `
+            SELECT c.*, n.nom AS nom_niveau
+            FROM cours c
+            JOIN niveaux n ON c.niveau_id = n.id
+            WHERE c.ecole_id = ?
+            AND (c.niveau_id = ? OR LOWER(REPLACE(n.nom, ' ', '')) = ?)
+            AND LOWER(c.domaine) = LOWER(?)
+        `;
 
-    const sql = `
-        SELECT c.*, n.nom AS nom_niveau
-        FROM cours c
-        JOIN niveaux n ON c.niveau_id = n.id
-        WHERE c.ecole_id = ?
-        AND (c.niveau_id = ? OR LOWER(REPLACE(n.nom, ' ', '')) = ?)
-        AND LOWER(c.domaine) = LOWER(?)
-    `;
-
-    db.query(sql, [ecoleId, niveauId, niveauClean, domaine], (err, results) => {
-        if (err) {
-            console.error("❌ Erreur SQL :", err);
-            return res.status(500).json({ error: "Erreur serveur" });
-        }
-        console.log(`📦 ${results.length} cours trouvés`);
+        const [results] = await db.query(sql, [ecoleId, niveauId, niveauClean, domaine]);
         res.json(results);
-    });
+    } catch (err) {
+        console.error("❌ Erreur SQL cours :", err);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
 });
 
-app.get('/api/exercices/:niveau/:domaine', (req, res) => {
+app.get('/api/exercices/:niveau/:domaine', async (req, res) => {
     const { niveau, domaine } = req.params;
     const ecoleId = req.query.ecole_id || 1;
 
-    // Filtrage sur l'école : si ecoleId == 1, on autorise le tronc commun (1) ou l'école 1.
-    // Sinon, on filtre sur l'école demandée.
     const conditionEcole = (parseInt(ecoleId) === 1) 
         ? '(c.ecole_id = 1 OR c.ecole_id IS NULL)' 
         : 'c.ecole_id = ?';
@@ -862,18 +810,18 @@ app.get('/api/exercices/:niveau/:domaine', (req, res) => {
         ? [niveau, niveau, domaine] 
         : [niveau, niveau, domaine, ecoleId];
 
-    db.query(sql, queryParams, (err, results) => {
-        if (err) {
-            console.error("Erreur SQL exercices :", err);
-            return res.status(500).send("Erreur serveur");
-        }
+    try {
+        const [results] = await db.query(sql, queryParams);
         res.json(results);
-    });
+    } catch (err) {
+        console.error("Erreur SQL exercices :", err);
+        res.status(500).send("Erreur serveur");
+    }
 });
 
-app.get('/api/videos/:idDuNiveau', (req, res) => {
+app.get('/api/videos/:idDuNiveau', async (req, res) => {
     const niveauId = req.params.idDuNiveau;
-    const domaine = req.query.domaine; // Récupéré via ?domaine=... si présent
+    const domaine = req.query.domaine;
     const ecoleId = req.query.ecole_id || 1;
 
     const conditionEcole = (parseInt(ecoleId) === 1) 
@@ -892,31 +840,29 @@ app.get('/api/videos/:idDuNiveau', (req, res) => {
         ? [niveauId, niveauId] 
         : [niveauId, niveauId, ecoleId];
 
-    // Si un domaine est fourni en paramètre GET, on l'ajoute dynamiquement
     if (domaine) {
         sql += ` AND LOWER(v.domaine) = LOWER(?)`;
         queryParams.push(domaine);
     }
 
-    db.query(sql, queryParams, (err, results) => {
-        if (err) {
-            console.error("Erreur SQL videos :", err);
-            return res.status(500).send(err);
-        }
+    try {
+        const [results] = await db.query(sql, queryParams);
         res.json(results);
-    });
+    } catch (err) {
+        console.error("Erreur SQL videos :", err);
+        res.status(500).send(err);
+    }
 });
 
-
-app.get('/api/jeux/:niveauId', (req, res) => {
-    const query = "SELECT * FROM jeux WHERE niveau_id = ?";
-    db.query(query, [req.params.niveauId], (err, results) => {
-        if (err) {
-            console.error("Erreur SQL Jeux:", err);
-            return res.status(500).send(err);
-        }
+app.get('/api/jeux/:niveauId', async (req, res) => {
+    try {
+        const query = "SELECT * FROM jeux WHERE niveau_id = ?";
+        const [results] = await db.query(query, [req.params.niveauId]);
         res.json(results);
-    });
+    } catch (err) {
+        console.error("Erreur SQL Jeux:", err);
+        res.status(500).send(err);
+    }
 });
 
 // ============= SOLVEUR =============
@@ -968,124 +914,100 @@ app.post('/api/solveur', (req, res) => {
     }
 });
 
-// Route pour récupérer la liste de toutes les classes (6ème A, 6ème B, etc.)
-app.get('/api/classes', (req, res) => {
-    const sql = "SELECT id, nom, niveau_nom FROM classes ORDER BY nom ASC";
-    db.query(sql, (err, results) => {
-        if (err) {
-            console.error("Erreur SQL lors de la récupération des classes :", err);
-            return res.status(500).json({ error: "Erreur lors de la récupération des classes" });
-        }
+app.get('/api/classes', async (req, res) => {
+    try {
+        const sql = "SELECT id, nom, niveau_nom FROM classes ORDER BY nom ASC";
+        const [results] = await db.query(sql);
         res.json(results);
-    });
+    } catch (err) {
+        console.error("Erreur SQL classes :", err);
+        res.status(500).json({ error: "Erreur lors de la récupération des classes" });
+    }
 });
 
 // ==========================================
 // ROUTES API - SUPER ADMIN
 // ==========================================
-
-// 1. Statistiques globales
-app.get('/api/admin/stats', (req, res) => {
-    const sql = `
-        SELECT 
-            (SELECT COUNT(*) FROM ecoles) AS totalEcoles,
-            (SELECT COUNT(*) FROM users WHERE role = 'eleve') AS totalEleves,
-            (SELECT COUNT(*) FROM users WHERE role = 'professeur') AS totalProfs,
-            (SELECT COUNT(*) FROM users WHERE role = 'prof_en_attente') AS pendingProfs
-    `;
-    
-    db.query(sql, (err, results) => {
-        if (err) {
-            console.error("Erreur SQL stats:", err);
-            return res.status(500).json({ error: err.message });
-        }
+app.get('/api/admin/stats', async (req, res) => {
+    try {
+        const sql = `
+            SELECT 
+                (SELECT COUNT(*) FROM ecoles) AS totalEcoles,
+                (SELECT COUNT(*) FROM users WHERE role = 'eleve') AS totalEleves,
+                (SELECT COUNT(*) FROM users WHERE role = 'professeur') AS totalProfs,
+                (SELECT COUNT(*) FROM users WHERE role = 'prof_en_attente') AS pendingProfs
+        `;
+        const [results] = await db.query(sql);
         res.json(results[0] || { totalEcoles: 0, totalEleves: 0, totalProfs: 0, pendingProfs: 0 });
-    });
+    } catch (err) {
+        console.error("Erreur SQL stats:", err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// 2. Écoles
-app.get('/api/admin/ecoles', (req, res) => {
-    db.query("SELECT * FROM ecoles ORDER BY id DESC", (err, results) => {
-        if (err) {
-            console.error("Erreur SQL ecoles:", err);
-            return res.status(500).json([]);
-        }
+app.get('/api/admin/ecoles', async (req, res) => {
+    try {
+        const [results] = await db.query("SELECT * FROM ecoles ORDER BY id DESC");
         res.json(Array.isArray(results) ? results : []);
-    });
+    } catch (err) {
+        console.error("Erreur SQL ecoles:", err);
+        res.status(500).json([]);
+    }
 });
 
-// ROUTE D'AJOUT D'UNE ÉCOLE AVEC UPLOAD DU LOGO SUR CLOUDINARY
-app.post('/api/admin/ecoles', uploadLogo.single('logo'), (req, res) => {
+app.post('/api/admin/ecoles', uploadLogo.single('logo'), async (req, res) => {
     const { 
         nom, ville, quartier, arrondissement, couleur_primaire, 
         telephone, email_contact, formule_abonnement, statut_abonnement, date_fin_abonnement 
     } = req.body;
 
-    // Cloudinary renvoie directement l'URL HTTPS hébergée dans req.file.path
     const logo_url = req.file ? req.file.path : null;
 
-    // Génération automatique du slug
     const slug = (nom || '').toLowerCase()
                     .trim()
                     .replace(/[^\w\s-]/g, '')
                     .replace(/[\s_-]+/g, '-')
                     .replace(/^-+|-+$/g, '');
 
-    // Formatage de la date de fin au format MySQL (YYYY-MM-DD HH:MM:SS)
     let dateFinFormatted = null;
     if (date_fin_abonnement) {
         dateFinFormatted = new Date(date_fin_abonnement).toISOString().slice(0, 19).replace('T', ' ');
     }
 
-    const sql = `
-        INSERT INTO ecoles 
-        (nom, ville, quartier, arrondissement, slug, logo_url, couleur_primaire, telephone, email_contact, formule_abonnement, statut_abonnement, date_fin_abonnement, created_at) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-    `;
+    try {
+        const sql = `
+            INSERT INTO ecoles 
+            (nom, ville, quartier, arrondissement, slug, logo_url, couleur_primaire, telephone, email_contact, formule_abonnement, statut_abonnement, date_fin_abonnement, created_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        `;
 
-    const params = [
-        nom, 
-        ville || null, 
-        quartier || null, 
-        arrondissement || null, 
-        slug, 
-        logo_url, 
-        couleur_primaire || '#4F46E5', 
-        telephone || null, 
-        email_contact || null,
-        formule_abonnement || 'annuel',
-        statut_abonnement || 'actif',
-        dateFinFormatted
-    ];
+        const params = [
+            nom, ville || null, quartier || null, arrondissement || null, 
+            slug, logo_url, couleur_primaire || '#4F46E5', 
+            telephone || null, email_contact || null,
+            formule_abonnement || 'annuel', statut_abonnement || 'actif', dateFinFormatted
+        ];
 
-    db.query(sql, params, (err, result) => {
-        if (err) {
-            console.error("Erreur insertion école:", err);
-            return res.status(500).json({ error: err.message });
-        }
+        const [result] = await db.query(sql, params);
         res.json({ success: true, id: result.insertId });
-    });
+    } catch (err) {
+        console.error("Erreur insertion école:", err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// ROUTE DE RENOUVELLEMENT DE L'ABONNEMENT D'UNE ÉCOLE
-app.post('/api/admin/ecoles/:id/renouveler', (req, res) => {
+app.post('/api/admin/ecoles/:id/renouveler', async (req, res) => {
     const ecoleId = req.params.id;
-    const { formule } = req.body; // 'mensuel' ou 'annuel'
+    const { formule } = req.body;
 
-    db.query("SELECT date_fin_abonnement FROM ecoles WHERE id = ?", [ecoleId], (err, results) => {
-        if (err) {
-            console.error("Erreur récupération école :", err);
-            return res.status(500).json({ error: err.message });
-        }
-
+    try {
+        const [results] = await db.query("SELECT date_fin_abonnement FROM ecoles WHERE id = ?", [ecoleId]);
         if (!results || results.length === 0) {
             return res.status(404).json({ error: "Établissement introuvable." });
         }
 
         const ancienneDate = results[0].date_fin_abonnement ? new Date(results[0].date_fin_abonnement) : new Date();
         const maintenant = new Date();
-
-        // Si l'abonnement est encore valide, on cumule à partir de l'ancienne date. Sinon, on repart d'aujourd'hui.
         let nouvelleDateFin = (ancienneDate > maintenant) ? ancienneDate : maintenant;
 
         if (formule === "annuel") {
@@ -1095,87 +1017,86 @@ app.post('/api/admin/ecoles/:id/renouveler', (req, res) => {
         }
 
         const dateSql = nouvelleDateFin.toISOString().slice(0, 19).replace('T', ' ');
-
         const updateSql = "UPDATE ecoles SET formule_abonnement = ?, date_fin_abonnement = ?, statut_abonnement = 'actif' WHERE id = ?";
         
-        db.query(updateSql, [formule || 'annuel', dateSql, ecoleId], (updateErr) => {
-            if (updateErr) {
-                console.error("Erreur renouvellement :", updateErr);
-                return res.status(500).json({ error: updateErr.message });
-            }
+        await db.query(updateSql, [formule || 'annuel', dateSql, ecoleId]);
 
-            res.json({ 
-                success: true, 
-                message: "Abonnement prolongé avec succès jusqu'au " + nouvelleDateFin.toLocaleDateString('fr-FR') 
-            });
+        res.json({ 
+            success: true, 
+            message: "Abonnement prolongé avec succès jusqu'au " + nouvelleDateFin.toLocaleDateString('fr-FR') 
         });
-    });
+    } catch (err) {
+        console.error("Erreur renouvellement :", err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.delete('/api/admin/ecoles/:id', (req, res) => {
-    db.query("DELETE FROM ecoles WHERE id = ?", [req.params.id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
+app.delete('/api/admin/ecoles/:id', async (req, res) => {
+    try {
+        await db.query("DELETE FROM ecoles WHERE id = ?", [req.params.id]);
         res.json({ success: true });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// 3. Utilisateurs
-app.get('/api/admin/users', (req, res) => {
-    const sql = `
-        SELECT u.id, u.username, u.email, u.role, e.nom as ecole_nom 
-        FROM users u 
-        LEFT JOIN ecoles e ON u.ecole_id = e.id
-        ORDER BY u.id DESC
-    `;
-    db.query(sql, (err, results) => {
-        if (err) {
-            console.error("Erreur SQL users:", err);
-            return res.status(500).json([]);
-        }
+app.get('/api/admin/users', async (req, res) => {
+    try {
+        const sql = `
+            SELECT u.id, u.username, u.email, u.role, e.nom as ecole_nom 
+            FROM users u 
+            LEFT JOIN ecoles e ON u.ecole_id = e.id
+            ORDER BY u.id DESC
+        `;
+        const [results] = await db.query(sql);
         res.json(Array.isArray(results) ? results : []);
-    });
+    } catch (err) {
+        console.error("Erreur SQL users:", err);
+        res.status(500).json([]);
+    }
 });
 
-app.delete('/api/admin/users/:id', (req, res) => {
-    db.query("DELETE FROM users WHERE id = ?", [req.params.id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
+app.delete('/api/admin/users/:id', async (req, res) => {
+    try {
+        await db.query("DELETE FROM users WHERE id = ?", [req.params.id]);
         res.json({ success: true });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// 4. Demandes professeurs en attente
-app.get('/api/admin/pending-profs', (req, res) => {
-    const sql = `
-        SELECT u.id, u.username, u.email, e.nom as ecole_nom 
-        FROM users u 
-        LEFT JOIN ecoles e ON u.ecole_id = e.id 
-        WHERE u.role = 'prof_en_attente'
-    `;
-    db.query(sql, (err, results) => {
-        if (err) {
-            console.error("Erreur SQL pending-profs:", err);
-            return res.status(500).json([]);
-        }
+app.get('/api/admin/pending-profs', async (req, res) => {
+    try {
+        const sql = `
+            SELECT u.id, u.username, u.email, e.nom as ecole_nom 
+            FROM users u 
+            LEFT JOIN ecoles e ON u.ecole_id = e.id 
+            WHERE u.role = 'prof_en_attente'
+        `;
+        const [results] = await db.query(sql);
         res.json(Array.isArray(results) ? results : []);
-    });
+    } catch (err) {
+        console.error("Erreur SQL pending-profs:", err);
+        res.status(500).json([]);
+    }
 });
 
-app.post('/api/admin/validate-prof/:id', (req, res) => {
+app.post('/api/admin/validate-prof/:id', async (req, res) => {
     const { id } = req.params;
     const { approuve } = req.body;
 
-    const sql = approuve 
-        ? "UPDATE users SET role = 'professeur' WHERE id = ?" 
-        : "DELETE FROM users WHERE id = ?";
+    try {
+        const sql = approuve 
+            ? "UPDATE users SET role = 'professeur' WHERE id = ?" 
+            : "DELETE FROM users WHERE id = ?";
 
-    db.query(sql, [id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
+        await db.query(sql, [id]);
         res.json({ success: true });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-
-// Route sécurisée pour créer un administrateur d'école
 app.post('/api/admin/creer-admin-ecole', async (req, res) => {
     const { username, email, password, ecole_id } = req.body;
 
@@ -1184,49 +1105,38 @@ app.post('/api/admin/creer-admin-ecole', async (req, res) => {
     }
 
     try {
-        // Hachage du mot de passe (10 tours de salt)
         const hashedPassword = await bcrypt.hash(password, 10);
-
         const sql = `
             INSERT INTO users (username, email, password, role, ecole_id) 
             VALUES (?, ?, ?, 'admin_ecole', ?)
         `;
 
-        db.query(sql, [username, email, hashedPassword, ecole_id], (err, result) => {
-            if (err) {
-                console.error("Erreur SQL création admin école :", err);
-                return res.status(500).json({ success: false, message: "Erreur lors de la création ou cet email est déjà utilisé." });
-            }
-            res.json({ success: true, message: "Administrateur d'école créé avec succès !" });
-        });
+        await db.query(sql, [username, email, hashedPassword, ecole_id]);
+        res.json({ success: true, message: "Administrateur d'école créé avec succès !" });
     } catch (err) {
-        console.error("Erreur de hachage bcrypt :", err);
-        res.status(500).json({ success: false, message: "Erreur technique du serveur." });
+        console.error("Erreur SQL création admin école :", err);
+        res.status(500).json({ success: false, message: "Erreur lors de la création ou cet email est déjà utilisé." });
     }
 });
 
-
-// PUT : Mise à jour des infos du profil
-app.put('/api/user/profile', (req, res) => {
+app.put('/api/user/profile', async (req, res) => {
     const { userId, username, email, niveau } = req.body;
-
-    const sql = `UPDATE users SET username = ?, email = ?, niveau = ? WHERE id = ?`;
-    db.query(sql, [username, email, niveau, userId], (err, result) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ success: false, message: "Erreur serveur ou email déjà utilisé" });
-        }
+    try {
+        const sql = `UPDATE users SET username = ?, email = ?, niveau = ? WHERE id = ?`;
+        await db.query(sql, [username, email, niveau, userId]);
         res.json({ success: true, message: "Profil mis à jour" });
-    });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Erreur serveur ou email déjà utilisé" });
+    }
 });
 
-// PUT : Changement de mot de passe
 app.put('/api/user/password', async (req, res) => {
     const { userId, oldPassword, newPassword } = req.body;
 
-    // 1. Récupérer le mot de passe actuel
-    db.query('SELECT password FROM users WHERE id = ?', [userId], async (err, result) => {
-        if (err || result.length === 0) {
+    try {
+        const [result] = await db.query('SELECT password FROM users WHERE id = ?', [userId]);
+        if (!result || result.length === 0) {
             return res.status(500).json({ success: false, message: "Utilisateur non trouvé" });
         }
 
@@ -1237,17 +1147,16 @@ app.put('/api/user/password', async (req, res) => {
             return res.status(400).json({ success: false, message: "L'ancien mot de passe est incorrect" });
         }
 
-        // 2. Hash du nouveau mot de passe
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-        db.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, userId], (err, updateResult) => {
-            if (err) return res.status(500).json({ success: false, message: "Erreur lors de la mise à jour" });
-            res.json({ success: true, message: "Mot de passe modifié avec succès" });
-        });
-    });
+        await db.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, userId]);
+        
+        res.json({ success: true, message: "Mot de passe modifié avec succès" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Erreur lors de la mise à jour" });
+    }
 });
 
-// ROUTE : Ajouter une classe pour l'école
 app.post('/api/admin-ecole/classes', async (req, res) => {
     const { ecole_id, nom_classe, niveau } = req.body;
 
@@ -1257,119 +1166,33 @@ app.post('/api/admin-ecole/classes', async (req, res) => {
 
     try {
         const sql = `INSERT INTO classes (ecole_id, nom, niveau_nom) VALUES (?, ?, ?)`;
-        await db.promise().query(sql, [ecole_id, nom_classe, niveau]);
+        await db.query(sql, [ecole_id, nom_classe, niveau]);
 
         res.json({ success: true, message: "Classe ajoutée avec succès !" });
     } catch (err) {
-        console.error("Erreur lors de l'ajout de la classe :", err);
+        console.error("Erreur ajout de classe :", err);
         res.status(500).json({ success: false, message: "Erreur serveur lors de la création de la classe." });
     }
 });
 
-// ============= ROUTES ADMIN ÉCOLE (Mise à jour complète) =============
-app.get('/api/admin-ecole/dashboard/:ecoleId', async (req, res) => {
-    const { ecoleId } = req.params;
-
-    try {
-        // 1. Professeurs de l'école avec leurs classes et leurs publications
-        const [teachers] = await db.promise().query(`
-            SELECT 
-                u.id, 
-                u.username AS name, 
-                u.email,
-                COALESCE(GROUP_CONCAT(DISTINCT c.nom SEPARATOR ', '), 'Aucune classe') AS classes
-            FROM users u
-            LEFT JOIN class_teachers ct ON u.id = ct.teacher_id
-            LEFT JOIN classes c ON ct.class_id = c.id
-            WHERE u.role = 'professeur' AND u.ecole_id = ?
-            GROUP BY u.id
-        `, [ecoleId]);
-
-        // 2. Classes de l'école
-        const [classes] = await db.promise().query(`
-            SELECT id, nom AS name, niveau_nom 
-            FROM classes 
-            WHERE ecole_id = ?
-        `, [ecoleId]);
-
-        // 3. Élèves de l'école (avec récupération d'un indicateur de progression si tu as une table de suivi, sinon simulé/basé sur les colonnes existantes)
-        const [eleves] = await db.promise().query(`
-            SELECT id, username, niveau, class_id, questions_posees_aujourdhui 
-            FROM users 
-            WHERE role = 'eleve' AND ecole_id = ?
-        `, [ecoleId]);
-
-        // 4. Cours et exercices publiés liés à l'école ou globaux
-        const [coursPublies] = await db.promise().query(`
-            SELECT c.id, c.titre, c.domaine, u.username AS professeur_nom
-            FROM cours c
-            LEFT JOIN users u ON c.professeur_id = u.id
-            WHERE c.ecole_id = ? OR c.est_public = TRUE
-        `, [ecoleId]);
-
-        // 5. Statistiques globales d'utilisation de l'IA par l'école
-        const [iaStats] = await db.promise().query(`
-            SELECT COUNT(*) AS total_questions_ia 
-            FROM conversations_ia ci
-            JOIN users u ON ci.user_id = u.id
-            WHERE u.ecole_id = ?
-        `, [ecoleId]);
-
-       // Structuration des classes avec leurs élèves respectifs et leur progression en %
-const classesList = classes.map(cls => {
-    const classStudents = eleves
-        .filter(e => e.class_id === cls.id || e.niveau === cls.name || e.niveau === cls.niveau_nom)
-        .map(e => ({
-            id: e.id,
-            username: e.username || e.nom || "Élève",
-            // Exemple : progression calculée selon l'activité (ou 0% par défaut)
-            progression: e.questions_posees_aujourdhui 
-                ? `${Math.min(e.questions_posees_aujourdhui * 25, 100)}%` 
-                : "0%"
-        }));
-
-    return {
-        id: cls.id,
-        name: cls.name,
-        students: classStudents
-    };
-});
-
-        res.json({
-            success: true,
-            classes: classesList,
-            teachers: teachers,
-            cours: coursPublies,
-            totalQuestionsIA: iaStats[0]?.total_questions_ia || 0
-        });
-
-    } catch (err) {
-        console.error("Erreur BDD Admin École Dashboard :", err);
-        res.status(500).json({ error: "Erreur lors du chargement des données." });
-    }
-});
-
-//profs_post_videos
-// Route POST pour l'ajout de vidéo avec gestion de fichier ou de lien YouTube
-app.post('/api/videos', upload.single('video_file'), (req, res) => {
+app.post('/api/videos', upload.single('video_file'), async (req, res) => {
     const { titre, niveau_id, domaine, ecole_id, prof_id, youtube_id } = req.body;
     
-    // Si un fichier a été téléversé, on enregistre son chemin, sinon on prend l'ID/lien YouTube
     const videoPath = req.file ? `/uploads/${req.file.filename}` : null;
     const finalYoutubeId = videoPath ? null : youtube_id;
 
-    const sql = `
-        INSERT INTO videos (titre, youtube_id, video_path, niveau_id, domaine, ecole_id, prof_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
+    try {
+        const sql = `
+            INSERT INTO videos (titre, youtube_id, video_path, niveau_id, domaine, ecole_id, prof_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `;
 
-    db.query(sql, [titre, finalYoutubeId, videoPath, niveau_id, domaine, ecole_id || 1, prof_id], (err, result) => {
-        if (err) {
-            console.error("Erreur SQL insertion vidéo :", err);
-            return res.status(500).send("Erreur serveur");
-        }
+        const [result] = await db.query(sql, [titre, finalYoutubeId, videoPath, niveau_id, domaine, ecole_id || 1, prof_id]);
         res.status(201).json({ message: "Vidéo ajoutée avec succès", id: result.insertId });
-    });
+    } catch (err) {
+        console.error("Erreur SQL insertion vidéo :", err);
+        res.status(500).send("Erreur serveur");
+    }
 });
 
 // ============= LANCEMENT DU SERVEUR =============
