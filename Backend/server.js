@@ -281,7 +281,7 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
 
         // 5. Appel au modèle Gemini
         const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash",
+            model: "gemini-3.6-flash",
             systemInstruction: systemInstruction
         });
 
