@@ -220,7 +220,6 @@ async function callGeminiWithRetry(model, prompt, retries = 2, delay = 1000) {
     }
 }
 
-// --- COACH SYLVIE INTELLIGENTE ---
 // --- COACH SYLVIE INTELLIGENTE (AVEC ACCÈS COMPLET AUX COURS) ---
 app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
     try {
@@ -230,42 +229,43 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
             return res.status(400).json({ answer: "Le serveur n'a pas reçu de texte." });
         }
 
-        // 1. Récupérer les informations de l'élève (Nom, Niveau)
+        // 1. Récupérer les informations de l'élève (Nom, Niveau, École)
         let eleveNom = "Élève";
-        let niveauEleve = "6ème"; // Valeur par défaut
+        let niveauEleve = "6ème"; 
+        let ecoleIdEleve = ecoleId || 1;
 
         if (userId) {
-            const [users] = await db.query("SELECT username, niveau FROM users WHERE id = ?", [userId]);
-            if (users && users.length > 0) {
-                eleveNom = users[0].username || "Élève";
-                niveauEleve = users[0].niveau || "6ème";
+            const [userInfos] = await db.query("SELECT username, niveau, ecole_id FROM users WHERE id = ?", [userId]);
+            if (userInfos && userInfos.length > 0) {
+                eleveNom = userInfos[0].username || "Élève";
+                niveauEleve = userInfos[0].niveau || "6ème";
+                ecoleIdEleve = userInfos[0].ecole_id || ecoleIdEleve;
             }
         }
 
-        // 2. Nettoyage du niveau pour la recherche SQL (ex: "6ème" -> "6e")
-        const niveauClean = niveauEleve.toLowerCase().replace(/\s+/g, '').replace(/[èe]me/g, 'e');
-
-        // 3. Récupérer TOUS les cours de la plateforme correspondant à ce niveau
+        // 2. Récupérer TOUS les cours disponibles pour cet élève (filtrés par école, cours publics ou niveau)
         let coursContexte = "";
         try {
             const sqlCours = `
-                SELECT c.titre, c.domaine, c.contenu 
+                SELECT DISTINCT c.titre, c.domaine, c.contenu 
                 FROM cours c
                 LEFT JOIN niveaux n ON c.niveau_id = n.id
-                WHERE LOWER(REPLACE(n.nom, ' ', '')) = ? 
+                WHERE c.ecole_id = ? 
+                   OR c.est_public = TRUE
                    OR c.niveau_id = ?
-                   OR LOWER(n.nom) = LOWER(?)
+                   OR LOWER(n.nom) LIKE ?
             `;
-            const [coursList] = await db.query(sqlCours, [niveauClean, parseInt(niveauEleve, 10) || 0, niveauEleve]);
+            const searchTerm = `%${niveauEleve.toLowerCase().replace(/[^0-9]/g, '')}%`;
+            const [coursList] = await db.query(sqlCours, [ecoleIdEleve, parseInt(niveauEleve, 10) || 0, searchTerm]);
 
             if (coursList && coursList.length > 0) {
-                coursContexte = coursList.map(c => `- [${c.domaine ? c.domaine.toUpperCase() : 'MATHS'}] ${c.titre} : ${c.contenu || 'Contenu disponible sur le site'}`).join("\n");
+                coursContexte = coursList.map(c => `- [${c.domaine ? c.domaine.toUpperCase() : 'MATHS'}] ${c.titre} : ${c.contenu || 'Contenu disponible sur la plateforme'}`).join("\n");
             }
         } catch (err) {
-            console.error("Erreur lors de la récupération des cours pour l'IA :", err);
+            console.error("Erreur lors de la récupération élargie des cours pour l'IA :", err);
         }
 
-        // 4. Instructions système pour forcer Sylvie à utiliser la liste des cours
+        // 3. Instructions système pour forcer Sylvie à utiliser la liste des cours
         const systemInstruction = `
             Tu es Sylvie, une coach et tutrice de mathématiques bienveillante, dynamique et pédagogique.
             Tu t'adresses à l'élève nommé(e) ${eleveNom}, qui est en classe de ${niveauEleve}.
@@ -279,7 +279,7 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
             - Sois encourageante, adapte tes explications à un niveau de ${niveauEleve}, et tutoie l'élève.
         `;
 
-        // 5. Appel au modèle Gemini
+        // 4. Appel au modèle Gemini
         const model = genAI.getGenerativeModel({
             model: "gemini-3.6-flash",
             systemInstruction: systemInstruction
@@ -288,10 +288,10 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
         const result = await callGeminiWithRetry(model, prompt);
         const text = result.response.text();
 
-        // 6. Sauvegarde optionnelle de la conversation
+        // 5. Sauvegarde optionnelle de la conversation
         if (userId) {
             await db.query("INSERT INTO conversations_ia (user_id, ecole_id, question, reponse) VALUES (?, ?, ?, ?)", 
-                [userId, ecoleId || 1, prompt, text]
+                [userId, ecoleIdEleve, prompt, text]
             ).catch(err => console.error("Erreur stockage conversation :", err));
         }
 
