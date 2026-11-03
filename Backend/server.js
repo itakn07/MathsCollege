@@ -220,7 +220,7 @@ async function callGeminiWithRetry(model, prompt, retries = 2, delay = 1000) {
     }
 }
 
-// --- COACH SYLVIE INTELLIGENTE (AVEC ACCÈS COMPLET AUX COURS) ---
+// --- COACH SYLVIE INTELLIGENTE (AVEC ACCÈS CIBLÉ AUX COURS DE L'ÉCOLE) ---
 app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
     try {
         const { prompt, userId, ecoleId } = req.body;
@@ -243,52 +243,59 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
             }
         }
 
-        // 2. Récupérer TOUS les cours disponibles pour cet élève (filtrés par école, cours publics ou niveau)
+        // 2. Récupérer UNIQUEMENT les cours spécifiques à l'école et au niveau de l'élève
         let coursContexte = "";
         try {
             const sqlCours = `
                 SELECT DISTINCT c.titre, c.domaine, c.contenu 
                 FROM cours c
                 LEFT JOIN niveaux n ON c.niveau_id = n.id
-                WHERE c.ecole_id = ? 
-                   OR c.est_public = TRUE
-                   OR c.niveau_id = ?
-                   OR LOWER(n.nom) LIKE ?
+                WHERE (c.ecole_id = ? OR c.ecole_id = 1)
+                  AND (c.niveau_id = ? OR LOWER(n.nom) LIKE ? OR LOWER(REPLACE(n.nom, ' ', '')) = ?)
             `;
-            const searchTerm = `%${niveauEleve.toLowerCase().replace(/[^0-9]/g, '')}%`;
-            const [coursList] = await db.query(sqlCours, [ecoleIdEleve, parseInt(niveauEleve, 10) || 0, searchTerm]);
+            
+            const niveauRecherche = niveauEleve.toLowerCase().trim();
+            const niveauClean = niveauRecherche.replace(/\s+/g, '').replace(/[èe]me/g, 'e');
+            const niveauChiffre = parseInt(niveauEleve, 10) || 0;
+
+            const [coursList] = await db.query(sqlCours, [
+                ecoleIdEleve, 
+                niveauChiffre, 
+                `%${niveauRecherche}%`, 
+                niveauClean
+            ]);
 
             if (coursList && coursList.length > 0) {
-                coursContexte = coursList.map(c => `- [${c.domaine ? c.domaine.toUpperCase() : 'MATHS'}] ${c.titre} : ${c.contenu || 'Contenu disponible sur la plateforme'}`).join("\n");
+                coursContexte = coursList.map(c => `- [${c.domaine ? c.domaine.toUpperCase() : 'MATHS'}] ${c.titre} : ${c.contenu || 'Contenu disponible sur le site'}`).join("\n");
             }
         } catch (err) {
-            console.error("Erreur lors de la récupération élargie des cours pour l'IA :", err);
+            console.error("Erreur lors de la récupération ciblée des cours pour l'IA :", err);
         }
 
-        // 3. Instructions système pour forcer Sylvie à utiliser la liste des cours
+        // 3. Instructions système pour guider Sylvie
         const systemInstruction = `
             Tu es Sylvie, une coach et tutrice de mathématiques bienveillante, dynamique et pédagogique.
-            Tu t'adresses à l'élève nommé(e) ${eleveNom}, qui est en classe de ${niveauEleve}.
+            Tu t'adresses à l'élève nommé(e) ${eleveNom}, qui est en classe de ${niveauEleve} (Établissement ID: ${ecoleIdEleve}).
 
-            Voici la LISTE OFFICIELLE des cours disponibles sur la plateforme pour son niveau (${niveauEleve}) :
-            ${coursContexte ? coursContexte : "Aucun cours n'a encore été publié par les professeurs pour ce niveau."}
+            Voici la LISTE OFFICIELLE des cours disponibles sur la plateforme pour son école et son niveau :
+            ${coursContexte ? coursContexte : "Aucun cours n'a encore été publié par les professeurs pour cette classe."}
 
             Directives importantes :
-            - Si l'élève te demande quels sont ses cours, la liste de ses cours ou ce qu'il a au programme, LISTE DIRECTEMENT les cours affichés ci-dessus de façon claire avec des puces. Ne dis JAMAIS que tu n'as pas accès à la liste de ses cours !
+            - Si l'élève te demande quels sont ses cours, la liste de ses cours ou ce qu'il a au programme, liste précisément les cours affichés ci-dessus. Ne dis jamais que tu n'as pas accès à la liste de ses cours si elle est fournie !
             - Si l'élève veut réviser ou résumer une notion, appuie-toi sur les titres et contenus de cette liste.
             - Sois encourageante, adapte tes explications à un niveau de ${niveauEleve}, et tutoie l'élève.
         `;
 
         // 4. Appel au modèle Gemini
         const model = genAI.getGenerativeModel({
-            model: "gemini-3.6-flash",
+            model: "gemini-1.5-flash",
             systemInstruction: systemInstruction
         });
 
         const result = await callGeminiWithRetry(model, prompt);
         const text = result.response.text();
 
-        // 5. Sauvegarde optionnelle de la conversation
+        // 5. Sauvegarde optionnelle de la conversation en base
         if (userId) {
             await db.query("INSERT INTO conversations_ia (user_id, ecole_id, question, reponse) VALUES (?, ?, ?, ?)", 
                 [userId, ecoleIdEleve, prompt, text]
