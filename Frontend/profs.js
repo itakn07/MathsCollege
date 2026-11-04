@@ -374,9 +374,20 @@ async function envoyerMessageProf() {
     inputField.value = '';
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-    // 2. Récupérer les identifiants stockés du prof
-    const userId = localStorage.getItem('userId') || localStorage.getItem('profId');
-    const ecoleId = localStorage.getItem('ecoleId') || 1;
+    // 2. Récupérer proprement l'ID et l'école depuis l'objet 'user' du localStorage
+    let userId = null;
+    let ecoleId = 1;
+
+    const userData = localStorage.getItem('user');
+    if (userData) {
+        try {
+            const userObj = JSON.parse(userData);
+            userId = userObj.id;
+            ecoleId = userObj.ecole_id || 1;
+        } catch (e) {
+            console.error("Erreur lecture données utilisateur :", e);
+        }
+    }
 
     // 3. Afficher un indicateur de chargement
     const loadingId = 'loading-' + Date.now();
@@ -418,10 +429,3 @@ async function envoyerMessageProf() {
 
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
-
-// Permettre l'envoi avec la touche "Entrée"
-document.getElementById('chat-input')?.addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') {
-        envoyerMessageProf();
-    }
-});
