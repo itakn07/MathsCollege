@@ -401,6 +401,7 @@ async function envoyerQuestionIA() {
         }
     }
 
+    // 1. Afficher le message de l'élève
     if (reponseIA) {
         reponseIA.innerHTML += `
             <div class="user-msg bg-slate-100 p-3 rounded-2xl text-sm text-slate-700 my-2 text-right">
@@ -408,6 +409,16 @@ async function envoyerQuestionIA() {
             </div>`;
     }
     inputEl.value = '';
+
+    // 2. Afficher l'indicateur de chargement "Sylvie réfléchit..."
+    const loadingId = 'loading-' + Date.now();
+    if (reponseIA) {
+        reponseIA.innerHTML += `
+            <div id="${loadingId}" class="bot-msg bg-slate-50 p-3 rounded-2xl border border-slate-200 text-sm text-slate-400 italic my-2">
+                <strong>Sylvie :</strong> Réfléchit...
+            </div>`;
+        reponseIA.scrollTop = reponseIA.scrollHeight;
+    }
 
     try {
         const response = await fetch('/ask-ai', {
@@ -417,14 +428,35 @@ async function envoyerQuestionIA() {
         });
         const data = await response.json();
 
+        // Supprimer le message de chargement
+        const loadingElement = document.getElementById(loadingId);
+        if (loadingElement) {
+            loadingElement.remove();
+        }
+
+        // 3. Afficher la vraie réponse de Sylvie
         if (reponseIA) {
             reponseIA.innerHTML += `
                 <div class="bot-msg bg-brand-50/80 p-3 rounded-2xl border-l-4 border-brand-500 text-sm text-slate-700 my-2">
-                    <strong>Sylvie :</strong> ${data.answer || "Je n'ai pas de réponse pour le moment."}
+                    <strong>Sylvie :</strong> ${data.answer ? data.answer.replace(/\n/g, '<br>') : "Je n'ai pas de réponse pour le moment."}
                 </div>`;
             reponseIA.scrollTop = reponseIA.scrollHeight;
         }
     } catch (e) {
         console.error("Erreur IA :", e);
+        
+        // Supprimer le message de chargement en cas d'erreur
+        const loadingElement = document.getElementById(loadingId);
+        if (loadingElement) {
+            loadingElement.remove();
+        }
+
+        if (reponseIA) {
+            reponseIA.innerHTML += `
+                <div class="bot-msg bg-red-50 p-3 rounded-2xl border-l-4 border-red-500 text-sm text-red-700 my-2">
+                    <strong>Sylvie :</strong> Oups, une erreur est survenue. Réessaie plus tard !
+                </div>`;
+            reponseIA.scrollTop = reponseIA.scrollHeight;
+        }
     }
 }
