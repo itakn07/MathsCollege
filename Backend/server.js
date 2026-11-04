@@ -220,7 +220,7 @@ async function callGeminiWithRetry(model, prompt, retries = 2, delay = 1000) {
     }
 }
 
-// --- COACH SYLVIE INTELLIGENTE (AVEC ACCÈS CIBLÉ AUX COURS DE L'ÉCOLE) ---
+// --- COACH SYLVIE INTELLIGENTE (SÉCURISÉE & ROBUSTE) ---
 app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
     try {
         const { prompt, userId, ecoleId } = req.body;
@@ -243,42 +243,30 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
             }
         }
 
-        // 2. Récupérer UNIQUEMENT les cours spécifiques à l'école et au niveau de l'élève
+        // 2. Récupérer les cours de l'école (ou du tronc commun id=1) sans risque de plantage SQL
         let coursContexte = "";
         try {
             const sqlCours = `
-                SELECT DISTINCT c.titre, c.domaine, c.contenu 
-                FROM cours c
-                LEFT JOIN niveaux n ON c.niveau_id = n.id
-                WHERE (c.ecole_id = ? OR c.ecole_id = 1)
-                  AND (c.niveau_id = ? OR LOWER(n.nom) LIKE ? OR LOWER(REPLACE(n.nom, ' ', '')) = ?)
+                SELECT titre, domaine, contenu 
+                FROM cours 
+                WHERE ecole_id = ? OR ecole_id = 1
             `;
-            
-            const niveauRecherche = niveauEleve.toLowerCase().trim();
-            const niveauClean = niveauRecherche.replace(/\s+/g, '').replace(/[èe]me/g, 'e');
-            const niveauChiffre = parseInt(niveauEleve, 10) || 0;
-
-            const [coursList] = await db.query(sqlCours, [
-                ecoleIdEleve, 
-                niveauChiffre, 
-                `%${niveauRecherche}%`, 
-                niveauClean
-            ]);
+            const [coursList] = await db.query(sqlCours, [ecoleIdEleve]);
 
             if (coursList && coursList.length > 0) {
-                coursContexte = coursList.map(c => `- [${c.domaine ? c.domaine.toUpperCase() : 'MATHS'}] ${c.titre} : ${c.contenu || 'Contenu disponible sur le site'}`).join("\n");
+                coursContexte = coursList.map(c => `- [${c.domaine ? c.domaine.toUpperCase() : 'MATHS'}] ${c.titre} : ${c.contenu || 'Contenu disponible sur la plateforme'}`).join("\n");
             }
         } catch (err) {
-            console.error("Erreur lors de la récupération ciblée des cours pour l'IA :", err);
+            console.error("Erreur lors de la récupération des cours pour l'IA :", err);
         }
 
         // 3. Instructions système pour guider Sylvie
         const systemInstruction = `
             Tu es Sylvie, une coach et tutrice de mathématiques bienveillante, dynamique et pédagogique.
-            Tu t'adresses à l'élève nommé(e) ${eleveNom}, qui est en classe de ${niveauEleve} (Établissement ID: ${ecoleIdEleve}).
+            Tu t'adresses à l'élève nommé(e) ${eleveNom}, qui est en classe de ${niveauEleve}.
 
-            Voici la LISTE OFFICIELLE des cours disponibles sur la plateforme pour son école et son niveau :
-            ${coursContexte ? coursContexte : "Aucun cours n'a encore été publié par les professeurs pour cette classe."}
+            Voici la LISTE DES COURS enregistrés sur la plateforme pour son établissement :
+            ${coursContexte ? coursContexte : "Aucun cours n'a encore été publié par les professeurs pour le moment."}
 
             Directives importantes :
             - Si l'élève te demande quels sont ses cours, la liste de ses cours ou ce qu'il a au programme, liste précisément les cours affichés ci-dessus. Ne dis jamais que tu n'as pas accès à la liste de ses cours si elle est fournie !
