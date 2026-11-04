@@ -337,3 +337,91 @@ function setupFormListeners(currentUser) {
         });
     }
 }
+
+async function poserQuestionProf(promptTexte) {
+    const userId = localStorage.getItem('userId'); // ou l'ID du prof connecté
+    const ecoleId = localStorage.getItem('ecoleId') || 1;
+
+    try {
+        const response = await fetch('/ask-ai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: promptTexte, userId, ecoleId })
+        });
+        const data = await response.json();
+        // Afficher data.answer dans l'interface de chat du prof
+    } catch (err) {
+        console.error("Erreur:", err);
+    }
+}
+
+
+async function envoyerMessageProf() {
+    const inputField = document.getElementById('chat-input');
+    const messagesContainer = document.getElementById('chat-messages');
+    const promptTexte = inputField.value.trim();
+
+    if (!promptTexte) return;
+
+    // 1. Afficher le message du professeur
+    messagesContainer.innerHTML += `
+        <div class="text-right">
+            <span class="inline-block bg-blue-600 text-white p-3 rounded-lg max-w-[80%] text-left">
+                <strong>Vous :</strong> ${promptTexte}
+            </span>
+        </div>
+    `;
+    inputField.value = '';
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    // 2. Récupérer les identifiants stockés du prof
+    const userId = localStorage.getItem('userId') || localStorage.getItem('profId');
+    const ecoleId = localStorage.getItem('ecoleId') || 1;
+
+    // 3. Afficher un indicateur de chargement
+    const loadingId = 'loading-' + Date.now();
+    messagesContainer.innerHTML += `
+        <div id="${loadingId}" class="bg-white text-gray-500 p-3 rounded-lg border italic">
+            Sylvie réfléchit à votre demande pédagogique...
+        </div>
+    `;
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    try {
+        // 4. Appel de la route backend `/ask-ai`
+        const response = await fetch('/ask-ai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: promptTexte, userId, ecoleId })
+        });
+
+        const data = await response.json();
+
+        // Supprimer le message de chargement
+        document.getElementById(loadingId).remove();
+
+        // Afficher la réponse de Sylvie
+        messagesContainer.innerHTML += `
+            <div class="bg-blue-50 text-blue-900 p-3 rounded-lg border border-blue-100">
+                <strong>Sylvie :</strong> ${data.answer.replace(/\n/g, '<br>')}
+            </div>
+        `;
+    } catch (err) {
+        console.error("Erreur communication IA:", err);
+        document.getElementById(loadingId).remove();
+        messagesContainer.innerHTML += `
+            <div class="bg-red-50 text-red-700 p-3 rounded-lg border">
+                <strong>Erreur :</strong> Impossible de joindre Sylvie pour le moment.
+            </div>
+        `;
+    }
+
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// Permettre l'envoi avec la touche "Entrée"
+document.getElementById('chat-input')?.addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+        envoyerMessageProf();
+    }
+});

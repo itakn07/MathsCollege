@@ -220,7 +220,7 @@ async function callGeminiWithRetry(model, prompt, retries = 2, delay = 1000) {
     }
 }
 
-// --- COACH SYLVIE INTELLIGENTE (COURS DE L'ÉCOLE + TRONC COMMUN) ---
+// --- COACH SYLVIE (ÉLÈVES & PROFESSEURS) ---
 app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
     try {
         const { prompt, userId, ecoleId } = req.body;
@@ -229,23 +229,23 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
             return res.status(400).json({ answer: "Le serveur n'a pas reçu de texte." });
         }
 
-        // 1. Récupérer les informations de l'élève (Nom, Niveau, École)
-        let eleveNom = "Élève";
+        // 1. Récupérer les informations de l'utilisateur (Nom, Rôle, Niveau, École)
+        let userName = "Utilisateur";
+        let userRole = "eleve";
         let niveauEleve = "6ème"; 
         let ecoleIdEleve = ecoleId || 1;
 
         if (userId) {
-            const [userInfos] = await db.query("SELECT username, niveau, ecole_id FROM users WHERE id = ?", [userId]);
+            const [userInfos] = await db.query("SELECT username, role, niveau, ecole_id FROM users WHERE id = ?", [userId]);
             if (userInfos && userInfos.length > 0) {
-                eleveNom = userInfos[0].username || "Élève";
+                userName = userInfos[0].username || "Utilisateur";
+                userRole = userInfos[0].role || "eleve";
                 niveauEleve = userInfos[0].niveau || "6ème";
                 ecoleIdEleve = userInfos[0].ecole_id || ecoleIdEleve;
             }
         }
 
-        console.log(`[IA DEBUG] Élève: ${eleveNom} | Niveau: ${niveauEleve} | École ID: ${ecoleIdEleve}`);
-
-        // 2. Récupérer les cours propres à l'école ET le tronc commun public
+        // 2. Récupérer les cours de l'école (ou du tronc commun) pour alimenter le contexte
         let coursContexte = "";
         try {
             const sqlCours = `
@@ -255,29 +255,43 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
             `;
             const [coursList] = await db.query(sqlCours, [ecoleIdEleve]);
 
-            console.log(`[IA DEBUG] Nombre de cours chargés pour l'IA :`, coursList.length);
-
             if (coursList && coursList.length > 0) {
-                coursContexte = coursList.map(c => `- [${c.domaine ? c.domaine.toUpperCase() : 'MATHS'}] ${c.titre} : ${c.contenu || 'Disponible sur la plateforme'}`).join("\n");
+                coursContexte = coursList.map(c => `- [${c.domaine ? c.domaine.toUpperCase() : 'MATHS'}] ${c.titre} : ${c.contenu || 'Disponible'}`).join("\n");
             }
         } catch (err) {
             console.error("Erreur lors de la récupération des cours pour l'IA :", err);
         }
 
-        // 3. Instruction système dynamique pour Coach Sylvie
-        const systemInstruction = `
-            Tu es Sylvie, une coach et tutrice de mathématiques bienveillante, dynamique et pédagogique.
-            Tu t'adresses à l'élève nommé(e) ${eleveNom}, qui est en classe de ${niveauEleve}.
+        // 3. Instructions système dynamiques selon le rôle (Professeur vs Élève)
+        let systemInstruction = "";
 
-            Voici la LISTE OFFICIELLE DES COURS disponibles sur la plateforme pour son établissement et le tronc commun :
-            ${coursContexte ? coursContexte : "Aucun cours n'a encore été publié pour le moment."}
+        if (userRole === 'professeur') {
+            systemInstruction = `
+                Tu es Sylvie, une assistante pédagogique intelligente et experte en mathématiques, conçue pour aider les professeurs.
+                Tu t'adresses à ${userName}, qui est professeur dans l'établissement.
+                
+                Voici la liste des cours de la plateforme de l'école pour référence :
+                ${coursContexte ? coursContexte : "Aucun cours enregistré pour le moment."}
 
-            Directives importantes :
-            - Si l'élève te demande quels sont ses cours, la liste de ses cours ou ce qu'il a au programme, LISTE DIRECTEMENT les cours affichés ci-dessus sous forme de puces claires.
-            - Ne dis jamais que tu n'as pas accès à la liste de ses cours si elle est fournie ci-dessus !
-            - Si l'élève veut réviser ou résumer une notion, appuie-toi sur les titres et contenus de cette liste.
-            - Sois encourageante, adapte tes explications à un niveau de ${niveauEleve}, et tutoie l'élève.
-        `;
+                Directives pour le professeur :
+                - Aide-le à concevoir des plans de cours, formuler des exercices, structurer des interros ou trouver des approches pédagogiques adaptées.
+                - Sois professionnelle, créative, technique et force de proposition dans tes réponses.
+                - Tutoie le professeur et adopte un ton constructif et collégial.
+            `;
+        } else {
+            systemInstruction = `
+                Tu es Sylvie, une coach et tutrice de mathématiques bienveillante, dynamique et pédagogique.
+                Tu t'adresses à l'élève ${userName}, qui est en classe de ${niveauEleve}.
+
+                Voici la LISTE OFFICIELLE DES COURS disponibles sur la plateforme pour son établissement :
+                ${coursContexte ? coursContexte : "Aucun cours n'a encore été publié pour le moment."}
+
+                Directives pour l'élève :
+                - Si l'élève te demande quels sont ses cours ou sa liste de cours, liste précisément les cours affichés ci-dessus sous forme de puces. Ne dis jamais que tu n'as pas accès à sa liste !
+                - Aide-le à réviser, explique les notions pas à pas sans donner directement les réponses aux exercices.
+                - Sois encourageante et tutoie l'élève.
+            `;
+        }
 
         // 4. Appel au modèle Gemini
         const model = genAI.getGenerativeModel({
@@ -288,7 +302,7 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
         const result = await callGeminiWithRetry(model, prompt);
         const text = result.response.text();
 
-        // 5. Sauvegarde de la conversation en base de données
+        // 5. Sauvegarde de la conversation
         if (userId) {
             await db.query("INSERT INTO conversations_ia (user_id, ecole_id, question, reponse) VALUES (?, ?, ?, ?)", 
                 [userId, ecoleIdEleve, prompt, text]
