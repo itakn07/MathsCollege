@@ -220,7 +220,7 @@ async function callGeminiWithRetry(model, prompt, retries = 2, delay = 1000) {
     }
 }
 
-// --- COACH SYLVIE INTELLIGENTE (SÉCURISÉE & ROBUSTE) ---
+// --- COACH SYLVIE INTELLIGENTE (COURS DE L'ÉCOLE + TRONC COMMUN) ---
 app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
     try {
         const { prompt, userId, ecoleId } = req.body;
@@ -243,33 +243,38 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
             }
         }
 
-        // 2. Récupérer les cours de l'école (ou du tronc commun id=1) sans risque de plantage SQL
+        console.log(`[IA DEBUG] Élève: ${eleveNom} | Niveau: ${niveauEleve} | École ID: ${ecoleIdEleve}`);
+
+        // 2. Récupérer les cours propres à l'école ET le tronc commun public
         let coursContexte = "";
         try {
             const sqlCours = `
-                SELECT titre, domaine, contenu 
+                SELECT titre, domaine, contenu, ecole_id 
                 FROM cours 
-                WHERE ecole_id = ? OR ecole_id = 1
+                WHERE ecole_id = ? OR ecole_id = 1 OR ecole_id IS NULL
             `;
             const [coursList] = await db.query(sqlCours, [ecoleIdEleve]);
 
+            console.log(`[IA DEBUG] Nombre de cours chargés pour l'IA :`, coursList.length);
+
             if (coursList && coursList.length > 0) {
-                coursContexte = coursList.map(c => `- [${c.domaine ? c.domaine.toUpperCase() : 'MATHS'}] ${c.titre} : ${c.contenu || 'Contenu disponible sur la plateforme'}`).join("\n");
+                coursContexte = coursList.map(c => `- [${c.domaine ? c.domaine.toUpperCase() : 'MATHS'}] ${c.titre} : ${c.contenu || 'Disponible sur la plateforme'}`).join("\n");
             }
         } catch (err) {
             console.error("Erreur lors de la récupération des cours pour l'IA :", err);
         }
 
-        // 3. Instructions système pour guider Sylvie
+        // 3. Instruction système dynamique pour Coach Sylvie
         const systemInstruction = `
             Tu es Sylvie, une coach et tutrice de mathématiques bienveillante, dynamique et pédagogique.
             Tu t'adresses à l'élève nommé(e) ${eleveNom}, qui est en classe de ${niveauEleve}.
 
-            Voici la LISTE DES COURS enregistrés sur la plateforme pour son établissement :
-            ${coursContexte ? coursContexte : "Aucun cours n'a encore été publié par les professeurs pour le moment."}
+            Voici la LISTE OFFICIELLE DES COURS disponibles sur la plateforme pour son établissement et le tronc commun :
+            ${coursContexte ? coursContexte : "Aucun cours n'a encore été publié pour le moment."}
 
             Directives importantes :
-            - Si l'élève te demande quels sont ses cours, la liste de ses cours ou ce qu'il a au programme, liste précisément les cours affichés ci-dessus. Ne dis jamais que tu n'as pas accès à la liste de ses cours si elle est fournie !
+            - Si l'élève te demande quels sont ses cours, la liste de ses cours ou ce qu'il a au programme, LISTE DIRECTEMENT les cours affichés ci-dessus sous forme de puces claires.
+            - Ne dis jamais que tu n'as pas accès à la liste de ses cours si elle est fournie ci-dessus !
             - Si l'élève veut réviser ou résumer une notion, appuie-toi sur les titres et contenus de cette liste.
             - Sois encourageante, adapte tes explications à un niveau de ${niveauEleve}, et tutoie l'élève.
         `;
@@ -283,7 +288,7 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
         const result = await callGeminiWithRetry(model, prompt);
         const text = result.response.text();
 
-        // 5. Sauvegarde optionnelle de la conversation en base
+        // 5. Sauvegarde de la conversation en base de données
         if (userId) {
             await db.query("INSERT INTO conversations_ia (user_id, ecole_id, question, reponse) VALUES (?, ?, ?, ?)", 
                 [userId, ecoleIdEleve, prompt, text]
