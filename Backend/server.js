@@ -91,14 +91,14 @@ async function verifierAbonnementsExpires() {
     try {
         const updateExpiredSql = `
             UPDATE ecoles 
-            SET statut_abonnement = 'inactif' 
+            SET statut_abonnement = 'suspendu' 
             WHERE date_fin_abonnement IS NOT NULL 
               AND date_fin_abonnement < NOW() 
               AND statut_abonnement = 'actif'
         `;
         const [result] = await db.query(updateExpiredSql);
         if (result.affectedRows > 0) {
-            console.log(`[CRON Abonnements] ${result.affectedRows} école(s) passée(s) en statut inactif/expiré.`);
+            console.log(`[CRON Abonnements] ${result.affectedRows} école(s) passée(s) en statut suspendu.`);
         }
     } catch (err) {
         if (err.code === 'ER_NO_SUCH_TABLE') {
