@@ -338,6 +338,30 @@ function setupFormListeners(currentUser) {
     }
 }
 
+function formaterReponseSylvie(texteBrut) {
+    if (!texteBrut) return "Je n'ai pas de réponse pour le moment.";
+
+    let texte = texteBrut.replace(/```[a-z]*\n?/g, '');
+
+    // Extraire les formules AVANT le markdown (sinon marked les abîme)
+    const formules = [];
+    texte = texte.replace(
+        /\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)|\$([^$\n]+?)\$/g,
+        (m, a, b, c, d) => {
+            const tex = (a ?? b ?? c ?? d).trim();
+            const display = a !== undefined || b !== undefined;
+            formules.push(katex.renderToString(tex, {
+                displayMode: display,
+                throwOnError: false
+            }));
+            return `§§${formules.length - 1}§§`;
+        }
+    );
+
+    let html = DOMPurify.sanitize(marked.parse(texte, { breaks: true }));
+    return html.replace(/§§(\d+)§§/g, (_, i) => formules[i]);
+}
+
 async function poserQuestionProf(promptTexte) {
     const userId = localStorage.getItem('userId'); // ou l'ID du prof connecté
     const ecoleId = localStorage.getItem('ecoleId') || 1;
@@ -363,18 +387,19 @@ async function envoyerMessageProf() {
 
     if (!promptTexte) return;
 
-    // 1. Afficher le message du professeur
+    // 1. Afficher le message du professeur (nettoyé contre l'injection de code)
+    const promptSecurise = DOMPurify.sanitize(promptTexte, { ALLOWED_TAGS: [] });
     messagesContainer.innerHTML += `
         <div class="text-right">
             <span class="inline-block bg-blue-600 text-white p-3 rounded-lg max-w-[80%] text-left">
-                <strong>Vous :</strong> ${promptTexte}
+                <strong>Vous :</strong> ${promptSecurise}
             </span>
         </div>
     `;
     inputField.value = '';
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-    // 2. Récupérer proprement l'ID et l'école depuis l'objet 'user' du localStorage
+    // 2. Récupérer l'ID et l'école depuis l'objet 'user'
     let userId = null;
     let ecoleId = 1;
 
@@ -389,7 +414,7 @@ async function envoyerMessageProf() {
         }
     }
 
-    // 3. Afficher un indicateur de chargement
+    // 3. Indicateur de chargement
     const loadingId = 'loading-' + Date.now();
     messagesContainer.innerHTML += `
         <div id="${loadingId}" class="bg-white text-gray-500 p-3 rounded-lg border italic">
@@ -399,7 +424,6 @@ async function envoyerMessageProf() {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
     try {
-        // 4. Appel de la route backend `/ask-ai`
         const response = await fetch('/ask-ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -408,18 +432,20 @@ async function envoyerMessageProf() {
 
         const data = await response.json();
 
-        // Supprimer le message de chargement
-        document.getElementById(loadingId).remove();
+        const loadingEl = document.getElementById(loadingId);
+        if (loadingEl) loadingEl.remove();
 
-        // Afficher la réponse de Sylvie
+        // 4. Afficher la réponse formatée (Markdown + formules)
         messagesContainer.innerHTML += `
-            <div class="bg-blue-50 text-blue-900 p-3 rounded-lg border border-blue-100">
-                <strong>Sylvie :</strong> ${data.answer.replace(/\n/g, '<br>')}
+            <div class="bot-msg bg-blue-50 text-blue-900 p-3 rounded-lg border border-blue-100">
+                <strong>Sylvie :</strong>
+                <div>${formaterReponseSylvie(data.answer)}</div>
             </div>
         `;
     } catch (err) {
         console.error("Erreur communication IA:", err);
-        document.getElementById(loadingId).remove();
+        const loadingEl = document.getElementById(loadingId);
+        if (loadingEl) loadingEl.remove();
         messagesContainer.innerHTML += `
             <div class="bg-red-50 text-red-700 p-3 rounded-lg border">
                 <strong>Erreur :</strong> Impossible de joindre Sylvie pour le moment.
