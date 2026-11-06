@@ -381,19 +381,28 @@ function effacerSolveur() {
 function formaterReponseSylvie(texteBrut) {
     if (!texteBrut) return "Je n'ai pas de réponse pour le moment.";
 
-    return texteBrut
-        // 1. Supprimer les balises de code Markdown (comme ```html ou ```)
+    let texteNettoye = texteBrut
+        // 1. Supprimer les balises de code Markdown résiduelles
         .replace(/```[a-z]*\n?/g, '')
         .replace(/```/g, '')
-        // 2. Transformer les titres (ex: ## 📌 Titre) en de beaux titres HTML bien visibles
-        .replace(/^##\s+(.*)$/gm, '<div class="font-bold text-base text-blue-900 mt-3 mb-1">📌 $1</div>')
-        .replace(/^###\s+(.*)$/gm, '<div class="font-bold text-sm text-blue-800 mt-2 mb-1">$1</div>')
-        // 3. Transformer le **texte en gras**
+
+        // 2. Transformer les titres Markdown (## ou ###) en HTML stylé
+        .replace(/^##\s+(.*)$/gm, '<div class="font-bold text-base text-blue-900 mt-4 mb-2">$1</div>')
+        .replace(/^###\s+(.*)$/gm, '<div class="font-bold text-sm text-blue-800 mt-3 mb-1">$1</div>')
+
+        // 3. Transformer les listes à puces (* ou -) en de vraies puces HTML propres
+        .replace(/^\s*[\*\-]\s+(.*)$/gm, '<div class="ml-4 my-1">• $1</div>')
+
+        // 4. Transformer le **texte en gras**
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        // 4. Nettoyer ou adapter les symboles $ pour les maths
-        .replace(/\$(.*?)\$/g, '<span class="italic">$1</span>')
-        // 5. Remplacer les retours à la ligne par de vrais <br>
+
+        // 5. Nettoyer ou enlever les symboles $ parasites tout en gardant le contenu mathématique lisible
+        .replace(/\$(.*?)\$/g, '<span class="font-serif italic font-medium text-blue-900">$1</span>')
+
+        // 6. Remplacer les sauts de ligne par des <br>
         .replace(/\n/g, '<br>');
+
+    return texteNettoye;
 }
 
 
