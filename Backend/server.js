@@ -277,6 +277,20 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
                 - Aide-le à concevoir des plans de cours, formuler des exercices, structurer des interros ou trouver des approches pédagogiques adaptées.
                 - Sois professionnelle, créative, technique et force de proposition dans tes réponses.
                 - Tutoie le professeur et adopte un ton constructif et collégial.
+
+                Publication directe :
+                - Si le professeur te demande de PUBLIER un cours ou un exercice, tu ne publies rien toi-même : tu prépares la publication, et il la validera d'un clic.
+                - Dans ce cas, termine ta réponse par un bloc EXACTEMENT dans ce format :
+[[PUBLICATION]]
+titre: <titre du cours>
+niveau: <6ème | 5ème | 4ème | 3ème>
+domaine: <algebre | geometrie | ...>
+type: <cours | exercice>
+---CONTENU---
+<le contenu complet en HTML>
+[[FIN_PUBLICATION]]
+                - Avant ce bloc, écris une phrase courte du type "Voici l'aperçu, clique sur Publier pour valider".
+                - N'utilise ce bloc que si le professeur demande explicitement de publier.
             `;
         } else {
             systemInstruction = `
@@ -302,6 +316,33 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
         const result = await callGeminiWithRetry(model, prompt);
         const text = result.response.text();
 
+        // Extraire une éventuelle publication proposée (professeurs uniquement)
+        let publication = null;
+        let answer = text;
+
+        if (userRole === 'professeur') {
+            const m = text.match(/\[\[PUBLICATION\]\]([\s\S]*?)\[\[FIN_PUBLICATION\]\]/);
+            if (m) {
+                const [entete, ...reste] = m[1].split('---CONTENU---');
+                const champ = (nom) => {
+                    const r = entete.match(new RegExp(nom + '\\s*:\\s*(.+)', 'i'));
+                    return r ? r[1].trim() : '';
+                };
+                const contenu = reste.join('---CONTENU---').trim();
+
+                if (champ('titre') && contenu) {
+                    publication = {
+                        titre: champ('titre'),
+                        niveau: champ('niveau'),
+                        domaine: champ('domaine').toLowerCase(),
+                        type: champ('type').toLowerCase() || 'cours',
+                        contenu
+                    };
+                }
+                answer = text.replace(m[0], '').trim();
+            }
+        }
+
         // 5. Sauvegarde de la conversation
         if (userId) {
             await db.query("INSERT INTO conversations_ia (user_id, ecole_id, question, reponse) VALUES (?, ?, ?, ?)", 
@@ -309,7 +350,7 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
             ).catch(err => console.error("Erreur stockage conversation :", err));
         }
 
-        res.json({ answer: text });
+        res.json({ answer, publication });
 
     } catch (error) {
         console.error("Erreur technique IA :", error);

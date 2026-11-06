@@ -380,6 +380,41 @@ async function poserQuestionProf(promptTexte) {
 }
 
 
+const publicationsEnAttente = {};
+
+function apercuPublicationHtml(id, pub) {
+    const titre = DOMPurify.sanitize(pub.titre, { ALLOWED_TAGS: [] });
+    const niveau = DOMPurify.sanitize(pub.niveau || '', { ALLOWED_TAGS: [] });
+    const domaine = DOMPurify.sanitize(pub.domaine || '', { ALLOWED_TAGS: [] });
+    const contenu = DOMPurify.sanitize(pub.contenu);
+    return `
+        <div id="${id}" class="bg-white border-2 border-indigo-300 p-4 rounded-lg my-2">
+            <div class="font-bold text-indigo-900">📄 ${titre}</div>
+            <div class="text-xs text-slate-500 mb-2">${niveau} · ${domaine}</div>
+            <details class="mb-3">
+                <summary class="cursor-pointer text-sm text-indigo-700">Voir l'aperçu du contenu</summary>
+                <div class="bot-msg mt-2 p-2 border rounded max-h-64 overflow-auto text-sm">${contenu}</div>
+            </details>
+            <button onclick="confirmerPublication('${id}')"
+                class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold">Publier</button>
+            <button onclick="annulerPublication('${id}')"
+                class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm ml-2">Annuler</button>
+        </div>`;
+}
+
+function annulerPublication(id) {
+    delete publicationsEnAttente[id];
+    const bloc = document.getElementById(id);
+    if (bloc) bloc.remove();
+}
+
+// Temporaire : on branchera la vraie publication à l'étape 3
+function confirmerPublication(id) {
+    alert("Étape 3 à venir : la publication n'est pas encore branchée.");
+}
+
+
+
 async function envoyerMessageProf() {
     const inputField = document.getElementById('chat-input');
     const messagesContainer = document.getElementById('chat-messages');
@@ -424,6 +459,7 @@ async function envoyerMessageProf() {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
     try {
+        // 4. Appel de la route backend /ask-ai
         const response = await fetch('/ask-ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -435,13 +471,21 @@ async function envoyerMessageProf() {
         const loadingEl = document.getElementById(loadingId);
         if (loadingEl) loadingEl.remove();
 
-        // 4. Afficher la réponse formatée (Markdown + formules)
+        // 5. Afficher la réponse formatée (Markdown + formules)
         messagesContainer.innerHTML += `
             <div class="bot-msg bg-blue-50 text-blue-900 p-3 rounded-lg border border-blue-100">
                 <strong>Sylvie :</strong>
                 <div>${formaterReponseSylvie(data.answer)}</div>
             </div>
         `;
+
+        // 6. Si Sylvie propose une publication, afficher l'aperçu avec les boutons
+        if (data.publication) {
+            const pubId = 'pub-' + Date.now();
+            publicationsEnAttente[pubId] = data.publication;
+            messagesContainer.innerHTML += apercuPublicationHtml(pubId, data.publication);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
     } catch (err) {
         console.error("Erreur communication IA:", err);
         const loadingEl = document.getElementById(loadingId);
