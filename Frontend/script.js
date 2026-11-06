@@ -381,29 +381,51 @@ function effacerSolveur() {
 function formaterReponseSylvie(texteBrut) {
     if (!texteBrut) return "Je n'ai pas de réponse pour le moment.";
 
-    let texteNettoye = texteBrut
-        // 1. Supprimer les balises de code Markdown résiduelles
-        .replace(/```[a-z]*\n?/g, '')
-        .replace(/```/g, '')
+    // Nettoyer les blocs de code markdown s'il y en a
+    let textePropre = texteBrut.replace(/```[a-z]*\n?/g, '').replace(/```/g, '');
+    
+    // Découper le texte ligne par ligne
+    let lignes = textePropre.split('\n');
+    let resultatHtml = [];
 
-        // 2. Transformer les titres Markdown (## ou ###) en HTML stylé
-        .replace(/^##\s+(.*)$/gm, '<div class="font-bold text-base text-blue-900 mt-4 mb-2">$1</div>')
-        .replace(/^###\s+(.*)$/gm, '<div class="font-bold text-sm text-blue-800 mt-3 mb-1">$1</div>')
+    for (let ligne of lignes) {
+        ligne = ligne.trim();
+        if (!ligne) {
+            resultatHtml.push('<br>');
+            continue;
+        }
 
-        // 3. Transformer les listes à puces (* ou -) en de vraies puces HTML propres
-        .replace(/^\s*[\*\-]\s+(.*)$/gm, '<div class="ml-4 my-1">• $1</div>')
+        // 1. Gestion des grands titres (##)
+        if (ligne.startsWith('## ')) {
+            let titre = ligne.replace('## ', '');
+            resultatHtml.push(`<div class="font-bold text-base text-blue-900 mt-4 mb-2">📌 ${titre}</div>`);
+        }
+        // 2. Gestion des sous-titres (###)
+        else if (ligne.startsWith('### ')) {
+            let soustitre = ligne.replace('### ', '');
+            resultatHtml.push(`<div class="font-bold text-sm text-blue-800 mt-3 mb-1">${soustitre}</div>`);
+        }
+        // 3. Gestion des listes à puces (* ou -)
+        else if (ligne.startsWith('* ') || ligne.startsWith('- ')) {
+            let item = ligne.replace(/^[\*\-]\s+/, '');
+            // Remplacer le gras à l'intérieur de la puce
+            item = item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            resultatHtml.push(`<div class="ml-4 my-1 text-slate-700">• ${item}</div>`);
+        }
+        // 4. Paragraphe normal
+        else {
+            // Remplacer le gras **texte**
+            ligne = ligne.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            // Nettoyer les symboles $ des maths pour les rendre plus discrets/propres
+            ligne = ligne.replace(/\$(.*?)\$/g, '<span class="font-serif italic text-blue-900">$1</span>');
+            
+            resultatHtml.push(`<div class="my-1 text-slate-700">${ligne}</div>`);
+        }
+    }
 
-        // 4. Transformer le **texte en gras**
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    return resultatHtml.join('');
+};
 
-        // 5. Nettoyer ou enlever les symboles $ parasites tout en gardant le contenu mathématique lisible
-        .replace(/\$(.*?)\$/g, '<span class="font-serif italic font-medium text-blue-900">$1</span>')
-
-        // 6. Remplacer les sauts de ligne par des <br>
-        .replace(/\n/g, '<br>');
-
-    return texteNettoye;
-}
 
 
 async function envoyerQuestionIA() {
