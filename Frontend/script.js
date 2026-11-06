@@ -420,7 +420,7 @@ async function envoyerQuestionIA() {
         }
     }
 
-    // 1. Afficher le message de l'élève
+    // Afficher le message de l'élève
     if (reponseIA) {
         reponseIA.innerHTML += `
             <div class="user-msg bg-slate-100 p-3 rounded-2xl text-sm text-slate-700 my-2 text-right">
@@ -429,7 +429,7 @@ async function envoyerQuestionIA() {
     }
     inputEl.value = '';
 
-    // 2. Afficher l'indicateur de chargement "Sylvie réfléchit..."
+    // Afficher l'indicateur de chargement "Sylvie réfléchit..."
     const loadingId = 'loading-' + Date.now();
     if (reponseIA) {
         reponseIA.innerHTML += `
@@ -449,26 +449,12 @@ async function envoyerQuestionIA() {
 
         // Supprimer le message de chargement
         const loadingElement = document.getElementById(loadingId);
-        if (loadingElement) {
-            loadingElement.remove();
-        }
+        if (loadingElement) loadingElement.remove();
 
-        // Fonction complète pour formater le texte de Sylvie (titres, gras, retours à la ligne)
-        const formaterReponseSylvie = (texteBrut) => {
-            if (!texteBrut) return "Je n'ai pas de réponse pour le moment.";
-            return texteBrut
-                .replace(/```[a-z]*\n?/g, '') // Supprime les blocs ```html ou similaires
-                .replace(/```/g, '')
-                .replace(/^##\s+(.*)$/gm, '<div class="font-bold text-base text-blue-900 mt-3 mb-1">📌 $1</div>') // Titres h2
-                .replace(/^###\s+(.*)$/gm, '<div class="font-bold text-sm text-blue-800 mt-2 mb-1">$1</div>') // Titres h3
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Texte en gras
-                .replace(/\$(.*?)\$/g, '<span class="italic">$1</span>') // Mathématiques / italique
-                .replace(/\n/g, '<br>'); // Retours à la ligne
-        };
-
+        // Appel direct de la fonction globale de formatage 🚀
         const reponsePropre = formaterReponseSylvie(data.answer);
 
-        // 3. Afficher la vraie réponse de Sylvie formatée
+        // Afficher la réponse propre de Sylvie
         if (reponseIA) {
             reponseIA.innerHTML += `
                 <div class="bot-msg bg-brand-50/80 p-4 rounded-2xl border-l-4 border-brand-500 text-sm text-slate-700 my-2 shadow-sm">
@@ -478,12 +464,8 @@ async function envoyerQuestionIA() {
         }
     } catch (e) {
         console.error("Erreur IA :", e);
-        
-        // Supprimer le message de chargement en cas d'erreur
         const loadingElement = document.getElementById(loadingId);
-        if (loadingElement) {
-            loadingElement.remove();
-        }
+        if (loadingElement) loadingElement.remove();
 
         if (reponseIA) {
             reponseIA.innerHTML += `
