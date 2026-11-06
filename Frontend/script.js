@@ -381,57 +381,37 @@ function effacerSolveur() {
 function formaterReponseSylvie(texteBrut) {
     if (!texteBrut) return "Je n'ai pas de réponse pour le moment.";
 
-    // Nettoyer les blocs de code markdown s'il y en a
-    let textePropre = texteBrut.replace(/```[a-z]*\n?/g, '').replace(/```/g, '');
-    
-    // Découper le texte ligne par ligne
-    let lignes = textePropre.split('\n');
-    let resultatHtml = [];
+    // Enlever les ``` éventuels autour de la réponse
+    let texte = texteBrut.replace(/```[a-z]*\n?/g, '');
 
-    for (let ligne of lignes) {
-        ligne = ligne.trim();
-        if (!ligne) {
-            resultatHtml.push('<br>');
-            continue;
+    // 1. Extraire les formules AVANT le markdown (sinon marked les abîme)
+    const formules = [];
+    texte = texte.replace(
+        /\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)|\$([^$\n]+?)\$/g,
+        (m, a, b, c, d) => {
+            const tex = (a ?? b ?? c ?? d).trim();
+            const display = a !== undefined || b !== undefined;
+            formules.push(katex.renderToString(tex, {
+                displayMode: display,
+                throwOnError: false
+            }));
+            return `§§${formules.length - 1}§§`;
         }
+    );
 
-        // 1. Gestion des grands titres (##)
-        if (ligne.startsWith('## ')) {
-            let titre = ligne.replace('## ', '');
-            resultatHtml.push(`<div class="font-bold text-base text-blue-900 mt-4 mb-2">📌 ${titre}</div>`);
-        }
-        // 2. Gestion des sous-titres (###)
-        else if (ligne.startsWith('### ')) {
-            let soustitre = ligne.replace('### ', '');
-            resultatHtml.push(`<div class="font-bold text-sm text-blue-800 mt-3 mb-1">${soustitre}</div>`);
-        }
-        // 3. Gestion des listes à puces (* ou -)
-        else if (ligne.startsWith('* ') || ligne.startsWith('- ')) {
-            let item = ligne.replace(/^[\*\-]\s+/, '');
-            // Remplacer le gras à l'intérieur de la puce
-            item = item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            resultatHtml.push(`<div class="ml-4 my-1 text-slate-700">• ${item}</div>`);
-        }
-        // 4. Paragraphe normal
-        else {
-            // Remplacer le gras **texte**
-            ligne = ligne.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            // Nettoyer les symboles $ des maths pour les rendre plus discrets/propres
-            ligne = ligne.replace(/\$(.*?)\$/g, '<span class="font-serif italic text-blue-900">$1</span>');
-            
-            resultatHtml.push(`<div class="my-1 text-slate-700">${ligne}</div>`);
-        }
-    }
+    // 2. Markdown -> HTML, puis nettoyage de sécurité
+    let html = DOMPurify.sanitize(marked.parse(texte, { breaks: true }));
 
-    return resultatHtml.join('');
-};
+    // 3. Remettre les formules rendues
+    return html.replace(/§§(\d+)§§/g, (_, i) => formules[i]);
+}
 
 
 
 async function envoyerQuestionIA() {
     const inputEl = document.getElementById('monInputIA');
     const reponseIA = document.getElementById('reponseIA');
-    
+
     if (!inputEl) return;
     const prompt = inputEl.value.trim();
     if (!prompt) return;
@@ -451,16 +431,17 @@ async function envoyerQuestionIA() {
         }
     }
 
-    // Afficher le message de l'élève
+    // Afficher le message de l'utilisateur (nettoyé pour éviter l'injection de code)
     if (reponseIA) {
+        const promptSecurise = DOMPurify.sanitize(prompt, { ALLOWED_TAGS: [] });
         reponseIA.innerHTML += `
             <div class="user-msg bg-slate-100 p-3 rounded-2xl text-sm text-slate-700 my-2 text-right">
-                <strong>Toi :</strong> ${prompt}
+                <strong>Toi :</strong> ${promptSecurise}
             </div>`;
     }
     inputEl.value = '';
 
-    // Afficher l'indicateur de chargement "Sylvie réfléchit..."
+    // Indicateur de chargement
     const loadingId = 'loading-' + Date.now();
     if (reponseIA) {
         reponseIA.innerHTML += `
@@ -482,14 +463,14 @@ async function envoyerQuestionIA() {
         const loadingElement = document.getElementById(loadingId);
         if (loadingElement) loadingElement.remove();
 
-        // Appel direct de la fonction globale de formatage 🚀
+        // Markdown + formules + sécurité
         const reponsePropre = formaterReponseSylvie(data.answer);
 
-        // Afficher la réponse propre de Sylvie
         if (reponseIA) {
             reponseIA.innerHTML += `
                 <div class="bot-msg bg-brand-50/80 p-4 rounded-2xl border-l-4 border-brand-500 text-sm text-slate-700 my-2 shadow-sm">
-                    <strong>Sylvie :</strong><br><br> ${reponsePropre}
+                    <strong>Sylvie :</strong>
+                    <div>${reponsePropre}</div>
                 </div>`;
             reponseIA.scrollTop = reponseIA.scrollHeight;
         }
