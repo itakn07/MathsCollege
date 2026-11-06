@@ -378,6 +378,20 @@ function effacerSolveur() {
 }
 
 
+
+function formaterReponseSylvie(texteBrut) {
+    if (!texteBrut) return "";
+
+    return texteBrut
+        // Transforme le **texte** en vrai texte en GRAS
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        // Nettoie les symboles $ des maths
+        .replace(/\$(.*?)\$/g, '<span class="italic">$1</span>')
+        // Remplace les sauts de ligne pour ne pas avoir un bloc de texte collé
+        .replace(/\n/g, '<br>');
+}
+
+
 async function envoyerQuestionIA() {
     const inputEl = document.getElementById('monInputIA');
     const reponseIA = document.getElementById('reponseIA');
@@ -434,11 +448,22 @@ async function envoyerQuestionIA() {
             loadingElement.remove();
         }
 
-        // 3. Afficher la vraie réponse de Sylvie
+        // Fonction interne pour formater proprement le texte de Sylvie
+        const formaterTexte = (texte) => {
+            if (!texte) return "Je n'ai pas de réponse pour le moment.";
+            return texte
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Transforme le **gras**
+                .replace(/\$(.*?)\$/g, '<span class="italic">$1</span>') // Nettoie ou met en valeur les expressions entre $
+                .replace(/\n/g, '<br>'); // Conserve les sauts de ligne
+        };
+
+        const reponsePropre = formaterTexte(data.answer);
+
+        // 3. Afficher la vraie réponse de Sylvie formatée
         if (reponseIA) {
             reponseIA.innerHTML += `
                 <div class="bot-msg bg-brand-50/80 p-3 rounded-2xl border-l-4 border-brand-500 text-sm text-slate-700 my-2">
-                    <strong>Sylvie :</strong> ${data.answer ? data.answer.replace(/\n/g, '<br>') : "Je n'ai pas de réponse pour le moment."}
+                    <strong>Sylvie :</strong><br><br> ${reponsePropre}
                 </div>`;
             reponseIA.scrollTop = reponseIA.scrollHeight;
         }
