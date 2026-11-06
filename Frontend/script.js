@@ -378,6 +378,24 @@ function effacerSolveur() {
 }
 
 
+function formaterReponseSylvie(texteBrut) {
+    if (!texteBrut) return "Je n'ai pas de réponse pour le moment.";
+
+    return texteBrut
+        // 1. Supprimer les balises de code Markdown (comme ```html ou ```)
+        .replace(/```[a-z]*\n?/g, '')
+        .replace(/```/g, '')
+        // 2. Transformer les titres (ex: ## 📌 Titre) en de beaux titres HTML bien visibles
+        .replace(/^##\s+(.*)$/gm, '<div class="font-bold text-base text-blue-900 mt-3 mb-1">📌 $1</div>')
+        .replace(/^###\s+(.*)$/gm, '<div class="font-bold text-sm text-blue-800 mt-2 mb-1">$1</div>')
+        // 3. Transformer le **texte en gras**
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        // 4. Nettoyer ou adapter les symboles $ pour les maths
+        .replace(/\$(.*?)\$/g, '<span class="italic">$1</span>')
+        // 5. Remplacer les retours à la ligne par de vrais <br>
+        .replace(/\n/g, '<br>');
+}
+
 
 async function envoyerQuestionIA() {
     const inputEl = document.getElementById('monInputIA');
