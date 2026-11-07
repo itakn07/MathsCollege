@@ -338,6 +338,8 @@ function setupFormListeners(currentUser) {
     }
 }
 
+// ============= CHAT SYLVIE (MODE PROFESSEUR) =============
+
 function formaterReponseSylvie(texteBrut) {
     if (!texteBrut) return "Je n'ai pas de réponse pour le moment.";
 
@@ -362,25 +364,16 @@ function formaterReponseSylvie(texteBrut) {
     return html.replace(/§§(\d+)§§/g, (_, i) => formules[i]);
 }
 
-async function poserQuestionProf(promptTexte) {
-    const userId = localStorage.getItem('userId'); // ou l'ID du prof connecté
-    const ecoleId = localStorage.getItem('ecoleId') || 1;
-
-    try {
-        const response = await fetch('/ask-ai', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: promptTexte, userId, ecoleId })
-        });
-        const data = await response.json();
-        // Afficher data.answer dans l'interface de chat du prof
-    } catch (err) {
-        console.error("Erreur:", err);
-    }
-}
-
-
+// Publications proposées par Sylvie, en attente de confirmation
 const publicationsEnAttente = {};
+
+// Correspondance niveau (texte) -> id de la table niveaux
+const NIVEAUX_ID = {
+    '6e': 1, '6ème': 1, '6eme': 1, '6': 1,
+    '5e': 2, '5ème': 2, '5eme': 2, '5': 2,
+    '4e': 3, '4ème': 3, '4eme': 3, '4': 3,
+    '3e': 4, '3ème': 4, '3eme': 4, '3': 4
+};
 
 function apercuPublicationHtml(id, pub) {
     const titre = DOMPurify.sanitize(pub.titre, { ALLOWED_TAGS: [] });
@@ -408,12 +401,50 @@ function annulerPublication(id) {
     if (bloc) bloc.remove();
 }
 
-// Temporaire : on branchera la vraie publication à l'étape 3
-function confirmerPublication(id) {
-    alert("Étape 3 à venir : la publication n'est pas encore branchée.");
+async function confirmerPublication(id) {
+    const pub = publicationsEnAttente[id];
+    const bloc = document.getElementById(id);
+    if (!pub || !bloc) return;
+
+    const niveau_id = NIVEAUX_ID[(pub.niveau || '').trim().toLowerCase()];
+    if (!niveau_id) {
+        alert("Niveau non reconnu : " + pub.niveau);
+        return;
+    }
+
+    let user = {};
+    try { user = JSON.parse(localStorage.getItem('user') || '{}'); } catch (e) {}
+
+    bloc.querySelectorAll('button').forEach(b => b.disabled = true);
+
+    try {
+        const res = await fetch('/api/prof/cours', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                titre: pub.titre,
+                contenu: DOMPurify.sanitize(pub.contenu),
+                niveau_id,
+                domaine: pub.domaine || 'algebre',
+                ecole_id: user.ecole_id || 1,
+                professeur_id: user.id,
+                est_public: 1
+            })
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+
+        delete publicationsEnAttente[id];
+        bloc.innerHTML = `<div class="text-green-700 font-bold">✅ Cours publié avec succès !</div>`;
+
+        // Rafraîchir la liste des cours et l'historique
+        chargerListeCours();
+        chargerStatsDashboard(user.id);
+    } catch (e) {
+        console.error(e);
+        bloc.querySelectorAll('button').forEach(b => b.disabled = false);
+        alert("Impossible de publier le cours.");
+    }
 }
-
-
 
 async function envoyerMessageProf() {
     const inputField = document.getElementById('chat-input');
