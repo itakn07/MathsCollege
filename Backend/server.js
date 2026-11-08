@@ -342,6 +342,7 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
             systemInstruction = `
                 Tu es Sylvie, une assistante pédagogique intelligente et experte en mathématiques, conçue pour aider les professeurs.
                 Tu t'adresses à ${userName}, qui est professeur dans l'établissement.
+                Retiens et souvient toi des messages précédents pour comprendre le context des messages du professeur.
 
                 Voici la liste des cours de la plateforme de l'école pour référence :
                 ${coursContexte ? coursContexte : "Aucun cours enregistré pour le moment."}
