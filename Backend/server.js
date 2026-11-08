@@ -245,18 +245,58 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
             }
         }
 
-        // 2. Récupérer les cours de l'école (ou du tronc commun) pour alimenter le contexte
+        // 2. Récupérer les cours pour alimenter le contexte
+        const htmlEnTexte = (html, max = 1500) => (html || '')
+            .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+            .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .slice(0, max);
+
+        const formaterCours = (liste) => liste
+            .map(c => `- [${c.domaine ? c.domaine.toUpperCase() : 'MATHS'}] ${c.titre} : ${htmlEnTexte(c.contenu) || 'Disponible'}`)
+            .join("\n");
+
+        // "5ème" -> 5 -> id 2 dans la table niveaux
+        const NIVEAU_IDS = { 6: 1, 5: 2, 4: 3, 3: 4 };
+        const chiffre = parseInt((String(niveauEleve).match(/\d/) || [])[0]);
+        const niveauId = NIVEAU_IDS[chiffre] || null;
+
         let coursContexte = "";
         try {
-            const sqlCours = `
-                SELECT titre, domaine, contenu, ecole_id 
-                FROM cours 
-                WHERE ecole_id = ? OR ecole_id = 1 OR ecole_id IS NULL
-            `;
-            const [coursList] = await db.query(sqlCours, [ecoleIdEleve]);
+            if (userRole === 'professeur' || !niveauId) {
+                // Professeur : tous les cours de l'école + tronc commun
+                const [coursList] = await db.query(
+                    `SELECT titre, domaine, contenu FROM cours
+                     WHERE ecole_id = ? OR ecole_id = 1 OR ecole_id IS NULL`,
+                    [ecoleIdEleve]
+                );
+                if (coursList.length > 0) coursContexte = formaterCours(coursList);
+            } else {
+                // Élève : cours communs de son niveau
+                const [communs] = await db.query(
+                    `SELECT titre, domaine, contenu FROM cours
+                     WHERE ecole_id = 1 AND niveau_id = ?`,
+                    [niveauId]
+                );
+                // Élève : cours propres à son école, pour son niveau
+                let specifiques = [];
+                if (ecoleIdEleve !== 1) {
+                    [specifiques] = await db.query(
+                        `SELECT titre, domaine, contenu FROM cours
+                         WHERE ecole_id = ? AND niveau_id = ?`,
+                        [ecoleIdEleve, niveauId]
+                    );
+                }
 
-            if (coursList && coursList.length > 0) {
-                coursContexte = coursList.map(c => `- [${c.domaine ? c.domaine.toUpperCase() : 'MATHS'}] ${c.titre} : ${c.contenu || 'Disponible'}`).join("\n");
+                if (communs.length > 0) {
+                    coursContexte += `COURS COMMUNS (programme de ${niveauEleve}) :\n${formaterCours(communs)}`;
+                }
+                if (specifiques.length > 0) {
+                    coursContexte += `\n\nCOURS SPÉCIFIQUES À SON ÉCOLE (${niveauEleve}) :\n${formaterCours(specifiques)}`;
+                }
             }
         } catch (err) {
             console.error("Erreur lors de la récupération des cours pour l'IA :", err);
@@ -304,6 +344,7 @@ type: <cours | exercice>
                 - Si l'élève te demande quels sont ses cours ou sa liste de cours, liste précisément les cours affichés ci-dessus sous forme de puces. Ne dis jamais que tu n'as pas accès à sa liste !
                 - Aide-le à réviser, explique les notions pas à pas sans donner directement les réponses aux exercices.
                 - Sois encourageante et tutoie l'élève.
+                - Appuie-toi d'abord sur les cours ci-dessus (surtout ceux spécifiques à son école), cite leur titre quand tu t'y réfères, et reste cohérente avec leur méthode et leur vocabulaire.
             `;
         }
 
