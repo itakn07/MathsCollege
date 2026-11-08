@@ -10,6 +10,7 @@ const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
+const sanitizeHtml = require('sanitize-html');
 
 // ============= IMPORTS CLOUDINARY =============
 const cloudinary = require('cloudinary').v2;
@@ -220,20 +221,36 @@ async function callGeminiWithRetry(model, prompt, retries = 2, delay = 1000) {
     }
 }
 
+// --- Sécurité : nettoyage du HTML produit par l'IA ---
+const OPTIONS_HTML = {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat(['h1', 'h2', 'h3', 'span', 'img', 'u']),
+    allowedAttributes: { '*': ['class', 'style'], 'img': ['src', 'alt'] },
+    allowedSchemes: ['http', 'https']
+};
+const nettoyerHtml = (html) => sanitizeHtml(html || '', OPTIONS_HTML);
+const nettoyerTexte = (t, max = 200) => sanitizeHtml(t || '', { allowedTags: [], allowedAttributes: {} }).trim().slice(0, max);
+
+// Un seul endroit pour identifier l'utilisateur.
+// TODO : quand le login sera sécurisé (JWT/session), remplacer par req.user.id
+function identifierUtilisateur(req) {
+    return req.body.userId || null;
+}
+
 // --- COACH SYLVIE (ÉLÈVES & PROFESSEURS) ---
 app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
     try {
-        const { prompt, userId, ecoleId } = req.body;
+        const prompt = typeof req.body.prompt === 'string' ? req.body.prompt.trim().slice(0, 4000) : '';
+        const userId = identifierUtilisateur(req);
 
         if (!prompt) {
             return res.status(400).json({ answer: "Le serveur n'a pas reçu de texte." });
         }
 
-        // 1. Récupérer les informations de l'utilisateur (Nom, Rôle, Niveau, École)
+        // 1. Informations de l'utilisateur (rôle, niveau et école lus en base, jamais dans le body)
         let userName = "Utilisateur";
         let userRole = "eleve";
-        let niveauEleve = "6ème"; 
-        let ecoleIdEleve = ecoleId || 1;
+        let niveauEleve = "6ème";
+        let ecoleIdEleve = 1;
 
         if (userId) {
             const [userInfos] = await db.query("SELECT username, role, niveau, ecole_id FROM users WHERE id = ?", [userId]);
@@ -241,11 +258,11 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
                 userName = userInfos[0].username || "Utilisateur";
                 userRole = userInfos[0].role || "eleve";
                 niveauEleve = userInfos[0].niveau || "6ème";
-                ecoleIdEleve = userInfos[0].ecole_id || ecoleIdEleve;
+                ecoleIdEleve = userInfos[0].ecole_id || 1;
             }
         }
 
-        // 2. Récupérer les cours pour alimenter le contexte
+        // 2. Cours pour alimenter le contexte
         const htmlEnTexte = (html, max = 1500) => (html || '')
             .replace(/<style[\s\S]*?<\/style>/gi, ' ')
             .replace(/<script[\s\S]*?<\/script>/gi, ' ')
@@ -267,7 +284,6 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
         let coursContexte = "";
         try {
             if (userRole === 'professeur' || !niveauId) {
-                // Professeur : tous les cours de l'école + tronc commun
                 const [coursList] = await db.query(
                     `SELECT titre, domaine, contenu FROM cours
                      WHERE ecole_id = ? OR ecole_id = 1 OR ecole_id IS NULL`,
@@ -275,22 +291,19 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
                 );
                 if (coursList.length > 0) coursContexte = formaterCours(coursList);
             } else {
-                // Élève : cours communs de son niveau
                 const [communs] = await db.query(
                     `SELECT titre, domaine, contenu FROM cours
                      WHERE ecole_id = 1 AND niveau_id = ?`,
                     [niveauId]
                 );
-                // Élève : cours propres à son école, pour son niveau
                 let specifiques = [];
-                if (ecoleIdEleve !== 1) {
+                if (Number(ecoleIdEleve) !== 1) {
                     [specifiques] = await db.query(
                         `SELECT titre, domaine, contenu FROM cours
                          WHERE ecole_id = ? AND niveau_id = ?`,
                         [ecoleIdEleve, niveauId]
                     );
                 }
-
                 if (communs.length > 0) {
                     coursContexte += `COURS COMMUNS (programme de ${niveauEleve}) :\n${formaterCours(communs)}`;
                 }
@@ -302,14 +315,34 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
             console.error("Erreur lors de la récupération des cours pour l'IA :", err);
         }
 
-        // 3. Instructions système dynamiques selon le rôle (Professeur vs Élève)
+        // 2bis. Cours publiés par ce professeur (pour y rattacher des exercices)
+        let mesCours = [];
+        if (userRole === 'professeur' && userId) {
+            try {
+                [mesCours] = await db.query(
+                    `SELECT c.id, c.titre, n.nom AS niveau
+                     FROM cours c
+                     LEFT JOIN niveaux n ON n.id = c.niveau_id
+                     WHERE c.professeur_id = ?
+                     ORDER BY c.id DESC`,
+                    [userId]
+                );
+            } catch (err) {
+                console.error("Erreur récupération cours du prof :", err);
+            }
+        }
+        const listeMesCours = mesCours
+            .map(c => `- id ${c.id} : ${c.titre} (${c.niveau || 'niveau inconnu'})`)
+            .join("\n");
+
+        // 3. Instructions système selon le rôle
         let systemInstruction = "";
 
         if (userRole === 'professeur') {
             systemInstruction = `
                 Tu es Sylvie, une assistante pédagogique intelligente et experte en mathématiques, conçue pour aider les professeurs.
                 Tu t'adresses à ${userName}, qui est professeur dans l'établissement.
-                
+
                 Voici la liste des cours de la plateforme de l'école pour référence :
                 ${coursContexte ? coursContexte : "Aucun cours enregistré pour le moment."}
 
@@ -318,33 +351,51 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
                 - Sois professionnelle, créative, technique et force de proposition dans tes réponses.
                 - Tutoie le professeur et adopte un ton constructif et collégial.
 
+                Cours publiés par ce professeur (pour y rattacher un exercice) :
+                ${listeMesCours ? listeMesCours : "Aucun cours publié pour le moment."}
+
                 Publication directe :
                 - Si le professeur te demande de PUBLIER un cours ou un exercice, tu ne publies rien toi-même : tu prépares la publication, et il la validera d'un clic.
-                - Dans ce cas, termine ta réponse par un bloc EXACTEMENT dans ce format :
+                - Si le niveau (6ème, 5ème, 4ème ou 3ème) n'est pas précisé, DEMANDE-LE avant de préparer quoi que ce soit, sans écrire de bloc.
+                - Pour un COURS, termine ta réponse par un bloc EXACTEMENT dans ce format :
 [[PUBLICATION]]
+type: cours
 titre: <titre du cours>
 niveau: <6ème | 5ème | 4ème | 3ème>
 domaine: <algebre | geometrie | ...>
-type: <cours | exercice>
 ---CONTENU---
 <le contenu complet en HTML>
 [[FIN_PUBLICATION]]
-                - Avant ce bloc, écris une phrase courte du type "Voici l'aperçu, clique sur Publier pour valider".
-                - N'utilise ce bloc que si le professeur demande explicitement de publier.
+                - Un EXERCICE doit être rattaché à un cours du professeur. S'il n'a pas dit lequel, présente-lui la liste numérotée de ses cours de ce niveau (titres seulement, sans les ids) et demande-lui lequel choisir, sans écrire de bloc. S'il n'a aucun cours à ce niveau, dis-le-lui et propose de préparer d'abord un cours.
+                - Quand le cours est choisi, termine ta réponse par un bloc EXACTEMENT dans ce format (cours_id = l'id exact pris dans la liste ci-dessus) :
+[[PUBLICATION]]
+type: exercice
+cours_id: <id du cours>
+titre: <titre de l'exercice>
+niveau: <6ème | 5ème | 4ème | 3ème>
+domaine: <algebre | geometrie | ...>
+---ENONCE---
+<l'énoncé complet en HTML>
+---REPONSE---
+<la réponse correcte, courte>
+[[FIN_PUBLICATION]]
+                - Avant le bloc, écris une phrase courte du type "Voici l'aperçu, clique sur Publier pour valider".
+                - N'utilise un bloc que si le professeur demande explicitement de publier.
             `;
         } else {
             systemInstruction = `
                 Tu es Sylvie, une coach et tutrice de mathématiques bienveillante, dynamique et pédagogique.
                 Tu t'adresses à l'élève ${userName}, qui est en classe de ${niveauEleve}.
 
-                Voici la LISTE OFFICIELLE DES COURS disponibles sur la plateforme pour son établissement :
+                Voici les COURS disponibles sur la plateforme pour son niveau et son établissement :
                 ${coursContexte ? coursContexte : "Aucun cours n'a encore été publié pour le moment."}
 
                 Directives pour l'élève :
                 - Si l'élève te demande quels sont ses cours ou sa liste de cours, liste précisément les cours affichés ci-dessus sous forme de puces. Ne dis jamais que tu n'as pas accès à sa liste !
+                - Appuie-toi d'abord sur les cours ci-dessus (surtout ceux spécifiques à son école), cite leur titre quand tu t'y réfères, et reste cohérente avec leur méthode et leur vocabulaire.
                 - Aide-le à réviser, explique les notions pas à pas sans donner directement les réponses aux exercices.
                 - Sois encourageante et tutoie l'élève.
-                - Appuie-toi d'abord sur les cours ci-dessus (surtout ceux spécifiques à son école), cite leur titre quand tu t'y réfères, et reste cohérente avec leur méthode et leur vocabulaire.
+                - Ne produis jamais de bloc [[PUBLICATION]] : tu ne publies rien.
             `;
         }
 
@@ -357,36 +408,57 @@ type: <cours | exercice>
         const result = await callGeminiWithRetry(model, prompt);
         const text = result.response.text();
 
-        // Extraire une éventuelle publication proposée (professeurs uniquement)
+        // 5. Extraction d'une publication proposée (professeurs uniquement, rôle lu en base)
         let publication = null;
         let answer = text;
 
-        if (userRole === 'professeur') {
-            const m = text.match(/\[\[PUBLICATION\]\]([\s\S]*?)\[\[FIN_PUBLICATION\]\]/);
-            if (m) {
-                const [entete, ...reste] = m[1].split('---CONTENU---');
+        // Retirer tout bloc technique du texte affiché, pour tout le monde
+        const regexBloc = /\[\[PUBLICATION\]\]([\s\S]*?)\[\[FIN_PUBLICATION\]\]/;
+        const m = text.match(regexBloc);
+
+        if (m) {
+            answer = text.replace(m[0], '').trim();
+
+            if (userRole === 'professeur') {
+                const corps = m[1];
+                const entete = corps.split(/---(?:CONTENU|ENONCE)---/)[0];
                 const champ = (nom) => {
                     const r = entete.match(new RegExp(nom + '\\s*:\\s*(.+)', 'i'));
                     return r ? r[1].trim() : '';
                 };
-                const contenu = reste.join('---CONTENU---').trim();
+                const type = champ('type').toLowerCase() === 'exercice' ? 'exercice' : 'cours';
+                const titre = nettoyerTexte(champ('titre'), 200);
+                const niveau = nettoyerTexte(champ('niveau'), 10);
+                let domaine = nettoyerTexte(champ('domaine'), 30).toLowerCase();
+                if (!/^[a-zé_ -]{2,30}$/.test(domaine)) domaine = 'algebre';
 
-                if (champ('titre') && contenu) {
-                    publication = {
-                        titre: champ('titre'),
-                        niveau: champ('niveau'),
-                        domaine: champ('domaine').toLowerCase(),
-                        type: champ('type').toLowerCase() || 'cours',
-                        contenu
-                    };
+                if (type === 'exercice') {
+                    // Le cours doit exister ET appartenir à ce professeur
+                    const coursChoisi = mesCours.find(c => c.id === parseInt(champ('cours_id')));
+                    const apres = corps.split('---ENONCE---')[1] || '';
+                    const [enonce, reponse] = apres.split('---REPONSE---');
+
+                    if (coursChoisi && titre && enonce && enonce.trim()) {
+                        publication = {
+                            type, titre, niveau, domaine,
+                            cours_id: coursChoisi.id,
+                            cours_titre: coursChoisi.titre,
+                            enonce: nettoyerHtml(enonce.trim()),
+                            reponse: nettoyerTexte(reponse, 500)
+                        };
+                    }
+                } else {
+                    const contenu = nettoyerHtml(corps.split('---CONTENU---').slice(1).join('---CONTENU---').trim());
+                    if (titre && contenu) {
+                        publication = { type, titre, niveau, domaine, contenu };
+                    }
                 }
-                answer = text.replace(m[0], '').trim();
             }
         }
 
-        // 5. Sauvegarde de la conversation
+        // 6. Sauvegarde de la conversation
         if (userId) {
-            await db.query("INSERT INTO conversations_ia (user_id, ecole_id, question, reponse) VALUES (?, ?, ?, ?)", 
+            await db.query("INSERT INTO conversations_ia (user_id, ecole_id, question, reponse) VALUES (?, ?, ?, ?)",
                 [userId, ecoleIdEleve, prompt, text]
             ).catch(err => console.error("Erreur stockage conversation :", err));
         }
@@ -400,6 +472,7 @@ type: <cours | exercice>
         });
     }
 });
+
 
 // ============= AUTHENTIFICATION (SIGNUP & LOGIN) =============
 app.post('/api/signup', async (req, res) => {
