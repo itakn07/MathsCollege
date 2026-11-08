@@ -295,9 +295,20 @@ function setupFormListeners(currentUser) {
         formVideo.addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            // Convertit "5e", "5ème" ou un id en id numérique (1 = 6e, 2 = 5e, 3 = 4e, 4 = 3e)
+            const NIV_VIDEO = { '6': 1, '5': 2, '4': 3, '3': 4 };
+            const valNiveau = String(document.getElementById('video-niveau').value).trim();
+            const chiffre = (valNiveau.match(/\d/) || [])[0];
+            const niveauId = /^[1-4]$/.test(valNiveau) ? valNiveau : (NIV_VIDEO[chiffre] || '');
+
+            if (!niveauId) {
+                alert("Niveau non reconnu : " + valNiveau);
+                return;
+            }
+
             const formData = new FormData();
             formData.append('titre', document.getElementById('video-titre').value);
-            formData.append('niveau_id', document.getElementById('video-niveau').value);
+            formData.append('niveau_id', niveauId);
             formData.append('domaine', document.getElementById('video-domaine').value);
             formData.append('ecole_id', currentUser.ecole_id || currentUser.ecole?.id || 1);
             formData.append('prof_id', currentUser.id || null);
@@ -592,7 +603,7 @@ async function envoyerMessageProf() {
             }
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
-        
+
     } catch (err) {
         console.error("Erreur communication IA:", err);
         const loadingEl = document.getElementById(loadingId);
