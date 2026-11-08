@@ -379,20 +379,72 @@ function apercuPublicationHtml(id, pub) {
     const titre = DOMPurify.sanitize(pub.titre, { ALLOWED_TAGS: [] });
     const niveau = DOMPurify.sanitize(pub.niveau || '', { ALLOWED_TAGS: [] });
     const domaine = DOMPurify.sanitize(pub.domaine || '', { ALLOWED_TAGS: [] });
-    const contenu = DOMPurify.sanitize(pub.contenu);
+    const estExo = pub.type === 'exercice';
+    const contenu = DOMPurify.sanitize(estExo ? pub.enonce : pub.contenu);
+    const reponse = DOMPurify.sanitize(pub.reponse || '', { ALLOWED_TAGS: [] });
+
+    const choix = estExo ? `
+        <div class="grid gap-2 mb-3">
+            <label class="text-xs font-semibold text-slate-600">Classe
+                <select id="${id}-classe" class="w-full border rounded p-2 text-sm font-normal">
+                    <option value="">Choisir une classe...</option>
+                </select>
+            </label>
+            <label class="text-xs font-semibold text-slate-600">Cours associé
+                <select id="${id}-cours" class="w-full border rounded p-2 text-sm font-normal">
+                    <option value="">Chargement...</option>
+                </select>
+            </label>
+        </div>
+        <div class="text-xs text-slate-600 mb-3"><strong>Réponse attendue :</strong> ${reponse || '—'}</div>
+    ` : '';
+
     return `
         <div id="${id}" class="bg-white border-2 border-indigo-300 p-4 rounded-lg my-2">
-            <div class="font-bold text-indigo-900">📄 ${titre}</div>
+            <div class="font-bold text-indigo-900">${estExo ? '✏️ Exercice' : '📄 Cours'} : ${titre}</div>
             <div class="text-xs text-slate-500 mb-2">${niveau} · ${domaine}</div>
             <details class="mb-3">
                 <summary class="cursor-pointer text-sm text-indigo-700">Voir l'aperçu du contenu</summary>
                 <div class="bot-msg mt-2 p-2 border rounded max-h-64 overflow-auto text-sm">${contenu}</div>
             </details>
+            ${choix}
             <button onclick="confirmerPublication('${id}')"
                 class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold">Publier</button>
             <button onclick="annulerPublication('${id}')"
                 class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm ml-2">Annuler</button>
         </div>`;
+}
+
+// Remplit les deux listes déroulantes d'une carte d'exercice
+async function preparerChoixExercice(id, pub) {
+    const selClasse = document.getElementById(id + '-classe');
+    const selCours = document.getElementById(id + '-cours');
+    if (!selClasse || !selCours) return;
+
+    // Classes du prof (déjà chargées dans le tableau de bord)
+    dashboardProfData.classes.forEach(c => {
+        selClasse.innerHTML += `<option value="${c.id}">${DOMPurify.sanitize(String(c.nom), { ALLOWED_TAGS: [] })}</option>`;
+    });
+
+    // Cours du prof, filtrés par le niveau proposé par Sylvie
+    let user = {};
+    try { user = JSON.parse(localStorage.getItem('user') || '{}'); } catch (e) {}
+    const niveauId = NIVEAUX_ID[(pub.niveau || '').trim().toLowerCase()];
+
+    try {
+        const res = await fetch(`/api/prof/mes-cours?professeur_id=${user.id}`);
+        const cours = await res.json();
+        const filtres = niveauId ? cours.filter(c => c.niveau_id === niveauId) : cours;
+
+        if (filtres.length === 0) {
+            selCours.innerHTML = '<option value="">Aucun cours à ce niveau : publie d\'abord un cours</option>';
+            return;
+        }
+        selCours.innerHTML = '<option value="">Choisir un cours...</option>' +
+            filtres.map(c => `<option value="${c.id}">${DOMPurify.sanitize(c.titre, { ALLOWED_TAGS: [] })}</option>`).join('');
+    } catch (e) {
+        selCours.innerHTML = '<option value="">Erreur de chargement</option>';
+    }
 }
 
 function annulerPublication(id) {
@@ -406,43 +458,63 @@ async function confirmerPublication(id) {
     const bloc = document.getElementById(id);
     if (!pub || !bloc) return;
 
-    const niveau_id = NIVEAUX_ID[(pub.niveau || '').trim().toLowerCase()];
-    if (!niveau_id) {
-        alert("Niveau non reconnu : " + pub.niveau);
-        return;
-    }
-
     let user = {};
     try { user = JSON.parse(localStorage.getItem('user') || '{}'); } catch (e) {}
+
+    let url, body;
+
+    if (pub.type === 'exercice') {
+        const classe_id = document.getElementById(id + '-classe')?.value;
+        const cours_id = document.getElementById(id + '-cours')?.value;
+        if (!classe_id || !cours_id) {
+            alert("Choisis la classe et le cours associé.");
+            return;
+        }
+        url = '/api/prof/exercices-ia';
+        body = {
+            userId: user.id,
+            cours_id, classe_id,
+            titre: pub.titre,
+            enonce: pub.enonce,
+            reponse_correcte: pub.reponse || ''
+        };
+    } else {
+        const niveau_id = NIVEAUX_ID[(pub.niveau || '').trim().toLowerCase()];
+        if (!niveau_id) {
+            alert("Niveau non reconnu : " + pub.niveau);
+            return;
+        }
+        url = '/api/prof/cours';
+        body = {
+            titre: pub.titre,
+            contenu: DOMPurify.sanitize(pub.contenu),
+            niveau_id,
+            domaine: pub.domaine || 'algebre',
+            ecole_id: user.ecole_id || 1,
+            professeur_id: user.id,
+            est_public: 1
+        };
+    }
 
     bloc.querySelectorAll('button').forEach(b => b.disabled = true);
 
     try {
-        const res = await fetch('/api/prof/cours', {
+        const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                titre: pub.titre,
-                contenu: DOMPurify.sanitize(pub.contenu),
-                niveau_id,
-                domaine: pub.domaine || 'algebre',
-                ecole_id: user.ecole_id || 1,
-                professeur_id: user.id,
-                est_public: 1
-            })
+            body: JSON.stringify(body)
         });
         if (!res.ok) throw new Error('HTTP ' + res.status);
 
         delete publicationsEnAttente[id];
-        bloc.innerHTML = `<div class="text-green-700 font-bold">✅ Cours publié avec succès !</div>`;
+        bloc.innerHTML = `<div class="text-green-700 font-bold">✅ ${pub.type === 'exercice' ? 'Exercice' : 'Cours'} publié avec succès !</div>`;
 
-        // Rafraîchir la liste des cours et l'historique
         chargerListeCours();
         chargerStatsDashboard(user.id);
     } catch (e) {
         console.error(e);
         bloc.querySelectorAll('button').forEach(b => b.disabled = false);
-        alert("Impossible de publier le cours.");
+        alert("Impossible de publier.");
     }
 }
 
@@ -514,9 +586,13 @@ async function envoyerMessageProf() {
         if (data.publication) {
             const pubId = 'pub-' + Date.now();
             publicationsEnAttente[pubId] = data.publication;
-            messagesContainer.innerHTML += apercuPublicationHtml(pubId, data.publication);
+            messagesContainer.insertAdjacentHTML('beforeend', apercuPublicationHtml(pubId, data.publication));
+            if (data.publication.type === 'exercice') {
+                preparerChoixExercice(pubId, data.publication);
+            }
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
+        
     } catch (err) {
         console.error("Erreur communication IA:", err);
         const loadingEl = document.getElementById(loadingId);

@@ -745,6 +745,65 @@ app.post('/api/prof/exercices', upload.single('pdf_file'), async (req, res) => {
     }
 });
 
+// Liste des cours publiés par un professeur (pour la carte de Sylvie)
+app.get('/api/prof/mes-cours', async (req, res) => {
+    try {
+        const professeurId = parseInt(req.query.professeur_id);
+        if (!professeurId) return res.json([]);
+        const [rows] = await db.query(
+            "SELECT id, titre, niveau_id FROM cours WHERE professeur_id = ? ORDER BY id DESC",
+            [professeurId]
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error("Erreur mes-cours :", err);
+        res.status(500).json([]);
+    }
+});
+
+// Publication d'un exercice proposé par Sylvie (avec vérifications)
+app.post('/api/prof/exercices-ia', async (req, res) => {
+    try {
+        const userId = identifierUtilisateur(req);
+        const cours_id = parseInt(req.body.cours_id);
+        const classe_id = parseInt(req.body.classe_id);
+        const titre = nettoyerTexte(req.body.titre, 255);
+        const enonce = nettoyerHtml(req.body.enonce);
+        const reponse = nettoyerTexte(req.body.reponse_correcte, 500);
+
+        if (!userId || !cours_id || !classe_id || !titre || !enonce) {
+            return res.status(400).json({ error: "Données incomplètes." });
+        }
+
+        // Le rôle et l'école sont lus en base
+        const [users] = await db.query("SELECT role, ecole_id FROM users WHERE id = ?", [userId]);
+        if (!users.length || users[0].role !== 'professeur') {
+            return res.status(403).json({ error: "Accès refusé." });
+        }
+
+        // Le cours doit appartenir à ce professeur
+        const [cours] = await db.query(
+            "SELECT id FROM cours WHERE id = ? AND professeur_id = ?", [cours_id, userId]
+        );
+        if (!cours.length) return res.status(403).json({ error: "Ce cours n'est pas le vôtre." });
+
+        // La classe doit être dans son école
+        const [classes] = await db.query(
+            "SELECT id FROM classes WHERE id = ? AND ecole_id = ?", [classe_id, users[0].ecole_id]
+        );
+        if (!classes.length) return res.status(403).json({ error: "Classe non autorisée." });
+
+        await db.query(
+            "INSERT INTO exercices (cours_id, classe_id, titre, enonce, reponse_correcte) VALUES (?, ?, ?, ?, ?)",
+            [cours_id, classe_id, titre, enonce, reponse]
+        );
+        res.json({ message: "Exercice publié avec succès !" });
+    } catch (err) {
+        console.error("Erreur exercices-ia :", err);
+        res.status(500).json({ error: "Impossible de publier l'exercice." });
+    }
+});
+
 // ============= ROUTES ADMIN ÉCOLE =============
 app.get('/api/admin-ecole/dashboard/:ecoleId', async (req, res) => {
     const { ecoleId } = req.params;
