@@ -315,26 +315,6 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
             console.error("Erreur lors de la récupération des cours pour l'IA :", err);
         }
 
-        // 2bis. Cours publiés par ce professeur (pour y rattacher des exercices)
-        let mesCours = [];
-        if (userRole === 'professeur' && userId) {
-            try {
-                [mesCours] = await db.query(
-                    `SELECT c.id, c.titre, n.nom AS niveau
-                     FROM cours c
-                     LEFT JOIN niveaux n ON n.id = c.niveau_id
-                     WHERE c.professeur_id = ?
-                     ORDER BY c.id DESC`,
-                    [userId]
-                );
-            } catch (err) {
-                console.error("Erreur récupération cours du prof :", err);
-            }
-        }
-        const listeMesCours = mesCours
-            .map(c => `- id ${c.id} : ${c.titre} (${c.niveau || 'niveau inconnu'})`)
-            .join("\n");
-
         // 3. Instructions système selon le rôle
         let systemInstruction = "";
 
@@ -342,7 +322,6 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
             systemInstruction = `
                 Tu es Sylvie, une assistante pédagogique intelligente et experte en mathématiques, conçue pour aider les professeurs.
                 Tu t'adresses à ${userName}, qui est professeur dans l'établissement.
-                Retiens et souvient toi des messages précédents pour comprendre le context des messages du professeur.
 
                 Voici la liste des cours de la plateforme de l'école pour référence :
                 ${coursContexte ? coursContexte : "Aucun cours enregistré pour le moment."}
@@ -351,9 +330,6 @@ app.post('/ask-ai', verifierQuotaIA, async (req, res) => {
                 - Aide-le à concevoir des plans de cours, formuler des exercices, structurer des interros ou trouver des approches pédagogiques adaptées.
                 - Sois professionnelle, créative, technique et force de proposition dans tes réponses.
                 - Tutoie le professeur et adopte un ton constructif et collégial.
-
-                Cours publiés par ce professeur (pour y rattacher un exercice) :
-                ${listeMesCours ? listeMesCours : "Aucun cours publié pour le moment."}
 
                 Publication directe :
                 - Si le professeur te demande de PUBLIER un cours ou un exercice, tu ne publies rien toi-même : tu prépares la publication, et il la validera d'un clic.
@@ -367,11 +343,9 @@ domaine: <algebre | geometrie | ...>
 ---CONTENU---
 <le contenu complet en HTML>
 [[FIN_PUBLICATION]]
-                - Un EXERCICE doit être rattaché à un cours du professeur. S'il n'a pas dit lequel, présente-lui la liste numérotée de ses cours de ce niveau (titres seulement, sans les ids) et demande-lui lequel choisir, sans écrire de bloc. S'il n'a aucun cours à ce niveau, dis-le-lui et propose de préparer d'abord un cours.
-                - Quand le cours est choisi, termine ta réponse par un bloc EXACTEMENT dans ce format (cours_id = l'id exact pris dans la liste ci-dessus) :
+                - Pour un EXERCICE, ne demande PAS quel cours ni quelle classe : le professeur les choisira dans des listes affichées sous ton aperçu. Si le niveau n'est pas précisé, demande-le d'abord. Termine ta réponse par un bloc EXACTEMENT dans ce format :
 [[PUBLICATION]]
 type: exercice
-cours_id: <id du cours>
 titre: <titre de l'exercice>
 niveau: <6ème | 5ème | 4ème | 3ème>
 domaine: <algebre | geometrie | ...>
@@ -380,7 +354,8 @@ domaine: <algebre | geometrie | ...>
 ---REPONSE---
 <la réponse correcte, courte>
 [[FIN_PUBLICATION]]
-                - Avant le bloc, écris une phrase courte du type "Voici l'aperçu, clique sur Publier pour valider".
+                - Avant le bloc, écris une phrase courte du type "Voici l'aperçu : choisis la classe et le cours, puis clique sur Publier."
+                - Après le bloc, ne dis rien de plus.
                 - N'utilise un bloc que si le professeur demande explicitement de publier.
             `;
         } else {
@@ -434,16 +409,12 @@ domaine: <algebre | geometrie | ...>
                 if (!/^[a-zé_ -]{2,30}$/.test(domaine)) domaine = 'algebre';
 
                 if (type === 'exercice') {
-                    // Le cours doit exister ET appartenir à ce professeur
-                    const coursChoisi = mesCours.find(c => c.id === parseInt(champ('cours_id')));
                     const apres = corps.split('---ENONCE---')[1] || '';
                     const [enonce, reponse] = apres.split('---REPONSE---');
 
-                    if (coursChoisi && titre && enonce && enonce.trim()) {
+                    if (titre && enonce && enonce.trim()) {
                         publication = {
                             type, titre, niveau, domaine,
-                            cours_id: coursChoisi.id,
-                            cours_titre: coursChoisi.titre,
                             enonce: nettoyerHtml(enonce.trim()),
                             reponse: nettoyerTexte(reponse, 500)
                         };
