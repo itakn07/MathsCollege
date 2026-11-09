@@ -323,6 +323,8 @@
 
   <script src="script.js"></script>
   
+ 
+  
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const user = JSON.parse(localStorage.getItem('user') || 'null');
@@ -340,28 +342,53 @@
           const nomEcole = ecoleData.nom;
           const logoUrl = ecoleData.logo || ecoleData.logo_url;
           const couleurTheme = ecoleData.couleur || ecoleData.couleur_primaire;
+          
+          const adresseEcole = ecoleData.adresse;
+          const emailEcole = ecoleData.email;
+          const telephoneEcole = ecoleData.telephone;
 
           if (nomEcole) {
               const headerTitle = document.getElementById('header-title');
-              const footerTitle = document.getElementById('footer-title');
+              const footerTitle = document.getElementById('footer-school-name'); // Corrigé ici
               const welcomeTitle = document.getElementById('welcome-guest-title');
+              
               if (headerTitle) { headerTitle.textContent = nomEcole; headerTitle.className = "text-base sm:text-xl font-extrabold truncate"; }
-              if (footerTitle) { footerTitle.textContent = nomEcole; footerTitle.className = "text-xl font-extrabold"; }
+              if (footerTitle) { footerTitle.textContent = nomEcole; footerTitle.className = "text-xl font-extrabold bg-gradient-to-r from-brand-500 to-purple-600 bg-clip-text text-transparent"; }
               if (welcomeTitle) welcomeTitle.textContent = `Bienvenue sur ${nomEcole} ! 👋`;
           }
+
+          // Mise à jour dynamique des coordonnées de contact du footer
+          if (adresseEcole) {
+              const addressText = document.getElementById('footer-address-text');
+              if (addressText) addressText.textContent = adresseEcole;
+          }
+          if (emailEcole) {
+              const emailText = document.getElementById('footer-email-text');
+              const emailLink = document.getElementById('footer-email-link');
+              if (emailText) emailText.textContent = emailEcole;
+              if (emailLink) emailLink.href = `mailto:${emailEcole}`;
+          }
+          if (telephoneEcole) {
+              const phoneText = document.getElementById('footer-phone-text');
+              const phoneLink = document.getElementById('footer-phone-link');
+              if (phoneText) phoneText.textContent = telephoneEcole;
+              if (phoneLink) phoneLink.href = `tel:${telephoneEcole.replace(/\s+/g, '')}`;
+          }
+
           if (logoUrl) {
               const headerLogo = document.getElementById('header-logo');
               const footerLogo = document.getElementById('footer-logo');
               if (headerLogo) headerLogo.src = logoUrl;
               if (footerLogo) footerLogo.src = logoUrl;
           }
+
           if (couleurTheme) {
               let styleTag = document.getElementById('dynamic-theme-style');
               if (!styleTag) { styleTag = document.createElement('style'); styleTag.id = 'dynamic-theme-style'; document.head.appendChild(styleTag); }
               styleTag.innerHTML = `
                   .bg-brand-500, .nav-btn, button.bg-brand-500, .action-btn, #levels-container button, #ai-avatar-badge { background-color: ${couleurTheme} !important; border-color: ${couleurTheme} !important; }
                   .bg-brand-500:hover, .action-btn:hover { filter: brightness(0.9) !important; }
-                  #header-title, #footer-title, .text-brand-500, .text-brand-600, #current-niveau-display { color: ${couleurTheme} !important; }
+                  #header-title, #footer-school-name, .text-brand-500, .text-brand-600, #current-niveau-display { color: ${couleurTheme} !important; }
                   .bg-brand-50 { background-color: ${couleurTheme}15 !important; }
                   .border-brand-100, .border-brand-500 { border-color: ${couleurTheme} !important; }
               `;
@@ -387,5 +414,6 @@
       window.location.href = 'videos.html';
     }
   </script>
+
 </body>
 </html>
