@@ -119,20 +119,23 @@ function renderSelectedClassStats() {
         return;
     }
 
-    // Effectif de la classe active
-    if (statEleves) statEleves.textContent = selectedClass.totalEleves;
+   // Effectif de la classe active
+    if (statEleves) {
+        statEleves.textContent = selectedClass.totalEleves || 0;
+    }
 
     // Top 10 des questions IA de cette classe
     if (listContainer) {
-        listContainer.innerHTML = '';
+        listContainer.innerHTML = ''; // Vider la liste avant de la remplir
+
         if (!selectedClass.topQuestions || selectedClass.topQuestions.length === 0) {
             listContainer.innerHTML = `<li class="text-xs text-slate-400 italic">Aucune question posée par les élèves de cette classe.</li>`;
         } else {
             selectedClass.topQuestions.forEach((item, index) => {
                 const li = document.createElement('li');
-                li.className = 'flex justify-between items-center py-1.5 border-b border-slate-100 last:border-none text-xs';
+                li.className = 'flex items-center justify-between py-1.5 border-b border-slate-100 last:border-none text-xs';
                 li.innerHTML = `
-                    <span class="text-slate-800 font-medium"><strong>${index + 1}.</strong> ${item.question}</span>
+                    <span class="text-slate-800 font-medium"><strong>#${index + 1}.</strong> ${item.question}</span>
                     <span class="bg-purple-50 text-purple-700 px-2 py-0.5 rounded font-bold">${item.frequence} fois</span>
                 `;
                 listContainer.appendChild(li);
